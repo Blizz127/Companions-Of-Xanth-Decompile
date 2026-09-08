@@ -1,0 +1,17 @@
+*.[eE][xX][eE]
+*.[oO][vV][lL]
+*.[iI][sS][oO]
+*.obj
+*.o
+*.map
+*.pdb
+*.bin
+*.cue
+__pycache__/
+.venv/
+/build/
+/extracted/
+/original/*
+!/original/README.md
+!/original/.gitignore
+/evidence/local/
