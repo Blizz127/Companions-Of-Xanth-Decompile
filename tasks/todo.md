@@ -15,4 +15,6 @@
 ## matching-pipeline
 
 - [x] Whole-file BINARY-MATCH for EXE and OVL via listing rebuild
-- [ ] Replace listing units with C compiled by CL 8.00c
+- [x] Splice CL 8.00c C units (`clear_byte`, `add20`, `sub20`, `iabs`)
+- [x] Invoke historical LINK.EXE on those objects (Legend OVL layout stays reconstructed)
+- [ ] Replace remaining listing functions with C

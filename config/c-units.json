@@ -1,0 +1,10 @@
+{
+  "compiler": "Microsoft C/C++ 8.00c",
+  "flags": ["/c", "/f-", "/AL", "/Gs", "/Os", "/nologo", "/Zl"],
+  "units": [
+    {"image": "exe-code", "offset": 106736, "source": "src/clear_byte.c"},
+    {"image": "exe-code", "offset": 14348, "source": "src/add20.c"},
+    {"image": "exe-code", "offset": 14382, "source": "src/sub20.c"},
+    {"image": "exe-code", "offset": 17806, "source": "src/iabs.c"}
+  ]
+}
