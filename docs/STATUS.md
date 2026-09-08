@@ -14,8 +14,8 @@ Date: 2026-09-07
 
 ## Not done
 
-- Most recovered code is still 16-bit listing; 14 EXE functions and 1 OVL
-  function are C compiled by CL 8.00c (data fixups applied from OMF)
+- Most recovered code is still 16-bit listing; 21 EXE functions and 4 OVL
+  functions are C compiled by CL 8.00c (data/far-call fixups applied from OMF)
 - Legend `.OVL` layout is not Microsoft LINK overlay format; LINK.EXE is
   invoked on the C objects, and the game overlay directory stays reconstructed
 - `pc-port` does not exist
