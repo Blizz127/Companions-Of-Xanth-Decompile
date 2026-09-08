@@ -10,8 +10,10 @@ _TOOLS = Path(__file__).resolve().parent
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
+from c_units import splice_exe_code
 from compare import compare_bytes
 from identify import identify_ovl
+from link_msc import compile_to_obj, link_objects, linker_available
 from listing import ListingError, assemble, assemble_data
 from mz import build_mz, parse_relocs, split_exe
 from retail_common import ROOT, RetailError, load_target, verify_file
@@ -34,6 +36,20 @@ def rebuild_exe(original: bytes) -> tuple[bytes, dict]:
         tail_built, _ = assemble_data(tail)
     except ListingError as exc:
         raise RebuildError(f"listing rebuild failed: {exc}") from exc
+    code_buf = bytearray(code_built)
+    c_units = splice_exe_code(code_buf)
+    linker = None
+    if c_units and linker_available():
+        from c_units import load_units
+
+        objects = []
+        for unit in load_units():
+            if unit.get("image") != "exe-code":
+                continue
+            name = Path(unit["source"]).stem + ".obj"
+            objects.append((name, compile_to_obj(ROOT / unit["source"])))
+        if objects:
+            linker = link_objects(objects)
     relocs = parse_relocs(original)
     rebuilt = build_mz(
         cs=mz["cs"],
@@ -43,13 +59,15 @@ def rebuild_exe(original: bytes) -> tuple[bytes, dict]:
         minalloc=mz["minalloc"],
         maxalloc=mz["maxalloc"],
         relocs=relocs,
-        load_image=code_built,
+        load_image=bytes(code_buf),
     )
     rebuilt += tail_built
     return rebuilt, {
-        "code": compare_bytes(code, code_built),
+        "code": compare_bytes(code, bytes(code_buf)),
         "tail": compare_bytes(tail, tail_built),
         "header_bytes": mz["header_bytes"],
+        "c_units": c_units,
+        "linker": linker,
     }
 
 

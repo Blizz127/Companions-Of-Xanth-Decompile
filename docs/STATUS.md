@@ -14,12 +14,12 @@ Date: 2026-09-07
 
 ## Not done
 
-- Most recovered code is still 16-bit listing (NASM mnemonics), not C
-- `LINK.EXE` is not yet producing the overlay layout; the MZ/OVL image is
-  reconstructed from parsed headers plus assembled listings
+- Most recovered code is still 16-bit listing; four EXE functions are C
+  (`clear_byte`, `add20`, `sub20`, `iabs`) compiled by CL 8.00c and spliced
+- Legend `.OVL` layout is not Microsoft LINK overlay format; LINK.EXE is
+  invoked on the C objects, and the game overlay directory stays reconstructed
 - `pc-port` does not exist
 
 ## Next
 
-Replace listing units with C compiled by CL 8.00c, function by function,
-keeping whole-file BINARY-MATCH.
+Keep replacing listing functions with C under CL 8.00c.

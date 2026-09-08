@@ -51,8 +51,9 @@ def compile_c(source: Path, *, flags: list[str] | None = None) -> bytes:
             if src.is_file():
                 shutil.copy2(src, work / name)
         shutil.copy2(source, work / source.name)
-        include = work / "include"
-        if MSC_INCLUDE.is_dir():
+        text = source.read_text(encoding="utf-8", errors="replace")
+        if "#include" in text and MSC_INCLUDE.is_dir():
+            include = work / "include"
             shutil.copytree(MSC_INCLUDE, include, dirs_exist_ok=True)
             env["INCLUDE"] = str(include)
         cmd = ["wine", str(work / "CL.EXE"), *flags, source.name]
@@ -60,4 +61,5 @@ def compile_c(source: Path, *, flags: list[str] | None = None) -> bytes:
         obj = work / (source.stem + ".obj")
         if proc.returncode != 0 or not obj.is_file():
             raise RetailError(f"CL.EXE failed: {proc.stdout} {proc.stderr}")
-        return ledata_code(obj.read_bytes())
+        obj_bytes = obj.read_bytes()
+        return ledata_code(obj_bytes)
