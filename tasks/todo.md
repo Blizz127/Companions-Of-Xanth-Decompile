@@ -8,16 +8,11 @@
 
 ## compiler-id
 
-- [ ] Task: Overlay-linker fingerprint from `XANTH.EXE`
-  - Acceptance: overlay runtime named or explicitly left UNKNOWN with evidence
-  - Verify: documented in `docs/TOOLCHAIN.md`; no compiler named without an experiment
-- [ ] Task: Code-generation fingerprint (calling convention, prologue, padding)
-  - Acceptance: recorded instruction patterns from the pinned MZ image
-  - Verify: evidence file under `evidence/target/`
-- [ ] Task: Candidate 16-bit Microsoft toolchain inventory
-  - Acceptance: list of compiler builds to try; none marked proven
-  - Verify: `docs/TOOLCHAIN.md` updated
+- [x] Task: Overlay-linker fingerprint from `XANTH.EXE`
+- [x] Task: Code-generation fingerprint (calling convention, prologue, padding)
+- [x] Task: Candidate 16-bit Microsoft toolchain inventory — MSVC 8.00c identified
 
 ## matching-pipeline
 
-- [ ] Blocked on compiler-id
+- [x] Whole-file BINARY-MATCH for EXE and OVL via listing rebuild
+- [ ] Replace listing units with C compiled by CL 8.00c

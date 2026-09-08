@@ -15,3 +15,5 @@ __pycache__/
 !/original/README.md
 !/original/.gitignore
 /evidence/local/
+/tools/toolchain/
+/asm/

@@ -1,8 +1,9 @@
 # Companions of Xanth matching decompilation
 
-Nothing is matched yet. The target is the 1997 budget CD (ISO volume
-`XANBUD`); independent hash corroboration remains unverified. This is a
-target-pin, not a rebuilt game.
+`tools/verify.py` reports whole-program BINARY-MATCH for this disc’s
+`XANTH.EXE` and `XANTH.OVL`. Most recovered code is still a 16-bit
+listing; C replacement with MSVC 8.00c is in progress. Independent hash
+corroboration of the ISO remains unverified.
 
 The retail executable and overlay are authority. Preserve behavior, bugs,
 layouts, overlay placement, and calling conventions. A modern port must be
@@ -22,6 +23,7 @@ implementation. No game data or proprietary toolchain artifacts belong in Git.
 python3 -m unittest discover -s tests -v
 python3 tools/register_retail.py
 python3 tools/verify.py
+python3 tools/rebuild.py
 ```
 
 Verification requires the legally supplied disc described in the target
