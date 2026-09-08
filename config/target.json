@@ -1,0 +1,30 @@
+{
+  "game": "Companions of Xanth",
+  "platform": "MS-DOS",
+  "identity_status": "LOCALLY_SUPPORTED_XANBUD",
+  "external_hash_verification": "UNVERIFIED",
+  "version_intended": "1997 budget CD (XANBUD), game files stamped 1994-04-17",
+  "iso": {
+    "path": "XANBUD.iso",
+    "volume": "XANBUD",
+    "publisher": "SSI",
+    "pvd_date": "1997-06-03",
+    "size": 202412032,
+    "sha1": "ca8043451fc9adbde25924403e60079bd4fa5dcc",
+    "sha256": "b995ed15d024566a1cff8da4df0d5ba57a33327002d315aa12422bf8bdebfefd"
+  },
+  "executable": {
+    "path": "original/XANTH.EXE",
+    "iso_member": "XANTH/XANTH.EXE",
+    "size": 265057,
+    "sha1": "414b9d24aa6683c38e41576909c8b1f08caf0c06",
+    "sha256": "3982b5f5c055a4fd84b0a4fe3b911b7393af687b623d0d00f846c5da46d26671"
+  },
+  "overlay": {
+    "path": "original/XANTH.OVL",
+    "iso_member": "XANTH/XANTH.OVL",
+    "size": 326091,
+    "sha1": "438b37b868d0229ece7fbb9b4ef13a090c7d498e",
+    "sha256": "efbf371c78169e21449b89b932e50ac7952b143c322d82192badd7a369174474"
+  }
+}
