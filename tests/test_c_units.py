@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from tools.c_units import load_units, splice_exe_code
-from tools.compile_msc import compile_c, toolchain_available
+from tools.compile_msc import compile_omf, toolchain_available
 from tools.compare import compare_bytes
 from tools.mz import split_exe
 from tools.rebuild import rebuild_and_compare
@@ -17,7 +17,7 @@ class CUnitSpliceTests(unittest.TestCase):
         units = load_units(ROOT)
         self.assertGreaterEqual(len(units), 1)
         for unit in units:
-            self.assertEqual(unit["image"], "exe-code")
+            self.assertIn(unit["image"], ("exe-code", "ovl-payload"))
             self.assertTrue((ROOT / unit["source"]).is_file())
             self.assertGreaterEqual(int(unit["offset"]), 0)
 
@@ -31,15 +31,22 @@ class CUnitSpliceTests(unittest.TestCase):
         _, code, _ = split_exe(exe.read_bytes())
         buf = bytearray(code)
         applied = splice_exe_code(buf, root=ROOT)
-        self.assertEqual(len(applied), len(load_units(ROOT)))
-        for unit, info in zip(load_units(ROOT), applied):
-            compiled = compile_c(ROOT / unit["source"])
-            while compiled.endswith(b"\x90") and len(compiled) > info["size"]:
-                compiled = compiled[:-1]
+        exe_units = [u for u in load_units(ROOT) if u.get("image") == "exe-code"]
+        self.assertEqual(len(applied), len(exe_units))
+        for unit, info in zip(exe_units, applied):
+            compiled, fixups = compile_omf(ROOT / unit["source"])
             slice_ = bytes(buf[info["offset"] : info["offset"] + info["size"]])
-            self.assertEqual(compare_bytes(compiled, slice_)["result"], "BINARY-MATCH")
             retail = code[info["offset"] : info["offset"] + info["size"]]
             self.assertEqual(compare_bytes(retail, slice_)["result"], "BINARY-MATCH")
+            self.assertGreaterEqual(len(compiled), info["size"])
+            # Non-fixup bytes of the CL object must match retail.
+            covered = set()
+            for off, size in fixups:
+                covered.update(range(off, off + size))
+            body = compiled[: info["size"]]
+            for index, (got, want) in enumerate(zip(body, retail)):
+                if index not in covered:
+                    self.assertEqual(got, want)
         report = rebuild_and_compare(ROOT)
         self.assertEqual(report["result"], "BINARY-MATCH")
         self.assertEqual(report["executable"]["sha256"], TARGET["executable"]["sha256"])
