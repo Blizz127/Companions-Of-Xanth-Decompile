@@ -16,6 +16,16 @@
     {"image": "exe-code", "offset": 17820, "source": "src/set_int_and_zero.c"},
     {"image": "exe-code", "offset": 83182, "source": "src/set_far_ptr.c"},
     {"image": "exe-code", "offset": 90625, "source": "src/set_int_if_ge0.c"},
-    {"image": "ovl-payload", "offset": 43876, "source": "src/set_int_arg1.c"}
+    {"image": "exe-code", "offset": 83726, "source": "src/call_int.c"},
+    {"image": "exe-code", "offset": 97401, "source": "src/call_int_int.c"},
+    {"image": "exe-code", "offset": 103926, "source": "src/call_int_zero.c"},
+    {"image": "exe-code", "offset": 97382, "source": "src/call_ulong.c"},
+    {"image": "exe-code", "offset": 19974, "source": "src/in_port.c"},
+    {"image": "exe-code", "offset": 20148, "source": "src/dos_close.c"},
+    {"image": "exe-code", "offset": 18078, "source": "src/get_vect.c"},
+    {"image": "ovl-payload", "offset": 43876, "source": "src/set_int_arg1.c"},
+    {"image": "ovl-payload", "offset": 9575, "source": "src/call_int_one.c"},
+    {"image": "ovl-payload", "offset": 246545, "source": "src/call_int_ten.c"},
+    {"image": "ovl-payload", "offset": 303011, "source": "src/call_int_ten.c"}
   ]
 }

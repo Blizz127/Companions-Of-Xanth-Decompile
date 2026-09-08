@@ -15,6 +15,6 @@
 ## matching-pipeline
 
 - [x] Whole-file BINARY-MATCH for EXE and OVL via listing rebuild
-- [x] Splice 14 EXE + 1 OVL CL 8.00c C units (including relocated global stores)
+- [x] Splice 21 EXE + 4 OVL CL 8.00c C units (stores, far-call wrappers, inp, close, getvect)
 - [x] Invoke historical LINK.EXE on those objects (Legend OVL layout stays reconstructed)
-- [ ] Replace remaining listing functions with C
+- [ ] Replace remaining listing functions with C (lds-register wrappers, outp, cli/sti)
