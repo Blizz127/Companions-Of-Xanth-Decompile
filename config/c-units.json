@@ -5,6 +5,17 @@
     {"image": "exe-code", "offset": 106736, "source": "src/clear_byte.c"},
     {"image": "exe-code", "offset": 14348, "source": "src/add20.c"},
     {"image": "exe-code", "offset": 14382, "source": "src/sub20.c"},
-    {"image": "exe-code", "offset": 17806, "source": "src/iabs.c"}
+    {"image": "exe-code", "offset": 17806, "source": "src/iabs.c"},
+    {"image": "exe-code", "offset": 85206, "source": "src/set_int.c"},
+    {"image": "exe-code", "offset": 104591, "source": "src/set_int.c"},
+    {"image": "exe-code", "offset": 112665, "source": "src/set_int.c"},
+    {"image": "exe-code", "offset": 85189, "source": "src/set_int_pair.c"},
+    {"image": "exe-code", "offset": 87498, "source": "src/set_int_pair.c"},
+    {"image": "exe-code", "offset": 103757, "source": "src/set_int_pair.c"},
+    {"image": "exe-code", "offset": 1818, "source": "src/set_int_and_zero.c"},
+    {"image": "exe-code", "offset": 17820, "source": "src/set_int_and_zero.c"},
+    {"image": "exe-code", "offset": 83182, "source": "src/set_far_ptr.c"},
+    {"image": "exe-code", "offset": 90625, "source": "src/set_int_if_ge0.c"},
+    {"image": "ovl-payload", "offset": 43876, "source": "src/set_int_arg1.c"}
   ]
 }

@@ -10,7 +10,7 @@ _TOOLS = Path(__file__).resolve().parent
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
-from c_units import splice_exe_code
+from c_units import splice_exe_code, splice_image
 from compare import compare_bytes
 from identify import identify_ovl
 from link_msc import compile_to_obj, link_objects, linker_available
@@ -86,11 +86,14 @@ def rebuild_ovl(original: bytes) -> tuple[bytes, dict]:
         payload, _ = assemble(original[offset:])
     except ListingError as exc:
         raise RebuildError(f"overlay listing rebuild failed: {exc}") from exc
-    rebuilt = bytes(directory) + payload
+    payload_buf = bytearray(payload)
+    c_units = splice_image(payload_buf, "ovl-payload")
+    rebuilt = bytes(directory) + bytes(payload_buf)
     return rebuilt, {
         "directory": compare_bytes(original[:offset], bytes(directory)),
-        "payload": compare_bytes(original[offset:], payload),
+        "payload": compare_bytes(original[offset:], bytes(payload_buf)),
         "code_offset": offset,
+        "c_units": c_units,
     }
 
 
