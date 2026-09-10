@@ -106,6 +106,30 @@ not a free pass:
 `coverage.py` keeps `emit-dump` and `mnemonic-asm` as separate lines so
 "transcribed bytes" is never confused with "recovered C".
 
+### 164 complete functions are provably not CL-compiled C
+
+`tools/library_scan.py` now reports two disjoint, provable categories:
+
+| Category | Units | Complete functions | Evidence |
+|---|---|---|---|
+| library | 116 | 84 | body bytes appear in a shipped `.LIB`; control 0/200 on 24-byte probes |
+| assembled | 81 | 80 | body contains `81 /n iw` with imm `< 0x80` |
+| both | 0 | 0 | the categories are disjoint |
+| **union** | — | **164 of 1,135** | |
+
+The second category is new and is a clean proof. CL 8.00c always encodes a
+small immediate with the sign-extended 8-bit form: `_asm { sub sp, 2 }`
+compiles to `83 EC 02`, not `81 EC 02 00`, verified by probe. Retail contains
+`81 EC 02 00` and its relatives, so those bodies were assembled by MASM, not
+compiled by CL. `exe_80795` (the function I was chasing) is one of them, which
+is why no C spelling reproduced its `sub sp` encoding.
+
+`docs/STATUS.md`'s earlier claim that these are CRT-only is too narrow: the
+assembled set is disjoint from the library set, so it is *game-side or
+startup-side assembly source* that the linker did not take from a `.LIB`.
+The toolchain does ship `MSVC/SOURCE/STARTUP` (`.ASM` and `.C`), which is the
+first place to look for those bodies.
+
 ### Part of the corpus is shipped library code, not game source
 
 `tools/library_scan.py` byte-probes every retail body against the 82 `.LIB`
