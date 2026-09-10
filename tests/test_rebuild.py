@@ -32,3 +32,5 @@ class RebuildAgainstRetailTests(unittest.TestCase):
         self.assertEqual(report["executable"]["result"], "BINARY-MATCH")
         self.assertEqual(report["overlay"]["result"], "BINARY-MATCH")
         self.assertEqual(report["result"], "BINARY-MATCH")
+        self.assertEqual(report["executable"]["parts"].get("image_source"), "cl-link")
+        self.assertEqual(report["overlay"]["parts"].get("image_source"), "cl-link")

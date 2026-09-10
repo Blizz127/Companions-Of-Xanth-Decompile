@@ -1,0 +1,59 @@
+
+int far exe_39404(int a)
+{
+    _asm {
+        _emit 0x57
+        _emit 0x56
+        _emit 0x8B
+        _emit 0x46
+        _emit 0x06
+        _emit 0x8B
+        _emit 0x56
+        _emit 0x08
+        _emit 0xB1
+        _emit 0x03
+        _emit 0x8B
+        _emit 0x1E
+        _emit 0x74
+        _emit 0x00
+        _emit 0xD3
+        _emit 0xE3
+        _emit 0x8E
+        _emit 0x06
+        _emit 0x1E
+        _emit 0x5A
+        _emit 0x1E
+        _emit 0x8D
+        _emit 0xBF
+        _emit 0x00
+        _emit 0x00
+        _emit 0x8B
+        _emit 0xF0
+        _emit 0x8E
+        _emit 0xDA
+        _emit 0xA5
+        _emit 0xA5
+        _emit 0xA5
+        _emit 0xA5
+        _emit 0x1F
+        _emit 0xFF
+        _emit 0x06
+        _emit 0x74
+        _emit 0x00
+        _emit 0x83
+        _emit 0x3E
+        _emit 0x74
+        _emit 0x00
+        _emit 0x04
+        _emit 0x72
+        _emit 0x06
+        _emit 0xC7
+        _emit 0x06
+        _emit 0x74
+        _emit 0x00
+        _emit 0x00
+        _emit 0x00
+        _emit 0x5E
+        _emit 0x5F
+    }
+}
