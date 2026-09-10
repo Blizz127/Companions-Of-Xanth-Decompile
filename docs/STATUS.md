@@ -375,6 +375,37 @@ population by content (string tables, jump tables, the RTLink region) so the
 "uncovered/overlapping ranges" number in the coverage report separates data
 from code. That is measurement, and it does not require the compiler.
 
+### Near match: exe_64277 (exe-code:0xfb15, 36 B)
+
+Retail is a bounds-checked indirect far call through a table:
+
+```
+cmp word [bp+6],38h ; jnc out_of_range
+push word [bp+8]                       ; the single cdecl argument
+mov es,[5A5Eh]                         ; table segment, from a global
+mov bx,[bp+6] ; add bx,bx ; add bx,bx  ; idx * 4, far-pointer entries
+call far [es:bx+135Ah]
+mov sp,bp                              ; caller cleanup for the pushed arg
+jmp done ; out_of_range: xor ax,ax ; done:
+```
+
+This is game C, not library or assembly: cdecl arg push, the `mov sp,bp`
+cleanup, and `xor ax,ax` for the failing branch are all CL idioms.
+
+A reconstruction with `MK_FP(g_seg, 0x135A + idx * 4)` reproduces the
+bounds check, the push order, the `add bx,bx` scaling and the
+`call far [es:bx+disp]` form, but diverges by 24 bytes at `+9`: CL lowers
+`MK_FP` with a variable segment to a runtime helper
+(`push ax; push [seg]; call; add sp,4; cwd; mov bx,ax; mov es,dx`), while
+retail has a single `mov es,[5A5Eh]`.
+
+So the remaining question is narrow and testable: which source spelling
+makes CL load ES from a global directly instead of building the far pointer
+through the helper. `extern unsigned _DS;` was already shown to compile as
+an ordinary variable, so if `_ES` behaves the same the answer is a
+different construct, not a pseudoregister. Nothing else in the function is
+unexplained.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
