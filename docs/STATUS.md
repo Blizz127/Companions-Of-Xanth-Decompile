@@ -585,6 +585,36 @@ justified boundary correction under the project rules, but each split has
 to be evidenced with the surrounding control flow, not just the byte
 pattern, and the unit totals must not be adjusted until then.
 
+### Glue verification: 14 confirmed, and why "ret-terminated fragments" is a trap
+
+Verification rule: a real function boundary exists when the instruction that
+**ends exactly at** the interior prologue is an unconditional transfer.
+Applying it to the 30 interior-prologue units:
+
+| outcome | count |
+|---|---|
+| preceded by a `ret`/`retf` — two functions in one unit, confirmed | **14** |
+| preceded by a `jmp` — needs per-unit control-flow work | 6 |
+| not a boundary (data, or no instruction ends there) | 10 |
+
+The dominant terminator in the confirmed 14 is `retf imm16`
+(`CA imm16`, disassembled as `retf word 2/6/8/16`) — the
+`__pascal`/`__stdcall` far return. The splitter recognises `CB`/`C3`
+but not `CA imm16`/`C2 imm16`, so those functions were merged with their
+successors. That is the mechanism, and it is a defect in the splitter's
+terminator set rather than a compiler or provenance limit. Confirmed units
+include `exe_6094`, `exe_13444`, `exe_14566`, `exe_18240`,
+`exe_24910`, `exe_26556`, `exe_30534`, `exe_30747`, `exe_31345`,
+`exe_34621`, `exe_34698`, `exe_34775`, `exe_35054`, `exe_100371`.
+
+**Rejected over-count, recorded so it is not chased.** Counting fragment
+units whose last instruction is a `ret`/`retf` gives 365 of 1,171, which
+looks like 365 functions with non-standard prologues the classifier missed.
+It is not. Sampling the smallest shows `stc; retf`, `push es; retf`,
+`add dl,bh; retf` — the RTLink overlay-thunk idiom, i.e. data. The 365
+figure is heavily polluted by thunks and is **not** evidence of missed
+functions; no count of missed functions is claimed from it.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
