@@ -479,6 +479,55 @@ memory operand has the same problem as `exe_489`. Recorded as blocked by
 the CS-relative access and register-save mechanisms, not by the segment
 load.
 
+### Near match at one instruction: exe_2021 (exe-code:0x7e5, 30 B)
+
+Retail is a CLI/STI guarded array store:
+
+```
+mov bx,[bp+6] ; mov ax,[bp+8]   ; pointer and value loaded first
+cli
+mov [bx+407Dh],ax              ; s->v = v
+or ax,ax : jnz
+les bx,[bx+407Fh]              ; s->p
+mov word [es:bx],0FFh
+sti
+```
+
+The natural reconstruction is the no-local form of the proven
+`_disable`/`_enable` idiom:
+
+```c
+struct S { int v; int far *p; };
+struct S g[1];
+
+void far f(int off, int v)
+{
+    _disable();
+    *(int *)((char *)g + off) = v;
+    if (v == 0)
+        **(int far **)((char *)g + off + 2) = 0xFF;
+    _enable();
+}
+```
+
+It compiles to **exactly 30 bytes with an identical instruction sequence**,
+including the folded displacement, the branch, the far-pointer load and the
+`mov word [es:bx],0FFh`. The single difference is the position of `cli`:
+CL emits it before the two parameter loads, retail emits it after.
+
+Three earlier spellings established the constraints that get to this point:
+a struct array with a scaled index introduces `imul` (blocker), declaring
+`struct S *s` as a local adds `sub sp,6`, and `add bx,offset g` appears
+unless the base is folded into the displacement. The no-local form is the
+only one that reproduces the addressing.
+
+`cli` placement does not move under `/Od`, `/Oa` or `/Ol`: all three
+still emit `cli` first. So either a construct this build does not provide
+(`_asm` positioned after the loads, or a different compiler's scheduler)
+produced it, or the source used inline asm for the two loads. The latter is
+rejected as a mechanical transcript. Recorded as a near match: same length,
+same instruction sequence, one instruction reordered.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
