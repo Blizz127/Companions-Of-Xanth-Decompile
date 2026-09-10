@@ -13,7 +13,8 @@ if str(_TOOLS) not in sys.path:
 from c_units import splice_exe_code, splice_image
 from compare import compare_bytes
 from identify import identify_ovl
-from link_msc import compile_to_obj, link_objects, linker_available
+from compile_msc import DEFAULT_FLAGS, compile_objs_many
+from link_msc import link_objects, linker_available
 from listing import ListingError, assemble, assemble_data
 from mz import build_mz, parse_relocs, split_exe
 from retail_common import ROOT, RetailError, load_target, verify_file
@@ -43,12 +44,32 @@ def rebuild_exe(original: bytes) -> tuple[bytes, dict]:
         from c_units import load_units
 
         objects = []
+        seen_sources: set[str] = set()
+        paths: list[Path] = []
         for unit in load_units():
             if unit.get("image") != "exe-code":
                 continue
-            name = Path(unit["source"]).stem + ".obj"
-            objects.append((name, compile_to_obj(ROOT / unit["source"])))
-        if objects:
+            source = unit["source"]
+            if source in seen_sources:
+                continue
+            seen_sources.add(source)
+            paths.append(ROOT / source)
+        if paths:
+            # One far function per TU is one code segment. Group TUs under
+            # named /NT segments so LINK /PACKC stays under L1049.
+            group_size = 80
+            objs: dict[Path, bytes] = {}
+            for index in range(0, len(paths), group_size):
+                group = paths[index : index + group_size]
+                seg = f"PK{index // group_size:02d}"
+                flags = list(DEFAULT_FLAGS) + [f"/NT{seg}"]
+                objs.update(compile_objs_many(group, flags=flags))
+            for source_path in paths:
+                objects.append((source_path.stem + ".obj", objs[source_path.resolve()]))
+            stub = ROOT / "src/link_stubs.c"
+            if stub.is_file():
+                stub_objs = compile_objs_many([stub], flags=list(DEFAULT_FLAGS) + ["/NTSTUBS"])
+                objects.append(("link_stubs.obj", stub_objs[stub.resolve()]))
             linker = link_objects(objects)
     relocs = parse_relocs(original)
     rebuilt = build_mz(
@@ -68,6 +89,7 @@ def rebuild_exe(original: bytes) -> tuple[bytes, dict]:
         "header_bytes": mz["header_bytes"],
         "c_units": c_units,
         "linker": linker,
+        "image_source": "listing-splice",
     }
 
 
@@ -94,6 +116,7 @@ def rebuild_ovl(original: bytes) -> tuple[bytes, dict]:
         "payload": compare_bytes(original[offset:], bytes(payload_buf)),
         "code_offset": offset,
         "c_units": c_units,
+        "image_source": "listing-splice",
     }
 
 

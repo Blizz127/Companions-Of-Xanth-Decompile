@@ -1,0 +1,56 @@
+
+int far ovl_17185(void)
+{
+    _asm {
+        _emit 0x06
+        _emit 0xCB
+        _emit 0x30
+        _emit 0x09
+        _emit 0x06
+        _emit 0xCB
+        _emit 0x30
+        _emit 0x59
+        _emit 0x05
+        _emit 0xCB
+        _emit 0x30
+        _emit 0x41
+        _emit 0x0B
+        _emit 0xCB
+        _emit 0x30
+        _emit 0xC2
+        _emit 0x09
+        _emit 0xCB
+        _emit 0x30
+        _emit 0x19
+        _emit 0x09
+        _emit 0xCB
+        _emit 0x30
+        _emit 0xCE
+        _emit 0x08
+        _emit 0xCB
+        _emit 0x30
+        _emit 0xED
+        _emit 0x05
+        _emit 0xCB
+        _emit 0x30
+        _emit 0x25
+        _emit 0x05
+        _emit 0xCB
+        _emit 0x30
+        _emit 0xBB
+        _emit 0x05
+        _emit 0xCB
+        _emit 0x30
+        _emit 0x80
+        _emit 0x05
+        _emit 0xCB
+        _emit 0x30
+        _emit 0x39
+        _emit 0x08
+        _emit 0xCB
+        _emit 0x30
+        _emit 0xD4
+        _emit 0x07
+        _emit 0xCB
+    }
+}

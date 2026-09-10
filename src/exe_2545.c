@@ -1,0 +1,56 @@
+
+int near exe_2545(void)
+{
+    _asm {
+        _emit 0x33
+        _emit 0xC0
+        _emit 0x8E
+        _emit 0xC0
+        _emit 0xA1
+        _emit 0x00
+        _emit 0x42
+        _emit 0x26
+        _emit 0xA3
+        _emit 0x20
+        _emit 0x00
+        _emit 0xA1
+        _emit 0x02
+        _emit 0x42
+        _emit 0x26
+        _emit 0xA3
+        _emit 0x22
+        _emit 0x00
+        _emit 0xB0
+        _emit 0x34
+        _emit 0xE6
+        _emit 0x43
+        _emit 0xEB
+        _emit 0x00
+        _emit 0xEB
+        _emit 0x00
+        _emit 0xA1
+        _emit 0xF6
+        _emit 0x41
+        _emit 0xE6
+        _emit 0x40
+        _emit 0xEB
+        _emit 0x00
+        _emit 0xEB
+        _emit 0x00
+        _emit 0x8A
+        _emit 0xC4
+        _emit 0xE6
+        _emit 0x40
+        _emit 0xE4
+        _emit 0x61
+        _emit 0xEB
+        _emit 0x00
+        _emit 0xEB
+        _emit 0x00
+        _emit 0x24
+        _emit 0xFC
+        _emit 0xE6
+        _emit 0x61
+        _emit 0xC3
+    }
+}

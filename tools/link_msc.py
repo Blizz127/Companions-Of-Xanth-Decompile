@@ -41,17 +41,23 @@ def link_objects(obj_names_and_bytes: list[tuple[str, bytes]]) -> dict:
         for name, data in obj_names_and_bytes:
             (work / name).write_bytes(data)
             names.append(name)
-        spec = "+".join(names)
-        # /NOI /NOD /NOE: no ignore-case change, no default libs, no extended dictionary.
+        # LINK L1022 if the object list is one long command-line argument.
+        # A response file with one `name +` line per object stays under 128 chars.
+        rsp = work / "units.rsp"
+        # /PACKC folds per-function far code segments; without it LINK
+        # hits L1049 ("too many segments") on this unit count.
+        first = (
+            f"/NOI /NOD /NOE /PACKC /ENTRY:link_start {names[0]} +"
+            if len(names) > 1
+            else f"/NOI /NOD /NOE /PACKC /ENTRY:link_start {names[0]},units.exe,units.map,;"
+        )
+        lines = [first]
+        if len(names) > 1:
+            lines.extend(f"{name} +" for name in names[1:-1])
+            lines.append(f"{names[-1]},units.exe,units.map,;")
+        rsp.write_bytes(("\r\n".join(lines) + "\r\n").encode("ascii"))
         # Overlay layout for this game is Legend's .OVL, not LINK (file) overlays.
-        cmd = [
-            "wine",
-            str(work / "LINK.EXE"),
-            f"/NOI",
-            "/NOD",
-            "/NOE",
-            f"{spec},units.exe,units.map,nul,",
-        ]
+        cmd = ["wine", str(work / "LINK.EXE"), f"@{rsp.name}"]
         proc = subprocess.run(cmd, cwd=work, env=env, capture_output=True, text=True, input="\n")
         mz = work / "units.exe"
         return {
@@ -84,6 +90,11 @@ def compile_to_obj(source: Path) -> bytes:
             if src.is_file():
                 shutil.copy2(src, work / name)
         shutil.copy2(source, work / source.name)
+        text = source.read_text(encoding="utf-8", errors="replace")
+        if "#include" in text and MSC_INCLUDE.is_dir():
+            include = work / "include"
+            shutil.copytree(MSC_INCLUDE, include, dirs_exist_ok=True)
+            env["INCLUDE"] = str(include)
         proc = subprocess.run(
             ["wine", str(work / "CL.EXE"), *DEFAULT_FLAGS, source.name],
             cwd=work,
