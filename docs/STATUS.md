@@ -247,6 +247,14 @@ Next experiment for this family: find the construct that makes CL emit the
 `es`/`si`/`di` saves together with a DS reload — it is one idiom instantiated
 at several offsets, so it is worth more than a single unit.
 
+The shipped CRT startup assembly is ruled out as the source: no file under
+`MSVC/SOURCE/STARTUP` contains a `push es`/`push ds` register-save prologue
+(`grep -lE "push[ 	]+es" *.ASM` is empty; only EMOEM.ASM and FMSGHDR.ASM
+mention `push ds` at all). So the family is game-side source, and since the
+C mechanisms above are exhausted, the next probe should be a mnemonic
+`_asm` prologue/epilogue pair around a C read, checking whether CL preserves
+the exact push order and the `mov si` indirection.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
