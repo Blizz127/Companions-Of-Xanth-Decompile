@@ -1,17 +1,19 @@
+/*
+ * Zero the word a far pointer addresses, with interrupts disabled and the
+ * caller's flags preserved. Retail saves flags with `pushf` and restores them
+ * with `popf`; no CL 8.00c intrinsic or header provides that pair, so it is
+ * written as two single-instruction `_asm` blocks around ordinary C.
+ *
+ * exe-code:0x830, 16 bytes.
+ */
+#include <dos.h>
 
-int far exe_2096(int a)
+#pragma intrinsic(_disable)
+
+void far exe_2096(unsigned far *p)
 {
-    _asm {
-        _emit 0x9C
-        _emit 0xFA
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x26
-        _emit 0xC7
-        _emit 0x07
-        _emit 0x00
-        _emit 0x00
-        _emit 0x9D
-    }
+    _asm { pushf }
+    _disable();
+    *p = 0;
+    _asm { popf }
 }

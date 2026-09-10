@@ -178,6 +178,75 @@ saves, plus a near `jmp +0`. Two recorded sub-facts:
 `les bx`); `exe_7548` is NEAR_MATCH (body matches exactly, frame is the only
 difference and C cannot emit it).
 
+### Recovery 2026-09-10 (second pass)
+
+**`exe_2096` recovered.** `exe-code:0x830`, 16 bytes, was an `_emit` dump:
+
+```c
+#include <dos.h>
+#pragma intrinsic(_disable)
+
+void far exe_2096(unsigned far *p)
+{
+    _asm { pushf }
+    _disable();
+    *p = 0;
+    _asm { popf }
+}
+```
+
+Compiles to `55 8B EC 9C FA C4 5E 06 26 C7 07 00 00 9D 8B E5 5D CB`; retail is
+the same minus the redundant `mov sp,bp`, which `_relocate` documents and
+trims for `_asm` units. `tools/lift.py` reports MATCH, trimmed 2,
+`exact_no_trims=False` — visible, not hidden. This is the first unit moved
+from the dump corpus to unaided C under the approved bar.
+
+The 24-byte form (`9C FA ... 9D`) had to come from `_asm`: `pushf`/`popf` have
+no C spelling and no header declares them. The rest of the body is real C.
+
+### New negative results, with the experiments that produced them
+
+- **`exe_489` is not CL-reachable.** `mov [cs:0x16], ax` is `2E A3 16 00` in
+  retail (moffs form). CL's inline assembler emits the ModRM form `2E 89 06
+  16 00` for all five spellings tried (`mov word ptr cs:[16h], ax`,
+  `mov word ptr cs:16h, ax`, `mov cs:16h, ax`, `mov word ptr [cs:16h], ax`
+  errors, `_asm`-per-line). `_CS` is not declared by any header in the pinned
+  toolchain, so there is no C route either. This is a **second MASM-vs-CL
+  encoding signature**: a segment-prefixed moffs (`26/2E/36/3E` + `A0..A3`)
+  is MASM-style; CL uses ModRM.
+- **`exe_98653` shared epilogue is compiler-limited so far.** Retail is
+  `cmp [bp+6],0 / jz else / and byte [g],0FDh / jmp +5 / else: or byte [g],2 /
+  pop bp / retf` — a jump to one shared epilogue. CL 8.00c duplicates the
+  epilogue for every spelling tried: plain `if/else`, `if/else` with a trailing
+  `return;`, `if` + `goto done`, `if` + `goto` with a labelled empty statement.
+  It also duplicates under `/Os`, `/Ot`, `/Ox`, `/Og /Os` and `/Oa /Os`.
+  Not yet proof that no spelling exists.
+- **No MASM in the toolchain.** `find tools/toolchain -iname "masm*"` is empty,
+  so the 81 assembled units cannot be reproduced by CL or by MASM from this
+  checkout. They need the original `.ASM` sources or MASM; the toolchain does
+  ship `MSVC/SOURCE/STARTUP` (`.ASM` and `.C`), which is the first place to
+  look.
+
+### Open family: DS-loading readers
+
+`exe_31310` / `exe_34586` / `exe_34663` (35 bytes each, `exe-code`)
+share a shape: `push ds; push es; push si; push di`, load a constant into DS,
+`mov si,0x52A6`, read a word at `[si+offset]`, spill it to `[bp-2]` and
+reload, then pop everything. The offsets differ per member.
+
+Facts established so far:
+
+- `_DS` is not declared in the pinned headers, and `extern unsigned _DS;`
+  plus `_DS = const;` compiles as an ordinary variable, not the register.
+- `__loadds` exists and produces `push ds; mov ax,SEG; mov ds,ax; ...; pop ds`
+  — but without the `es`/`si`/`di` saves and without the `mov si` indirection,
+  so it is not the whole story.
+- `__saveregs` pushes all eight registers plus DS/ES, which retail does not.
+
+Next experiment for this family: find the construct that makes CL emit the
+`es`/`si`/`di` saves together with a DS reload — it is one idiom instantiated
+at several offsets, so it is worth more than a single unit.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
