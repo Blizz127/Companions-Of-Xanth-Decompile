@@ -439,6 +439,46 @@ of the offset half. That is what `exe_64277` does
 C spelling here. Distinguishing the two needs the operand decode, not a
 substring search, so no count of that narrowed set is claimed yet.
 
+### Segment-load classification: 162 sites, 14 with a C route
+
+Two more controlled experiments close the \`exe_64277\` question:
+
+| source | ES load |
+|---|---|
+| \`*(unsigned far *)MK_FP(g_seg, 0x2C)\` (load) | runtime helper, then \`cwd; mov bx,ax; mov es,dx; mov ax,[es:bx]\` |
+| \`(*fp)(arg)\` with \`MK_FP(g_seg, const)\` (call) | runtime helper, then \`cwd; mov bx,ax; mov es,dx\` |
+
+So \`MK_FP\` with a variable segment never yields a bare \`mov es,[mem]\`, in
+either the load or the call context.
+
+**A checkable classification** (heuristic, rule stated): for a far pointer
+variable stored at address A the offset half is at A and the segment half at
+A+2, so a C-expressible dereference both loads \`[A+2]\` into a segment
+register *and* reads \`[A]\`. Applying that to every complete function:
+
+| | count |
+|---|---|
+| complete functions with a \`mov es/ds/ss,[disp16]\` site | **162** |
+| the paired offset half is also read (C-expressible) | **14** |
+| segment-only with a constant offset (the \`exe_64277\` blocker) | 148 |
+
+The rule is a heuristic, not a proof: a function can read both halves for
+unrelated reasons. Two samples were hand-verified in both directions —
+\`exe_5934\` (\`mov es,[53C0h]; mov bx,es:[2Ch]\`, constant offset, no pair →
+blocker) and \`exe_123400\` (paired, and blocked for a different reason
+below). The 148 figure should be treated as an upper bound on the blocker
+until more samples are hand-checked.
+
+**\`exe_123400\` (exe-code:0x1e208, 131 B) is blocked by a different
+mechanism.** It is a near function (\`pop bp; ret\`) with a full
+register-save prologue (\`push ax/bx/cx/dx/di/si/ds; pushf\`) and a
+matching epilogue, plus \`test word [cs:0D27h],100h\` and
+\`mov ax,cs; mov ds,ax\`. It looks like an interrupt-callback frame. No C
+spelling gives the all-register save plus \`pushf\`, and the CS-relative
+memory operand has the same problem as \`exe_489\`. Recorded as blocked by
+the CS-relative access and register-save mechanisms, not by the segment
+load.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
