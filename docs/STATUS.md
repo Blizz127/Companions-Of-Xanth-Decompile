@@ -106,6 +106,32 @@ not a free pass:
 `coverage.py` keeps `emit-dump` and `mnemonic-asm` as separate lines so
 "transcribed bytes" is never confused with "recovered C".
 
+### Part of the corpus is shipped library code, not game source
+
+`tools/library_scan.py` byte-probes every retail body against the 82 `.LIB`
+files in the pinned toolchain (14,239,639 bytes).
+
+| Probe | Units matched | Control |
+|---|---|---|
+| 24 bytes | 116 of 2,836 | 0 of 200 random probes |
+| 32 bytes | 94 of 2,836 | 0 of 200 random probes |
+
+The control matters: a random 24-byte probe matches the library corpus zero
+times, so a hit is evidence. 84 of the 1,135 complete far functions are in
+this set; the rest are fragments and glue. Most hits land in `CDLLCAW.LIB`,
+`CLIBCAWQ.LIB`, `LLIBC7.LIB` and `CLIBC7.LIB`.
+
+These units were never C in this project — the linker pulled them out of the
+shipped runtime — so "recover as source" is the wrong action for them. The
+correct action is a rebuild that links the same library, which is Lane B work,
+and they should be classified LIBRARY rather than counted as unlifted game
+functions. They are **not** deleted: the image still has to contain them.
+
+The toolchain also ships the startup sources under
+`tools/toolchain/msvc152/MSVC/SOURCE/STARTUP` (`_FILE.C`, `INTERNAL.C`,
+`NULBODY.C`, `CRT0FP.ASM`, `SETARGV.ASM`, `CHKSTK.ASM`, …), which covers the
+`CSTARTUP` half of the low EXE region.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
