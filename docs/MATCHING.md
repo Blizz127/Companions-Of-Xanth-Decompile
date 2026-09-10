@@ -24,3 +24,22 @@ optional.
 
 No normalization is used by the comparator. Unknown symbols and unsupported
 fixups fail. Modern compiler success does not identify the original toolchain.
+
+## Recovered-source bar
+
+Decided 2026-09-10 (see `CONSTRAINTS.md` for the numbers and
+`docs/STATUS.md` for the experiments):
+
+- **A recovered unit is source, not a byte transcript.** No `_emit` anywhere
+  in `src/**`.
+- **`_asm` in mnemonics is source.** The original contained inline asm: an
+  `_asm` block is what produces the retail `push bp; mov bp,sp` frame on
+  functions with no locals, and `pushf`/`popf`/`int`/`in`/`out` have no C
+  spelling in this toolchain.
+- The previous bar — no `_asm` at all — was not reachable and was replaced
+  rather than quietly edited. The gate it protects is still red: 2,376 of
+  2,836 units are byte dumps.
+
+A unit counts as recovered only when `tools/lift.py` shows it compiling to its
+retail slice, and `exact_no_trims` is reported so a match that survives
+`_relocate` trimming is not mistaken for a strict one.
