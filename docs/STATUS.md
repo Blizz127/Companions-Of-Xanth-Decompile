@@ -528,6 +528,38 @@ produced it, or the source used inline asm for the two loads. The latter is
 rejected as a mechanical transcript. Recorded as a near match: same length,
 same instruction sequence, one instruction reordered.
 
+### exe_2021 classified COMPILER-LIMITED on the cli position
+
+The no-local reconstruction matches retail on 30 of 30 bytes with an
+identical instruction sequence; only `cli` sits in a different place. Six
+configurations were compiled, and every one emits `cli` before the two
+parameter loads:
+
+| configuration | result |
+|---|---|
+| default `/Os` | `cli` first, 30 bytes, rest byte-identical |
+| `/Od` | `cli` first |
+| `/Oa` | `cli` first |
+| `/Ol` | `cli` first |
+| `#pragma optimize("s",off)` | `cli` first |
+| `#pragma optimize("g",on)` | `cli` first, 34 bytes (adds a reload) |
+
+So the residue is a scheduling property of this compiler build, not a
+missing source spelling: no configuration tried keeps `cli` after the
+loads. Per `docs/MATCHING.md`, that is what COMPILER-LIMITED means —
+controlled experiments demonstrate the remaining limitation of *this*
+toolchain. It is not proof that no C spelling exists on some other build,
+and the entry stays a dump rather than being written into `src/` with a
+knowing mismatch.
+
+Sibling `exe_2051` (exe-code:0x803, 30 B) shows the same `cli` residue *and*
+a second one: retail reuses the `add`'s flags for both the `js` and the
+`jnz`, while CL reloads the value (`cmp word [bx],0`) and the unit grows to
+38 bytes. Same family, one extra compiler-level difference.
+
+Three configurations for the sibling would not be a better use of the next
+hour than finding a family with no residue at all.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
