@@ -132,6 +132,28 @@ The toolchain also ships the startup sources under
 `NULBODY.C`, `CRT0FP.ASM`, `SETARGV.ASM`, `CHKSTK.ASM`, …), which covers the
 `CSTARTUP` half of the low EXE region.
 
+### Active item at handoff
+
+`exe_80795` (exe-code:0x13b9b, 22 bytes) is the next concrete attempt:
+
+```
+55 8B EC  81 EC 02 00  56 57  A0 F4 41  98  E9 00 00  5F 5E  8B E5 5D CB
+push bp   sub sp,2      push si/di  mov al,[0x41f4]  cbw  jmp +0  pop di/si
+```
+
+It returns `(int)(char)g` but carries a 2-byte local frame and unused `si`/`di`
+saves, plus a near `jmp +0`. Two recorded sub-facts:
+
+- retail encodes `sub sp,2` as `81 EC 02 00` (imm16 form) while CL 8.00c /Os
+  emits `83 EC 02` (sign-extended imm8 form) for `char c; c = g; if (c)
+  return c; return c;`. Worth a controlled experiment: find a construct that
+  makes CL choose the imm16 form.
+- `E9 00 00` is a resolved-to-zero near jump, i.e. an MSC branch merge.
+
+`exe_1802` is recorded above as NEAR_MATCH (25 variants, no C form gives
+`les bx`); `exe_7548` is NEAR_MATCH (body matches exactly, frame is the only
+difference and C cannot emit it).
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
