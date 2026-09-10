@@ -406,6 +406,30 @@ an ordinary variable, so if `_ES` behaves the same the answer is a
 different construct, not a pseudoregister. Nothing else in the function is
 unexplained.
 
+### exe_64277: C routes exhausted, blocker characterised
+
+Four spellings tried against the one unexplained instruction
+(`mov es,[5A5Eh]`, a segment register loaded straight from a word variable):
+
+| source | ES load |
+|---|---|
+| `MK_FP(g_seg, 0x135A + idx*4)` (variable segment) | runtime helper: `push ax; push [seg]; call; add sp,4; cwd; mov bx,ax; mov es,dx` |
+| `MK_FP(0x5A5E, 0x135A))` (constant segment) | still the helper: `push 135Ah; push 5A5Eh; call` |
+| `extern FARFN far *g_tbl; g_tbl[idx](arg)` | `les si,[g_tbl]` — loads the base **offset** from memory, but retail's offset is the constant `135Ah` |
+| `extern unsigned _ES; _ES = g_seg;` | not a pseudoregister in this build: compiles to `mov ax,[g_seg]; mov [0],ax` |
+
+`_DS` was shown the same way earlier. So in this compiler build the segment
+pseudoregisters do not exist, and `MK_FP` with a variable segment always
+goes through the runtime helper. Retail's `mov es,[mem]` has no plain-C
+spelling here; the original either used a segment pseudoregister available in
+the compiler it was actually built with, or inline asm.
+
+That makes **a lone `mov es/DS/SS, [mem]`** a fourth provenance signature
+alongside `81 /n iw`, segment-prefixed moffs, and the inlined multi-step
+`adc` chain — all checkable without a compiler. `exe_64277` stays a near
+match; its control flow, cdecl argument, table scaling and call form are all
+recovered and recorded.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
