@@ -324,6 +324,57 @@ zero candidates — the 111 units the earlier sessions recovered were that
 family. Wrapper-shaped work is exhausted; the remaining corpus needs either
 new idioms or per-function reverse engineering.
 
+### Boundary audit: the fragment units are not unrecovered functions
+
+Three measurements, all reproducible from `tools/units.py`.
+
+**1. Functions and fragments form a clean partition.** The 1,135
+function-shaped units and the 1,171 fragment units do not overlap at all:
+
+| image | function bytes | fragment bytes | fragment bytes inside a function |
+|---|---|---|---|
+| `exe-code` | 107,629 | 80,007 | **0** |
+| `ovl-payload` | 217,622 | 97,199 | **0** |
+
+**2. The splitter missed no standard prologue.** Searching the whole image
+for `55 8B EC`, then excluding bytes inside a function unit and excluding
+positions that are already some unit's start offset, leaves **0** prologues
+in `exe-code` and **0** in `ovl-payload`. So there is no queue of
+recognisable functions that the splitter simply failed to carve. The
+boundary hypothesis from the previous handoff is refuted for this prologue
+form.
+
+**3. The tail of `exe-code` is data and a third-party runtime, not game
+functions.** From roughly `0x1dc00` to the end of the image:
+
+- `eov0001:` at `0x1dc2e` and `RELOAD to increase` at `0x1dda3` — the
+  third-party overlay-manager markers, the same strings seen in `XANTH.OVL`.
+- `RTLink` at `0x215c5` and the string
+  `Internal error in .RTLink(R)/Plus run-time code.` — the **Pocket Soft
+  RTLink/Plus** overlay runtime, linked in and not game source.
+- Game message strings (`XANTH.OVL`, `XANTH.EXE`, `Fatal Error $`,
+  `Overlay save buffer too small`, `Free memory: %s`, `1.2.0  04-18-1994`).
+- Fragment units in this region are frequently **exactly 1500 bytes**
+  (`exe_137497`, `exe_138997`, `exe_142154`, … dozens). 1,500 is a fixed
+  chunk size, i.e. the splitter carved data into even blocks, not at
+  function boundaries.
+
+About **59,076 fragment bytes** of `exe-code` lie at or after `0x205c5`.
+
+This does **not** delete those units or shrink the denominator to look
+better. They are still part of the image and still have to be reproduced.
+What it changes is the classification: the fragment population is
+predominantly data, strings and the RTLink runtime, so it is not a queue of
+1,171 functions waiting for C. The function-recovery queue remains the 1,135
+function-shaped units, of which 164 are provably not CL-compiled C, 1 has
+been recovered to source (`exe_2096`), and a handful are recorded near
+matches.
+
+Follow-up worth doing before more per-function work: classify the fragment
+population by content (string tables, jump tables, the RTLink region) so the
+"uncovered/overlapping ranges" number in the coverage report separates data
+from code. That is measurement, and it does not require the compiler.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
