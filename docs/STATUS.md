@@ -255,6 +255,75 @@ C mechanisms above are exhausted, the next probe should be a mnemonic
 `_asm` prologue/epilogue pair around a C read, checking whether CL preserves
 the exact push order and the `mov si` indirection.
 
+### Recovery 2026-09-10 (third pass) — no new matches, two mechanisms characterised
+
+**CL 8.00c inlines 32-bit shifts by 1 only.** Discriminating experiment
+(`cl_probe.py`, default flags):
+
+| source | codegen |
+|---|---|
+| `unsigned long f(unsigned long a){ return a + a; }` | `add ax,ax; adc dx,dx` (16 B) |
+| `unsigned long f(unsigned long a){ return a << 1; }` | `add ax,ax; adc dx,dx` (16 B) |
+| `unsigned long f(unsigned long a){ return a << 2; }` | `mov cl,2; call <shift helper>` |
+| `unsigned long f(unsigned long a){ return a << 5; }` | `mov cl,5; call <shift helper>` |
+
+So a retail body containing an inlined multi-step `adc ax,ax; adc dx,dx`
+chain did not come from `<< n` or `* 2**n` source. It can come from repeated
+`+`, or from a codegen path this build does not take. This is a third
+MASM/different-path signature alongside `81 /n iw` and the segment-prefixed
+moffs, and it is checkable without a compiler.
+
+**`exe_94712` (exe-code:0x171f8, 39 B) decoded.** `mov ax,[bp+6];
+mov dx,[bp+8]`, then five doublings (`add ax,ax; adc dx,dx` followed by four
+`adc ax,ax; adc dx,dx`), then `xchg ax,dx`, `and dx,0x0F`, then a 32-bit add
+of `[bp+0xa]`/`[bp+0xc]`, `pop bp; retf`. It is a 32-bit arithmetic helper
+whose tail is `(something >> 11) + base`. Twelve candidate spellings were
+compiled (`a >> 12`, `a >> 11`, `(a << 4/5) >> 16`, `a * 32 >> 16`, `a / 2048`,
+masked forms, `unsigned`/`signed` variants); all differ at `+9` because CL
+uses the shift helper where retail inlines. Not resolved: the inlined chain
+says the source repeated `+`, and the smallest source that does that has not
+been found. Left as a near match with the decode recorded.
+
+**DS-loading family (`exe_31310`/`34586`/`34663`/`34740`, 35 B each).**
+Tested the hybrid form — a mnemonic `_asm` block around a C local:
+
+```c
+int far exe_31310(void)
+{
+    int v;
+    _asm {
+        push ds
+        push es
+        push si
+        push di
+        mov ax, 38AFh
+        mov ds, ax
+        mov si, 52A6h
+        mov ax, [si+18h]
+        mov v, ax
+        pop di
+        pop si
+        pop es
+        pop ds
+    }
+    return v;
+}
+```
+
+CL emits its **own** `push di; push si` before the block and `pop si; pop di`
+after it (it protects the registers the asm clobbers), and it places the
+`mov ax,[bp-2]` reload **after** the pops, where retail has it before. Both
+extra pairs and the reload position would have to be hand-written, including
+deliberately reproducing an unoptimised spill/reload — a mechanical
+transcript, which the approved bar forbids. So this family stays an `_emit`
+dump for now and is recorded as characterised-but-unrecovered.
+
+**No pure cdecl far-call wrappers remain.** A scan for bodies that are only
+`push word [bp+X]` (X = 6/8/10/12) followed by exactly one far call returns
+zero candidates — the 111 units the earlier sessions recovered were that
+family. Wrapper-shaped work is exhausted; the remaining corpus needs either
+new idioms or per-function reverse engineering.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
