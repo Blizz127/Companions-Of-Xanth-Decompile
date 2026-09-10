@@ -424,11 +424,20 @@ goes through the runtime helper. Retail's `mov es,[mem]` has no plain-C
 spelling here; the original either used a segment pseudoregister available in
 the compiler it was actually built with, or inline asm.
 
-That makes **a lone `mov es/DS/SS, [mem]`** a fourth provenance signature
-alongside `81 /n iw`, segment-prefixed moffs, and the inlined multi-step
-`adc` chain — all checkable without a compiler. `exe_64277` stays a near
-match; its control flow, cdecl argument, table scaling and call form are all
-recovered and recorded.
+`exe_64277` stays a near match; its control flow, cdecl argument, table
+scaling and call form are all recovered and recorded.
+
+**Correction, so this is not overstated.** A raw byte scan finds
+`8E /r` with a `[disp16]` operand in **162 of 1,134** complete functions,
+but that is *not* 162 units this compiler cannot produce. An ordinary far
+pointer dereference compiles to exactly `mov es,[g]; mov bx,es:[disp]`
+(for example `exe_5934`: `mov es,[53C0h]; mov bx,es:[2Ch]`), which is
+plain C. The narrow, defensible form of the signature is: a segment
+register loaded from memory while the **offset is a constant**, with no load
+of the offset half. That is what `exe_64277` does
+(`mov es,[5A5Eh]` then `call far [es:bx+135Ah]`) and it is what has no
+C spelling here. Distinguishing the two needs the operand decode, not a
+substring search, so no count of that narrowed set is claimed yet.
 
 ### Test status
 
