@@ -560,6 +560,31 @@ a second one: retail reuses the `add`'s flags for both the `js` and the
 Three configurations for the sibling would not be a better use of the next
 hour than finding a family with no residue at all.
 
+### 30 function units contain a second prologue (glued functions)
+
+Scanning every function-shaped unit for a `55 8B EC` after its own
+prologue finds it in **30 of 1,134** units. At least one is a genuine
+glue: `exe_18064` (exe-code:0x4690, 32 B) is two functions in one unit —
+
+```
+mov bx,[bp+6] ; mov ah,68h ; int 21h ; jmp far ...   <- function A tail-calls out
+mov ax,[bp+6] ; mov ah,35h ; int 21h ; mov dx,es ; mov ax,bx ; ... ; retf
+```
+
+A tail-calling function has no `retf`, so the splitter's
+`prologue ... retf` rule walked straight past the boundary and swallowed
+function B as well. Such a unit cannot be recovered as one C function: no
+single source compiles to a function that jumps away and then defines a
+second function inline.
+
+**This is not yet a verified count of glued units.** An interior
+`55 8B EC` can also be data (an immediate or a jump-table entry) rather
+than code. The 30 need per-unit disassembly before any boundary change is
+made; only `exe_18064` is hand-verified so far. Splitting them is a
+justified boundary correction under the project rules, but each split has
+to be evidenced with the surrounding control flow, not just the byte
+pattern, and the unit totals must not be adjusted until then.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
