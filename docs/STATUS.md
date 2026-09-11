@@ -837,6 +837,55 @@ is known, because the compiler's call encoding and register strategy both
 depend on it. Those units belong to the CL+LINK lane, not to per-unit source
 recovery, and no amount of per-unit spelling will reach them.
 
+### A four-member pure-C family in the overlay: identified, not yet aligned
+
+`ovl_103506`, `ovl_165711`, `ovl_187298` and `ovl_193562` are 35 bytes each,
+identical in shape, and contain no call, no `int`, no `in`/`out` and no
+segment-qualified access — the cleanest pure-C family the corpus has
+produced. Each decodes as:
+
+```
+push bp ; mov bp,sp
+cmp word [bp+6],10h ; jnz ZERO
+cmp byte [G],0      ; jz OTHER        ; G differs per member
+mov ax,OFFSET_A     ; jmp TAIL         ; A differs per member
+nop
+OTHER: mov ax,OFFSET_B
+TAIL: mov dx,ds ; jmp FIN
+nop
+ZERO: xor ax,ax ; cwd
+FIN: pop bp ; retf
+```
+
+so each returns a `char far *`: null unless the argument is `10h`, else one
+of two string-literal addresses with DS as the segment — i.e.
+
+```c
+char far *far f(int a)
+{
+    if (a != 0x10)
+        return 0;
+    return g ? "..." : "...";
+}
+```
+
+The four members differ only in the tested byte and the two literal
+offsets, so this is four recoveries behind one idiom if it can be verified.
+
+**It cannot yet be verified by the per-unit splice.** Compiling that source
+gives 38 bytes in which MSC emits the twelve bytes of string literals
+*before* the function, so the blob is compared against the retail code slice
+from `+0` and differs immediately. The compiled function also appears
+shorter than retail's 35 bytes, missing the frame and the first `cmp`, which
+is not explained yet; that is recorded as an open question rather than
+guessed at.
+
+The practical consequence is the same as `exe_18240`: units whose source
+contains string literals need the real CL+LINK path, where literals get
+their own segment and their own addresses, rather than the per-unit splice
+which compares one contiguous code blob. Both of these blockers are Lane B
+work.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
