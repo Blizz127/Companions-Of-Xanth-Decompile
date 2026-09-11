@@ -2045,6 +2045,36 @@ known cause, not an open question about provenance — and it retires the
 "register saves mean assembly" reading I recorded one round earlier for
 this unit.
 
+### Correction: CL does NOT add push di/push si around an _asm call
+
+Last section's mechanism claim is **withdrawn**, and the experiment that
+withdraws it is two lines long. Both of these compile to the same 8-instruction
+body with **no register saves at all**:
+
+```c
+_asm { mov ah, c;        call far ptr helper; }   /* C parameter name */
+_asm { mov ah, [bp+6];   call far ptr helper; }   /* explicit frame slot */
+```
+
+```
+0003 8A 66 06     mov ah,[bp+6]
+0006 9A ...       call far
+000B 8B E5        mov sp,bp
+```
+
+So CL emits **no** `push di`/`push si` for an `_asm` block containing a
+call, and my reading of the earlier listing — that the outer pair of pushes
+belonged to CL and the inner pair to the source — was wrong. The source in
+that test contained exactly one `push di; push si`, yet the listing shows
+two pairs, and nothing in these two new experiments explains the duplicate.
+That is an unexplained artifact of the first test, not a mechanism, and the
+correct state is: **`exe_714` has CL-inexplicable register saves again**, and
+the unit is back to unexplained at 16 bytes against retail's 17.
+
+Recording this as a withdrawal rather than quietly rewriting the previous
+section, because the previous section drew a conclusion (that the unit was
+recoverable as C and not assembly) that the evidence does not support.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
