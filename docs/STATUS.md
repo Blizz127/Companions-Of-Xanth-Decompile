@@ -661,6 +661,47 @@ still has 1,134 function units. Widening `EPILOGUES` also changes
 `tests/test_units.py` must be re-measured as part of the same change, not
 after it.
 
+### Boundary correction applied to four units
+
+The two-part fix was done in the right order and landed.
+
+1. `tools/units.py` gained `returns()`, which recognises `5d ca iw`
+   (`retf imm16`) and `5d c2 iw` (`ret imm16`) alongside `5d cb`/`5d c3`,
+   and `classify` now uses it. These are the `__pascal`/`__stdcall` far
+   returns the splitter missed. On its own this corrected `exe_26464` from
+   `framed-fragment` to `function` (1,134 -> 1,135 functions).
+2. Four of the six overlapping glued units were then truncated, with the
+   successor's extent confirming the arithmetic exactly:
+
+| unit | extent before | after | successor | successor extent |
+|---|---|---|---|---|
+| `exe_6094` | 144 | **43** | `exe_6137` | 101 |
+| `exe_34621` | 77 | **42** | `exe_34663` | 35 |
+| `exe_34698` | 77 | **42** | `exe_34740` | 35 |
+| `exe_34775` | 278 | **42** | `exe_34817` | 236 |
+
+Every pair satisfies `before = after + successor_extent`, and the measured
+`emit-dump` byte totals are unchanged (`exe-code` 187,636;
+`ovl-payload` 314,821), so the covered byte union is provably identical.
+The overlap is gone and neither unit is glued any more.
+
+**Two of the six were reverted, not split.** `exe_13444` and `exe_14566`
+do not end in a recognised epilogue after truncation, so their cut is not
+established by the same evidence. They keep their committed extents (594
+and 203) until their boundaries are confirmed by control flow rather than
+by the presence of a prologue byte.
+
+**A widening that was tried and rejected.** Accepting a bare trailing
+`CB`/`C3` as "ends in a return" reclassified **640** fragments as
+`unframed-function` (7 -> 647, fragments 1,171 -> 531) on the strength of a
+single trailing byte. That is not evidence those units are functions, so it
+was reverted and only the `5d`-prefixed forms are accepted.
+
+The invariant test that asserts function-shaped units end with a return now
+calls `units.returns()` instead of matching two byte pairs by hand, so the
+assertion and the classifier cannot drift apart again. The coverage
+ratchets are untouched and still pass.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
