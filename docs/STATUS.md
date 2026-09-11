@@ -1926,6 +1926,38 @@ continuation, CL may generate the shared site and the padding that retail
 has. That is testable, unlike the previous framing of the difference as an
 unexplained placement.
 
+### exe_86814: the nop placement is the only difference, shown byte by byte
+
+The prediction from the shared-call-site finding was tested on this unit and
+does not apply here: CL already shares the store site, so there is nothing to
+restructure. Adding a temporary variable for the stored value makes it worse
+(54 bytes against 50). Comparing the two listings by hand settles it:
+
+```
+retail  ... 83 7E 06 00 74 06 | A1 E4 42 | EB 04 | 90 | B8 00 A0 | A3 E6 42 | ...
+mine    ... 83 7E 06 00 74 05 | A1 00 00 | EB 03 |      B8 00 A0 | A3 00 00 | ...
+                                                                 ^ nop is here in retail
+```
+
+and at the end:
+
+```
+retail  ... 1B C0 40 | A3 E0 42 | 5D CB
+mine    ... 1B C0 40 | A3 00 00 | 5D CB | 90     <- the same nop, after retf
+```
+
+Every opcode and every operand is identical apart from the fixup
+displacements; **the sole difference is that retail's `nop` sits before the
+`mov ax,0A000h` and CL's sits after the final `retf`**. Both units are 50
+bytes. The `jmp` displacement differs by exactly that one byte, which is
+what makes the two listings diverge from offset 29 while being the same
+instruction sequence.
+
+So this unit is a near match whose entire residue is an alignment decision.
+Two guesses have now been tested against it (a shared-site restructure,
+which does not apply, and a temporary variable, which is worse) and both are
+recorded.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
