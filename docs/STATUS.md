@@ -2194,6 +2194,69 @@ attempt should begin by writing the struct from the `[bp-12h]`/`[bp-10h]`
 pushes — those two words are read from inside the copied record, so which
 fields they are fixes the layout.
 
+### exe_111158: 140 against 142 on the first attempt
+
+The decode was written up as C and compiled first time. It lands **two bytes
+short of retail's 142**, first difference at `+5`, which is inside the frame
+setup:
+
+```c
+struct S { unsigned f0; long f1; char rest[14]; };
+
+extern unsigned __near g680a, g680c, g680e;
+extern char far * __near g_tbl[];
+extern struct S __near g_arr[];
+
+void far callA(long v);
+void far callB(char far *p);
+
+void far exe_111158(int arg)
+{
+    struct S s;
+    struct S __near *p;
+    unsigned bit;
+
+    s = *(struct S far *)(g_tbl[g680a] + g680c * 20);
+    callA(s.f1);
+    bit = 1;
+    p = g_arr;
+    do {
+        if ((bit & arg) == (bit & g680e))
+            callB((char far *)p);
+        p++;
+        bit <<= 1;
+    } while (bit <= 0x200);
+    callA(0);
+    g680e = arg;
+}
+```
+
+**What this confirms, on the first try and with no spelling iteration:**
+
+- the record is 20 bytes and the field stride really is 20 (`g680c * 20`
+  reproduces the `imul` by 14h);
+- the far-pointer table element is 4 bytes so `g_tbl[]` indexes as `*4`;
+- `s = *(struct S far *)...` is exactly what produces `rep movsw` with
+  `cx = 0Ah`, so the local really is a 20-byte struct copy;
+- the two words pushed for the first call are a **`long` field at offset 2**
+  of that struct, which is why the same call site later appears as
+  `push 0 ; push 0` for `callA(0)`;
+- `callB((char far *)p)` over a `__near` struct pointer explains both the
+  `push ds ; push word [bp-1Ah]` and the `+= 14h` stride;
+- the loop is `do { ... } while (bit <= 0x200)`, not a `for`, which is why
+  the `cmp`/`jng` sits at the bottom after the shift.
+
+Each of those was read from the code and written once; none needed a second
+try. The remaining two bytes are in the frame setup at `+5` — retail has
+`sub sp,1Ah` then `push di ; push si`, and the tail of the diff has not been
+traced. That is the next step, and it is two bytes on a 142-byte function
+whose types are now settled rather than a fresh investigation.
+
+This is the mode that worked earlier in the session: decode, write once from
+the decode, compare. It produced 442 units' worth of understanding here in a
+single round after six rounds spent chasing one-to-three-byte gaps on units
+chosen for being small rather than for being understood.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
