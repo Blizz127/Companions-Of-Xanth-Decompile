@@ -3071,6 +3071,41 @@ capability — but it does not answer it, and recording it as an answer would
 have been the same mistake as the withdrawn `les` and hoisting conclusions.
 The distinction is now in the file.
 
+### Retraction: liveness does not explain the cleanup difference
+
+The liveness reading was tested properly — a value carried across a one-word
+call by two shapes:
+
+| shape | cleanup after the one-word call |
+|---|---|
+| `r = a(g); b(g); return r;` | **`pop bx`** |
+| `r = a(g); c(g); return r;` where `c` returns int | **`pop bx`** |
+
+In both, the return value is live across the following call and CL still
+discards the argument word with `pop bx`. So **the liveness reading is not
+supported and is withdrawn.**
+
+**What remains, stated without a cause:**
+
+- `add sp,N` is producible — measured: 1 word gives `pop bx`, 2 words give
+  `add sp,4`, 4 words give `add sp,8`.
+- Retail uses `add sp,2` for a **one-word** call in `exe_109083` and
+  `mov sp,bp` for one in `exe_91501`, and neither form has been produced from
+  a one-word call by any shape tried.
+- The `pop bx` choice survives a live register, so it is not liveness as
+  simply modelled.
+
+That is a narrower statement than the previous round's, and it is the accurate
+one. Three explanations have now been offered for this pattern across two
+rounds — missing capability, then liveness — and two have been withdrawn by
+measurement. Recording the *measurements* rather than a third explanation is
+the right move: the four data points above are what the next attempt should
+start from, not a hypothesis.
+
+**State for both units:** `exe_109083` at 98/101 and `exe_91501` at 84/85, with
+the cleanup difference in each localised to a single instruction and every
+other element of both functions reproduced.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
