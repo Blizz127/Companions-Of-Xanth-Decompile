@@ -184,6 +184,20 @@ of the same era whose output was assembled by it. Neither is on this
 machine: `ML.EXE`, `MASM.EXE`, `TASM.EXE`, `JWASM` and `UASM` are all absent
 (searched `/var/home/blizz`, `/usr`, `/opt`).
 
+`tools/asm_profile.py` is the conformance check for a candidate. It assembles
+three probes and reports which profile facts hold — the imm16 stack adjust,
+the `8B` register-to-register `mov`, and literal `push si`/`push di` with no
+wrapper — so a dropped-in assembler can be judged in one command:
+
+```sh
+python3 tools/asm_profile.py --cmd 'wine ML.EXE /c /nologo {src}' --obj
+```
+
+Controls: NASM in `--syntax nasm` scores 2/3 (it holds the imm16 and push
+facts, fails the `mov` one), and NASM against the MASM-syntax probe reports
+`ASSEMBLE-FAIL` for all three, which is what an assembler with the wrong
+dialect should look like.
+
 Re-running the current converter over the 577 confirms the ceiling: **none**
 of the 563 function-shaped units is spellable as inline asm any more (one
 did convert, `exe_87075`, whose body carried the SI/DI push in the compiler's
