@@ -218,6 +218,26 @@ level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
 lodsb` silently drops the prefix and emits `AC`), and a direct far jump
 (`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
 
+### Session 2026-09-11 (tenth pass) — the pass-1 staleness class resists both
+spellings
+
+The `DIFF +11`/`+8`/`+7` classes (32 units) come from MASM pass-1 length
+estimates: a labelled forward short jump keeps whatever displacement pass 1
+computed, and a backward `jcc short` is expanded anyway, so the label moves
+and the forward displacement is stale. A second candidate spelling with
+`$`-relative displacements was implemented and measured — 0 of 468 converted
+with it, and it is the form the compiler ICEs on elsewhere — so the variant
+was removed rather than left in as dead code. That closes the last spelling
+hypothesis for this class; it needs an assembler without the pass-1
+resolver.
+
+Along the way the candidate guard from the seventh pass earned its keep: a
+loop variable named `text` clobbered the unit's source text exactly as
+before, and the guard raised instead of silently compiling a bare instruction
+list.
+
+No units converted this pass.
+
 ### Session 2026-09-11 (ninth pass) — two labels for one address, and an
 idempotent render
 
