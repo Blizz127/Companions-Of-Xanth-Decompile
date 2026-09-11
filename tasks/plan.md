@@ -10,6 +10,10 @@ itself: the majority of the game is still recovered as `_asm { _emit … }`
 byte dumps, and the compared image is still listing-splice rather than
 CL + LINK. This plan carries that work forward.
 
+Live corpus and ratchets: `CONSTRAINTS.md` and the snapshot at the top
+of `docs/STATUS.md`. The table below is the 2026-09-10 reconnaissance
+and is not current.
+
 ## Reconnaissance (2026-09-10)
 
 | Fact | Value |
@@ -62,22 +66,22 @@ counts are an upper bound on distinct code.
 ## Task List
 
 ### Phase 1: instrumentation
-- [ ] Task 1: `tools/coverage.py` — per-image unaided-C vs dump coverage, JSON + text
-- [ ] Task 2: `tools/lift.py` — compile one candidate TU, compare to the retail
+- [x] Task 1: `tools/coverage.py` — per-image unaided-C vs dump coverage, JSON + text
+- [x] Task 2: `tools/lift.py` — compile one candidate TU, compare to the retail
       slice, report first mismatch with both disassemblies
-- [ ] Task 3: unit-shape index (`tools/units.py`) so families can be selected
+- [x] Task 3: unit-shape index (`tools/units.py`) so families can be selected
       by shape instead of by filename
 
 ### Checkpoint: instrumentation
-- [ ] `python3 tools/coverage.py` reproduces the reconnaissance table
-- [ ] `python3 tools/lift.py <src>` byte-diffs a known-bad candidate
+- [x] `python3 tools/coverage.py` reproduces the reconnaissance table
+- [x] `python3 tools/lift.py <src>` byte-diffs a known-bad candidate
 
 ### Phase 2: function recovery
 - [ ] Task 4: lift the smallest complete far functions (data/pointer stores,
       cli/sti guarded array access, far-pointer globals) and verify each
 - [ ] Task 5: lift the `helper()` / `helper()==0` / `helper(a,b)` thunk families
       still in dump form `/Og` can now express
-- [ ] Task 6: split glued dump units so each complete function is its own unit
+- [x] Task 6: split glued dump units so each complete function is its own unit
       with its own offset (removes the overlapping-fragment noise)
 
 ### Checkpoint: function recovery

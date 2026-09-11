@@ -22,10 +22,11 @@ Target: 100% unaided C for `XANTH.EXE` + `XANTH.OVL`, compared via CL + LINK.
 
 ## function-decomp
 
-Corpus as measured on 2026-09-10 by `tools/coverage.py`: 2,836 units
-(1,245 `exe-code`, 1,591 `ovl-payload`); 2,376 `_emit` dumps covering 97.9% of
-the EXE code image and 96.7% of the OVL payload; 439 unaided-C units; 21 mixed
-mnemonic-`_asm` units. 1,135 units are complete framed far functions.
+Corpus as measured on 2026-09-11 by `tools/coverage.py`: 2,844 units
+(1,253 `exe-code`, 1,591 `ovl-payload`); 2,380 `_emit` dumps covering 97.8% of
+the EXE code image and 96.69% of the OVL payload; 442 unaided-C units; 22
+mnemonic-`_asm` units. 1,142 dump units are complete framed far functions.
+Live numbers and ratchet history: `CONSTRAINTS.md`.
 
 ### Phase 1 — instrumentation
 
@@ -60,7 +61,10 @@ mnemonic-`_asm` units. 1,135 units are complete framed far functions.
       `exe_1802` (`les bx` far-pointer store register choice),
       `exe_98653` (jump to a shared epilogue from an if/else).
 - [ ] Task 8: convert the 60 unresolved mixed-`_asm` dumps so no `_emit` remains
-- [ ] Task 9: split glued dump units so each complete function is one unit
+- [x] Task 9: split glued dump units so each complete function is one unit
+      Fourteen confirmed glues separated 2026-09-10; dump bytes unchanged
+      at split time. Two jmp-preceded interior prologues left for
+      per-unit control-flow work.
 
 ### Checkpoint: function recovery
 

@@ -94,6 +94,11 @@ def report(root: Path | None = None, *, compile_units: bool = False) -> dict:
             "unaided_c_percent": round(100 * by_kind["unaided-c"] / size, 2),
             "dump_percent": round(100 * by_kind["emit-dump"] / size, 2),
         }
+    dump_functions = sum(
+        1
+        for row in rows
+        if row["kind"] == unit_index.KIND_DUMP and row["shape"] == "function"
+    )
     return {
         "compile_units": compile_units,
         "images": images_report,
@@ -105,6 +110,7 @@ def report(root: Path | None = None, *, compile_units: bool = False) -> dict:
                 )
                 for kind in (unit_index.KIND_C, unit_index.KIND_ASM, unit_index.KIND_DUMP)
             },
+            "dump_functions": dump_functions,
         },
     }
 
@@ -133,6 +139,7 @@ def format_report(data: dict) -> str:
     lines.append(
         "total kinds: " + ", ".join(f"{key}={value}" for key, value in totals["kinds"].items())
     )
+    lines.append(f"dump functions still in dump form: {totals['dump_functions']}")
     return "\n".join(lines)
 
 
