@@ -84,7 +84,16 @@ def ledata_and_fixups(data: bytes) -> tuple[bytes, list[tuple[int, int]]]:
         if i > len(data) or not rec:
             raise OmfError("truncated OMF record")
         payload = rec[:-1]
-        if typ == 0xA0:
+        if typ == 0x90 and len(payload) >= 3:
+            # PUBDEF names the segment its symbol lives in, which is the code
+            # segment for the function we are recovering. Neither "the first
+            # LEDATA" nor "the lowest segment index" is safe: for a TU with
+            # static data, CL emits the data segment's LEDATA *first*.
+            _, cursor = _index(payload, 0)  # group
+            segment, _ = _index(payload, cursor)
+            if code_segment is None:
+                code_segment = segment
+        elif typ == 0xA0:
             if len(payload) < 3:
                 raise OmfError("short LEDATA")
             segment = payload[0]
