@@ -1,5 +1,106 @@
 # Session handoff
 
+Live numbers belong in this snapshot and in `CONSTRAINTS.md`. Dated
+sessions below are lab notes; counts inside a dated session are of that
+date. A unit is recovered only when its source is in `src/` and
+`tools/lift.py` reports MATCH. Notebook C is not a recovery.
+
+## Current (2026-09-11)
+
+Measured by `python3 tools/coverage.py` (wine-free). C and mnemonic-`_asm`
+units have no dump extent, so unaided-C *byte* coverage reads 0.0% here;
+`--compile` is the byte metric. Dump byte coverage and unit counts are
+the numbers that are locked.
+
+| Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
+|---|---|---|---|---|---|---|
+| `exe-code` | 191,656 | 1,253 | 108 | 21 | 1,124 | 97.8% (187,446 B) |
+| `ovl-payload` | 325,595 | 1,591 | 334 | 1 | 1,256 | 96.69% (314,821 B) |
+
+| Source kind | units |
+|---|---|
+| unaided C (no `_asm`) | 442 |
+| mnemonic `_asm` | 22 |
+| `_emit` dump | 2,380 |
+
+Dump-unit shapes (C/asm units are `unknown` because they have no extent
+without `--compile`):
+
+| Shape | count | meaning |
+|---|---|---|
+| `function` | 1,142 | framed dump that starts `55 8B EC` and ends in a return |
+| `unframed-function` | 7 | no frame, ends in a return |
+| `fragment` | 1,171 | mid-function slice, thunk, or data |
+| `unknown` | 524 | 442 C + 22 mnemonic `_asm` + 60 mixed dumps |
+
+Rebuild is still `listing-splice` BINARY-MATCH for both images, not
+CL+LINK. `pc-port` does not exist.
+
+### In the tree — `lift.py` MATCH
+
+Recompiled 2026-09-11:
+
+| unit | image | result |
+|---|---|---|
+| `exe_2096` | exe-code:0x830, 16 B | MATCH, trimmed 2 (justified `pushf`/`popf`) |
+| `exe_99679` | exe-code:0x1855F, 48 B | MATCH, trimmed 0 |
+| `exe_112795` | exe-code:0x1B89B, 58 B | MATCH, trimmed 0 |
+| `exe_112711` | exe-code:0x1B847, 84 B | MATCH, trimmed 0 |
+
+The other 439 unaided-C units are the Sept 8 thunk/store families
+(far-call wrappers, CLI/STI stores, `== 0` helpers, 2D bit-tests).
+
+### Notebook only — still `_emit` dumps
+
+The lab notes below describe recovered source for these. They are **not**
+recovered. Do not count them, and do not resume them unless a new
+discriminating experiment exists:
+
+`exe_117397`, `exe_18240`, `exe_115231`, `exe_91501`, `exe_111158`,
+`exe_109269`, `exe_86814`, `exe_98653`, `ovl_103506` / `ovl_165711` /
+`ovl_187298` / `ovl_193562`, `exe_790`, `exe_714`, `exe_2021`,
+`exe_64277`, `exe_53332`, `exe_110357`, `exe_109184`, `exe_109083`,
+`exe_109741`, `exe_112853`, `exe_87918`, `exe_94712`, `exe_80795`,
+`exe_1802`, `exe_1768`, `exe_7548`, DS-loading family `exe_31310` /
+`exe_34586` / `exe_34663` / `exe_34740`.
+
+### Proven levers
+
+- `#pragma intrinsic(_disable,_enable)` for `cli`/`sti`
+- `#pragma intrinsic(_inp,_outp)` for `in`/`out` (else they are far calls)
+- `char c = g; if (c)` for the 5-byte load-and-test; `if (g)` is a 6-byte `cmp`
+- `__near` on globals so the array base folds into the displacement
+- a named local even if CL keeps it in registers (forces `sub sp`)
+- declaration order pins stack-slot offsets
+- `/Og` for `== 0` as `cmp ax,1 / sbb / neg` and 1-arg `add sp,2`
+
+Working rule: when a unit's remaining gap is one mechanism and five
+spellings have failed, stop, record it, pick another candidate. Decode
+once, write once, compile. Do not grind 1–3 byte residues.
+
+### Next
+
+1. Convert the 60 mixed `_asm` dumps (`shape=unknown`, `kind=dump`) so no
+   `_emit` remains there.
+2. `python3 tools/coverage.py --list function` — smallest complete dump
+   functions; decode once, `lift.py`.
+3. Classify fragment units (RTLink / data vs code) so coverage separates
+   data from unlifted functions. Measurement; no compiler.
+4. Phase 3 (`image_source=cl-link`) after source recovery, not instead of it.
+
+### Test status
+
+- Fast suite `tests/test_units.py` carries the ratchets.
+- Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
+  (2,380 dump units) and `image_source == "cl-link"`.
+
+---
+
+## Lab notes
+
+Experiment log. Do not treat it as the live queue or as recovered
+source. Counts inside a dated session are of that date.
+
 ## Session 2026-09-10 — function-decomp reconnaissance and tooling
 
 ### Corpus, measured not guessed
@@ -3269,27 +3370,10 @@ such encoding in the unit by scanning its bytes against the `CL_IMPOSSIBLE`
 table, which is a one-command check and would settle whether the unit belongs
 with the 81 assembled functions.
 
-### Test status
+### Test status / Next (this session)
 
-- `tests/test_units.py` — 9 tests, green.
-- `test_target` / `test_identify` / `test_retail` / `test_compare` /
-  `test_compile_msc` — green.
-- Still red by design, which is the work queue:
-  `test_recovered_sources_have_no_emit_byte_dumps` (2,376 dump units left),
-  and `test_rebuild_path_matches_pinned_exe_and_ovl`'s
-  `image_source == "cl-link"` assertion. The listing splice still
-  BINARY-MATCHes both images.
-
-### Next
-
-1. Lift with `tools/lift.py`; pick targets with `coverage.py --list function`.
-   The 1,000 complete functions containing only compiler-producible
-   instructions are the tractable set; `exe_1768`, `exe_1802` and `exe_98653`
-   are the recorded near-misses with the exact byte diff.
-2. Convert the 60 unresolved mixed-`_asm` units so no `_emit` remains there
-   (cheap, they already carry mnemonics).
-3. `image_source=cl-link` needs an EXE symbol/data map, not just code; it is
-   the only way to close the metric honestly.
+Superseded by the 2026-09-11 snapshot at the top of this file. Counts in
+the sections above are of 2026-09-10 and were not updated in place.
 
 ---
 

@@ -60,15 +60,15 @@ def _fixups(payload: bytes, ledata_base: int) -> list[tuple[int, int]]:
 def ledata_and_fixups(data: bytes) -> tuple[bytes, list[tuple[int, int]]]:
     """LEDATA of the *code* segment, plus its fixups.
 
-    A translation unit can emit more than one segment: a source containing
-    string literals puts them in a data segment whose LEDATA offsets start
-    at the same place as the code's. Merging every LEDATA by offset — which
-    this used to do — let the literals overwrite the first bytes of the
-    function, so the comparison saw data instead of code and differed at
-    +0. CL emits the code segment first, so its segment index is taken from
-    the first LEDATA record and later segments are ignored. For the
-    single-segment objects that make up the rest of the corpus this is a
-    no-op.
+    A translation unit can emit more than one segment: string literals go
+    in a data segment whose LEDATA offsets start at the same place as the
+    code's. Merging every LEDATA by offset used to let those literals
+    overwrite the first bytes of the function.
+
+    The code segment is the one named by the first PUBDEF (the function
+    symbol). Falling back to the first LEDATA is only for objects with no
+    PUBDEF. It is not safe as the primary rule: a TU with static data
+    emits that data LEDATA first.
     """
     i = 0
     chunks: list[tuple[int, bytes]] = []

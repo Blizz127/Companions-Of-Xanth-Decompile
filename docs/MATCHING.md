@@ -37,9 +37,14 @@ Decided 2026-09-10 (see `CONSTRAINTS.md` for the numbers and
   functions with no locals, and `pushf`/`popf`/`int`/`in`/`out` have no C
   spelling in this toolchain.
 - The previous bar — no `_asm` at all — was not reachable and was replaced
-  rather than quietly edited. The gate it protects is still red: 2,376 of
-  2,836 units are byte dumps.
+  rather than quietly edited. The gate it protects is still red: 2,380 of
+  2,844 units are byte dumps.
 
-A unit counts as recovered only when `tools/lift.py` shows it compiling to its
-retail slice, and `exact_no_trims` is reported so a match that survives
-`_relocate` trimming is not mistaken for a strict one.
+A unit counts as recovered only when its source is in `src/` **and**
+`tools/lift.py` reports MATCH against that unit's retail slice.
+`exact_no_trims` is reported so a match that only survives `_relocate`
+trimming is not mistaken for a strict one.
+
+Notebook C in `docs/STATUS.md` is DECOMPILED at most, never recovered.
+Near-matches, COMPILER-LIMITED classifications, and decoded-but-uncommitted
+bodies stay dumps until they MATCH in the tree.

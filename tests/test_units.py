@@ -67,11 +67,15 @@ class DumpExtentTests(unittest.TestCase):
 
 
 class CoverageReportTests(unittest.TestCase):
-    # Recorded 2026-09-10. See CONSTRAINTS.md: these are ratchets, not targets.
-    # They may only move in the improving direction, and moving one is a
-    # deliberate edit carrying the new number and its evidence.
-    DUMP_PERCENT_CEILING = {"exe-code": 97.91, "ovl-payload": 96.69}
-    UNAIDED_C_UNIT_FLOOR = 439
+    # See CONSTRAINTS.md: these are ratchets, not targets. They may only
+    # move in the improving direction, and moving one is a deliberate edit
+    # carrying the new number and its evidence.
+    # Locked 2026-09-11 from `python3 tools/coverage.py` after the four
+    # Sept-10 recoveries (exe_2096 / exe_99679 / exe_112795 / exe_112711)
+    # and the fourteen glue splits.
+    DUMP_PERCENT_CEILING = {"exe-code": 97.8, "ovl-payload": 96.69}
+    UNAIDED_C_UNIT_FLOOR = 442
+    DUMP_FUNCTION_CEILING = 1142
 
     def test_report_is_self_consistent(self):
         data = report()
@@ -103,6 +107,17 @@ class CoverageReportTests(unittest.TestCase):
             data["totals"]["kinds"]["unaided-c"],
             self.UNAIDED_C_UNIT_FLOOR,
             "unaided-C units were lost; check c-units.json before lowering this ratchet",
+        )
+
+    def test_dump_function_count_does_not_increase(self):
+        data = report()
+        self.assertLessEqual(
+            data["totals"]["dump_functions"],
+            self.DUMP_FUNCTION_CEILING,
+            f"complete functions still in dump form rose to "
+            f"{data['totals']['dump_functions']} (ceiling "
+            f"{self.DUMP_FUNCTION_CEILING}); a split or reclassification "
+            f"added dump functions without a matching recovery",
         )
 
 
