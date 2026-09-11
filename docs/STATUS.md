@@ -1755,6 +1755,37 @@ ready:
 }
 ```
 
+### exe_790: counter register is the whole remaining difference
+
+Four forms tried, each narrowing the gap, and the residue is now a single
+question — which register CL puts the 0xFFFF counter in:
+
+| form | size | counter lives in | back edge |
+|---|---|---|---|
+| `for (i = 0xFFFF; i != 0; i--)` | 52 | `[bp-2]`, with `sub sp,2` | `dec/jnz` |
+| `do { } while (--i)`, plain local | 44 | `[bp-2]` | `dec/jnz` |
+| the same with `register unsigned i` | 40 | **`si`** (with `push si`) | `dec si / jnz` |
+| retail | **35** | **`cx`**, no frame, no saved register | **`loop`** |
+
+So `do/while(--i)` is the right loop shape — it got from 52 to 44 bytes and
+matches retail's back edge semantics — and `register` moves the counter out
+of memory, but CL picks `si` where retail has `cx`. Retail also has no
+prologue save at all, so the counter is in a register CL never spills.
+
+**What this narrows to.** Retail's `mov cx,0FFFFh` with a bare `loop` back
+edge, no frame and no saved register, is CL's output when the counter is its
+last-allocated register. Since `register unsigned i` alone yields `si`, the
+source likely has a *second* register-resident value competing for the same
+file — the port is already held across the loop in `dx`, so the counter
+taking `cx` would follow if one more value were also register-allocated.
+That is the hypothesis for the next attempt; it is stated before the
+experiment, not after, and the two experiments that failed here (`for` and
+plain-local `do/while`) each cost only one compile.
+
+**The lever that did hold:** `#pragma intrinsic(_inp, _outp)` with
+`_inp`/`_outp`. Without it these are far calls and the unit is 62 bytes;
+with it the `in`/`out` are inline as retail has them.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
