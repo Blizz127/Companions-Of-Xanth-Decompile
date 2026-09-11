@@ -3,6 +3,11 @@ extern int __near mn643C;
 extern int __near mn643E;
 extern int __near mn6440;
 extern int __near mn6442;
+extern int __near mn4E9E;
+extern int __near mn643C;
+extern int __near mn643E;
+extern int __near mn6440;
+extern int __near mn6442;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -18,8 +23,8 @@ int far exe_98020(int a)
         sub sp,0x8
         cmp word ptr mn4E9E,0x0
         jz short $+5
-        jmp LC8
-L0D:
+        jmp lblC8
+lbl0D:
         mov ax,0x33
         push ax
         call far ptr helper_0
@@ -35,7 +40,7 @@ L0D:
         jz short $+6
         cmp al,0xcf
         jnz short $+30
-L33:
+lbl33:
         mov ax,0x4ea2
         push ds
         push ax
@@ -46,7 +51,7 @@ L33:
         add sp,0x8
         call far ptr helper_2
         call far ptr helper_3
-L4F:
+lbl4F:
         mov ax,0x20
         int 0x33
         mov ax,0x0
@@ -69,7 +74,7 @@ L4F:
         push ax
         call far ptr helper_5
         add sp,0x2
-L88:
+lbl88:
         mov word ptr mn4E9E,0x80
         mov ax,0x100
         cwd
@@ -91,6 +96,6 @@ L88:
         cmp word ptr [bp+0x6],0x0
         jz short $+7
         call far ptr helper_8
-LC8:
+lblC8:
     }
 }

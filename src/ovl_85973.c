@@ -1,6 +1,9 @@
 extern int __near mn6A06;
 extern int __near mn6A02;
 extern int __near mn6A04;
+extern int __near mn6A06;
+extern int __near mn6A02;
+extern int __near mn6A04;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -23,15 +26,15 @@ int far ovl_85973(int a)
         dec ax
         dec ax
         jnz short $+5
-        jmp LF3
-L12:
-        jmp L41F
-L15:
+        jmp lblF3
+lbl12:
+        jmp lbl41F
+lbl15:
         mov ax,mn6A06
         sub ax,0x38
         jz short $+5
-        jmp L41F
-L20:
+        jmp lbl41F
+lbl20:
         mov ax,0xe
         push ax
         push word ptr mn6A02
@@ -54,14 +57,14 @@ L20:
         push dx
         push ax
         mov ax,0xc
-L5B:
+lbl5B:
         mov dx,0xf005
         push dx
         push ax
         call far ptr helper_2
         add sp,0xc
-        jmp LED
-L6B:
+        jmp lblED
+lbl6B:
         mov ax,mn6A04
         sub ax,0x4a
         jl short $+11
@@ -71,7 +74,7 @@ L6B:
         dec ax
         dec ax
         jz short $+43
-L7C:
+lbl7C:
         push word ptr mn6A02
         mov ax,0x2
         push ax
@@ -88,7 +91,7 @@ L7C:
         push ax
         mov ax,0xe
         jmp short $-72
-LA5:
+lblA5:
         push word ptr mn6A02
         mov ax,0x2
         push ax
@@ -115,18 +118,18 @@ LA5:
         push word ptr mn6A04
         call far ptr helper_3
         add sp,0x6
-LED:
+lblED:
         mov ax,0x1
-        jmp L421
-LF3:
+        jmp lbl421
+lblF3:
         mov ax,mn6A06
         cmp ax,0x45
         jnz short $+5
-        jmp L2AD
-LFE:
+        jmp lbl2AD
+lblFE:
         jna short $+5
-        jmp L41F
-L103:
+        jmp lbl41F
+lbl103:
         sub al,0x8
         jz short $+20
         sub al,0xb
@@ -135,10 +138,10 @@ L103:
         jz short $+12
         sub al,0x18
         jnz short $+5
-        jmp L287
-L116:
-        jmp L41F
-L119:
+        jmp lbl287
+lbl116:
+        jmp lbl41F
+lbl119:
         cmp word ptr mn6A06,0x2c
         jnz short $+22
         mov ax,0xe
@@ -148,11 +151,11 @@ L119:
         add sp,0x4
         or ax,ax
         jz short $+35
-L134:
+lbl134:
         cmp word ptr mn6A06,0x8
         jz short $+5
-        jmp L41F
-L13E:
+        jmp lbl41F
+lbl13E:
         mov ax,0xe
         push ax
         push word ptr mn6A04
@@ -160,15 +163,15 @@ L13E:
         add sp,0x4
         or ax,ax
         jnz short $+5
-        jmp L41F
-L155:
+        jmp lbl41F
+lbl155:
         mov ax,0x229c
         push ds
         push ax
         call far ptr helper_4
         add sp,0x4
-        jmp L41F
-L165:
+        jmp lbl41F
+lbl165:
         mov ax,0xe
         push ax
         mov ax,0x49
@@ -180,9 +183,9 @@ L165:
         mov ax,0x223a
         jmp short $+6
         nop
-L17F:
+lbl17F:
         mov ax,0x223f
-L182:
+lbl182:
         push ds
         push ax
         mov ax,0x6
@@ -199,8 +202,8 @@ L182:
         add sp,0x4
         or ax,ax
         jnz short $+5
-        jmp L277
-L1AB:
+        jmp lbl277
+lbl1AB:
         mov ax,0x7
         mov dx,0xf005
         push dx
@@ -211,7 +214,7 @@ L1AB:
         mov word ptr [bp-0x6],0x0
         mov word ptr [bp-0x2],0x3
         mov word ptr [bp-0x8],0x223a
-L1CF:
+lbl1CF:
         mov ax,0x49
         push ax
         mov bx,[bp-0x8]
@@ -224,9 +227,9 @@ L1CF:
         jnz short $+8
         mov ax,[bp-0x2]
         mov [bp-0x4],ax
-L1F0:
+lbl1F0:
         inc word ptr [bp-0x6]
-L1F3:
+lbl1F3:
         dec word ptr [bp-0x2]
         sub word ptr [bp-0x8],0x2
         cmp word ptr [bp-0x8],0x2234
@@ -240,10 +243,10 @@ L1F3:
         add sp,0x4
         jmp short $+99
         nop
-L217:
+lbl217:
         mov word ptr [bp-0x2],0x0
         mov word ptr [bp-0xa],0x2234
-L221:
+lbl221:
         mov ax,0x49
         push ax
         mov bx,[bp-0xa]
@@ -260,33 +263,33 @@ L221:
         mov ax,0x224f
         jmp short $+6
         nop
-L24B:
+lbl24B:
         mov ax,0x2254
-L24E:
+lbl24E:
         push ds
         push ax
         call far ptr helper_2
         add sp,0x4
-L258:
+lbl258:
         mov bx,[bp-0xa]
         push word ptr [bx]
         mov ax,0x83
         push ax
         call far ptr helper_1
         add sp,0x4
-L269:
+lbl269:
         inc word ptr [bp-0x2]
         add word ptr [bp-0xa],0x2
         cmp word ptr [bp-0xa],0x223a
         jc short $-84
-L277:
+lbl277:
         mov ax,0x2256
         push ds
         push ax
         call far ptr helper_2
         add sp,0x4
-        jmp LED
-L287:
+        jmp lblED
+lbl287:
         push word ptr mn6A04
         mov ax,0x2
         push ax
@@ -300,9 +303,9 @@ L287:
         push ax
         call far ptr helper_2
         add sp,0x8
-        jmp LED
+        jmp lblED
         nop
-L2AD:
+lbl2AD:
         mov ax,0xe
         push ax
         push word ptr mn6A04
@@ -313,9 +316,9 @@ L2AD:
         mov ax,0x2258
         jmp short $+6
         nop
-L2C7:
+lbl2C7:
         mov ax,0x225e
-L2CA:
+lbl2CA:
         push ds
         push ax
         push word ptr mn6A04
@@ -334,9 +337,9 @@ L2CA:
         jz short $+7
         mov ax,0x2263
         jmp short $+5
-L2F7:
+lbl2F7:
         mov ax,0x2269
-L2FA:
+lbl2FA:
         push ds
         push ax
         mov ax,0x9
@@ -385,14 +388,14 @@ L2FA:
         add sp,0x4
         mov ax,0x2c
         jmp short $+21
-L385:
+lbl385:
         mov ax,0xe
         push ax
         push word ptr mn6A04
         call far ptr helper_9
         add sp,0x4
         mov ax,0x8
-L398:
+lbl398:
         push ax
         push word ptr mn6A04
         call far ptr helper_10
@@ -415,9 +418,9 @@ L398:
         jz short $+7
         mov ax,0x2287
         jmp short $+5
-L3D7:
+lbl3D7:
         mov ax,0x228c
-L3DA:
+lbl3DA:
         push ds
         push ax
         mov ax,0xe
@@ -429,9 +432,9 @@ L3DA:
         jz short $+7
         mov ax,0x2293
         jmp short $+5
-L3F5:
+lbl3F5:
         mov ax,0x2297
-L3F8:
+lbl3F8:
         push ds
         push ax
         push word ptr mn6A04
@@ -447,9 +450,9 @@ L3F8:
         push ax
         call far ptr helper_2
         add sp,0x10
-        jmp LED
-L41F:
+        jmp lblED
+lbl41F:
         xor ax,ax
-L421:
+lbl421:
     }
 }

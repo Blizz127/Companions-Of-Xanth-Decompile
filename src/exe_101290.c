@@ -1,5 +1,7 @@
 extern int __near mn67B2;
 extern int __near mn67B4;
+extern int __near mn67B2;
+extern int __near mn67B4;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -23,7 +25,7 @@ int far exe_101290(int a)
         mov ax,[bp+0x6]
         dec ax
         mov [bp-0x8],ax
-L2A:
+lbl2A:
         les bx, [bp-0x6]
         push word ptr es:[bx+0x2]
         push word ptr es:[bx]
@@ -32,7 +34,7 @@ L2A:
         add word ptr [bp-0x6],0x4
         dec word ptr [bp-0x8]
         jnz short $-25
-L45:
+lbl45:
         cmp word ptr mn67B2,-1
         jnz short $+31
         mov ax,0x0
@@ -44,7 +46,7 @@ L45:
         cmp word ptr mn67B2,-1
         jnz short $+8
         mov word ptr mn67B2,0x1
-L69:
+lbl69:
         call far ptr helper_1
         push word ptr mn67B2
         call far ptr helper_2
@@ -52,7 +54,7 @@ L69:
         cmp word ptr mn67B4,0x0
         jz short $+7
         call far ptr helper_3
-L86:
+lbl86:
         call far ptr helper_4
         call far ptr helper_5
     }

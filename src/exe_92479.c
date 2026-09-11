@@ -1,4 +1,5 @@
 extern int __near mn4D38;
+extern int __near mn4D38;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -13,15 +14,15 @@ int far exe_92479(int a)
         add sp,0x2
         or ax,ax
         jnl short $+5
-        jmp L127
-L16:
+        jmp lbl127
+lbl16:
         mov bx,ax
         add bx,ax
         mov [bp-0xe],bx
         cmp word ptr [bx+0x6378],0x1
         jnl short $+5
-        jmp L127
-L27:
+        jmp lbl127
+lbl27:
         mov ax,[bx+0x6370]
         mov [bp-0x6],ax
         mov ax,[bx+0x636c]
@@ -36,7 +37,7 @@ L27:
         mov word ptr [bp-0x4],0x0
         jmp short $+21
         nop
-L51:
+lbl51:
         mov ax,[bx+0x6378]
         dec ax
         cmp ax,[bp-0x4]
@@ -44,25 +45,25 @@ L51:
         mov ax,[bx+0x6378]
         dec ax
         mov [bp-0x4],ax
-L63:
+lbl63:
         mov ax,[bp-0x4]
         cmp [bp-0x6],ax
         jng short $+8
         mov [bp-0x6],ax
         jmp short $+76
         nop
-L71:
+lbl71:
         sub ax,[bx+0x637c]
         inc ax
         cmp ax,[bp-0x6]
         jng short $+65
         mov [bp-0x6],ax
-L7E:
+lbl7E:
         or ax,ax
         jnl short $+58
         mov word ptr [bp-0x6],0x0
         jmp short $+51
-L89:
+lbl89:
         mov ax,[bx+0x6378]
         sub ax,[bx+0x637c]
         mov cx,[bp+0x6]
@@ -74,14 +75,14 @@ L89:
         dec cx
         mov [bp-0x4],cx
         jmp short $-41
-LA9:
+lblA9:
         cmp word ptr [bp-0x6],0x0
         jnl short $+7
         mov word ptr [bp-0x6],0x0
-LB4:
+lblB4:
         mov ax,[bp-0x6]
         mov [bp-0x4],ax
-LBA:
+lblBA:
         mov bx,[bp-0xe]
         mov ax,[bp-0x6]
         mov [bx+0x6370],ax
@@ -95,7 +96,7 @@ LBA:
         mov ax,[bp-0xa]
         jmp short $+31
         nop
-LE3:
+lblE3:
         sub ax,[bp-0xa]
         mul word ptr [bp-0x4]
         mov bx,[bp-0xe]
@@ -106,7 +107,7 @@ LE3:
         sub dx,dx
         div cx
         add ax,[bp-0xa]
-LFF:
+lblFF:
         mov [bp-0x8],ax
         call far ptr helper_1
         push word ptr [bp-0x8]
@@ -118,6 +119,6 @@ LFF:
         call far ptr helper_3
         add sp,0x2
         call far ptr helper_4
-L127:
+lbl127:
     }
 }

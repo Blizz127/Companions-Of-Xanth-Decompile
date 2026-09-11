@@ -239,7 +239,7 @@ def convert(unit: dict, root: Path | None = None) -> dict:
     for insn in insns:
         addr = insn["addr"]
         if addr in targets:
-            lines.append(f"L{addr:02X}:")
+            lines.append(f"lbl{addr:02X}:")
         if addr in calls:
             lines.append(f"        call far ptr {helper_names[helper_index]}")
             helper_index += 1
@@ -273,14 +273,14 @@ def convert(unit: dict, root: Path | None = None) -> dict:
                 if insn["raw"][:1] == b"\xeb":
                     lines.append(f"        jmp short {offset}")
                 else:
-                    lines.append(f"        jmp L{target:02X}")
+                    lines.append(f"        jmp lbl{target:02X}")
                 continue
             # MASM expands a backward conditional jump to `inverse; jmp`, and
             # mis-resolves some forward ones; `$` pins the rel8 the retail
             # image actually uses.
             if name == "jcxz" or name.startswith("loop"):
                 # `jcxz $+N` and `loop $+N` are rejected by the assembler.
-                lines.append(f"        {name} L{target:02X}")
+                lines.append(f"        {name} lbl{target:02X}")
             else:
                 lines.append(f"        {name} short {offset}")
             continue
@@ -293,7 +293,7 @@ def convert(unit: dict, root: Path | None = None) -> dict:
 
     for target in sorted(targets):
         if target >= len(body):
-            lines.append(f"L{target:02X}:")
+            lines.append(f"lbl{target:02X}:")
 
     note = ""
     if helper_index != len(calls):
