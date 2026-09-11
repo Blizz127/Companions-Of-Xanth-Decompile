@@ -3233,6 +3233,42 @@ change in the next attempt, and it is stated here rather than rediscovered.
 decode is recorded above, and the next step is a one-line change to the source
 rather than another decode.
 
+### exe_109269: single assignment fixed it, and the residue is a known non-CL encoding
+
+The one-line change recorded last round — assign `p` once from
+`g_tbl[i] + 40` and reuse it, rather than recomputing the expression after
+`sub_a` — takes the unit from **162 to 136 bytes** against retail's 138. That
+confirms the reading of the decode: the reload (`les bx,[bp-4]`) is CL
+spilling a single variable, not the source re-deriving the address.
+
+**The remaining 2 bytes include a signature this project documented at the
+start and has not seen since.** Retail's offset add is
+
+```
+retail  81 C3 28 00     add bx,28h      ; imm16, 4 bytes
+mine    83 C3 28        add bx,28h      ; imm8,  3 bytes
+```
+
+`0x28` fits in a signed byte, so CL always emits the three-byte `83 /n ib`
+form; retail uses the four-byte `81 /n iw` form. That is the **`81 /n iw`
+with an immediate below `0x80`** signature recorded in the earliest project
+notes as something CL does not produce, and it is the same pattern
+`tools/library_scan.py` searches for with its `CL_IMPOSSIBLE` table — which
+classified 81 of 1,135 complete functions as assembled rather than compiled.
+
+**That is a real connection and it is worth stating carefully.** It does not
+prove `exe_109269` is assembly: everything else in its 136 bytes reproduces
+from C, including three helper calls with cdecl ordering, a far-pointer local
+and the flag test. But it does mean this unit contains at least one encoding
+that this compiler cannot emit, which places it in the same category as the
+`CL_IMPOSSIBLE` set rather than in the ordinary near-match pile. One further
+byte is still unlocated.
+
+**Next step is already narrowed:** check whether `add bx,0x28` is the *only*
+such encoding in the unit by scanning its bytes against the `CL_IMPOSSIBLE`
+table, which is a one-command check and would settle whether the unit belongs
+with the 81 assembled functions.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
