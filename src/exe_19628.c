@@ -1,7 +1,9 @@
-
-int far exe_19628(void)
-{
-    _asm {
-        _emit 0x41
-    }
-}
+/*
+ * Data region, not an instruction stream: 1/1 bytes are printable ASCII.
+ * exe-code:0x4cac, 1 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0x41,
+};

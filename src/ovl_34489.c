@@ -4,80 +4,44 @@ void far helper_2(void);
 int far ovl_34489(void)
 {
     _asm {
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xB9
-        _emit 0x01
-        _emit 0x00
-        _emit 0x51
-        _emit 0xBA
-        _emit 0x91
-        _emit 0x00
-        _emit 0x52
+        xor ax,ax
+        push ax
+        mov cx,0x1
+        push cx
+        mov dx,0x91
+        push dx
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xB9
-        _emit 0x01
-        _emit 0x00
-        _emit 0x51
-        _emit 0xB9
-        _emit 0x92
-        _emit 0x00
-        _emit 0x51
+        add sp,0x6
+        xor ax,ax
+        push ax
+        mov cx,0x1
+        push cx
+        mov cx,0x92
+        push cx
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xB9
-        _emit 0x03
-        _emit 0x00
-        _emit 0x51
-        _emit 0xB9
-        _emit 0x26
-        _emit 0x80
-        _emit 0x51
+        add sp,0x6
+        xor ax,ax
+        push ax
+        mov cx,0x3
+        push cx
+        mov cx,0x8026
+        push cx
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x04
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x26
-        _emit 0x80
-        _emit 0x50
+        add sp,0x6
+        xor ax,ax
+        push ax
+        mov ax,0x4
+        push ax
+        mov ax,0x8026
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
-        _emit 0xB8
-        _emit 0x25
-        _emit 0x00
-        _emit 0x50
+        add sp,0x6
+        mov ax,0x25
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x19
-        _emit 0x00
-        _emit 0xBA
-        _emit 0x35
-        _emit 0xF0
-        _emit 0xCB
+        add sp,0x2
+        mov ax,0x19
+        mov dx,0xf035
+        retf
     }
 }

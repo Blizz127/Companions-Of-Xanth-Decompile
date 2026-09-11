@@ -2,15 +2,9 @@
 int far ovl_51503(void)
 {
     _asm {
-        _emit 0x32
-        _emit 0x6A
-        _emit 0x0A
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xBB
-        _emit 0x00
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xCB
+        xor ch,[bp+si+0xa]
+        push ds
+        xor bh,[bp+di+0x1e00]
+        xor cl,bl
     }
 }

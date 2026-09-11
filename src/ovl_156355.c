@@ -1,46 +1,26 @@
+extern char __near mb1132;
+extern int __near mnE432;
+extern char __near mb0132;
 
 int far ovl_156355(void)
 {
     _asm {
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x00
-        _emit 0x81
-        _emit 0x02
-        _emit 0x1E
-        _emit 0x32
-        _emit 0x5C
-        _emit 0x0A
-        _emit 0x1E
-        _emit 0x32
-        _emit 0x77
-        _emit 0x02
-        _emit 0x1E
-        _emit 0x32
-        _emit 0x0B
-        _emit 0x02
-        _emit 0x1E
-        _emit 0x32
-        _emit 0x11
-        _emit 0x01
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xE4
-        _emit 0x00
-        _emit 0x1E
-        _emit 0x32
-        _emit 0x01
-        _emit 0x06
-        _emit 0x1E
+        add [bx+si],al
+        add [bx+si],al
+        add [bx+si],al
+        add [bx+si],al
+        add [bx+si],al
+        add [bx+si],al
+        add [bx+di+0x1e02],al
+        xor bl,[si+0xa]
+        push ds
+        xor dh,[bx+0x2]
+        push ds
+        xor cl,[bp+di]
+        add bl,mb1132
+        add mnE432,bx
+        add mb0132,bl
+        push es
+        push ds
     }
 }

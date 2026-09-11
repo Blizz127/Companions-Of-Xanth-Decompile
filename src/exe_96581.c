@@ -1,66 +1,33 @@
+extern int __near mn4DA8;
+extern int __near mn4DA6;
+extern int __near mn4DAC;
+extern int __near mn4DAA;
 void far helper_0(void);
 void far helper_1(void);
 int far exe_96581(void)
 {
     _asm {
-        _emit 0xFF
-        _emit 0x36
-        _emit 0xA8
-        _emit 0x4D
-        _emit 0xFF
-        _emit 0x36
-        _emit 0xA6
-        _emit 0x4D
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x36
-        _emit 0xAC
-        _emit 0x4D
-        _emit 0xFF
-        _emit 0x36
-        _emit 0xAA
-        _emit 0x4D
+        push word ptr mn4DA8
+        push word ptr mn4DA6
+        xor ax,ax
+        push ax
+        push word ptr mn4DAC
+        push word ptr mn4DAA
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x0A
-        _emit 0xA1
-        _emit 0xAC
-        _emit 0x4D
-        _emit 0x0B
-        _emit 0x06
-        _emit 0xAA
-        _emit 0x4D
-        _emit 0x74
-        _emit 0x10
-        _emit 0xFF
-        _emit 0x36
-        _emit 0xAC
-        _emit 0x4D
-        _emit 0xFF
-        _emit 0x36
-        _emit 0xAA
-        _emit 0x4D
+        add sp,0xa
+        mov ax,mn4DAC
+        or ax,mn4DAA
+        jz short $+18
+        push word ptr mn4DAC
+        push word ptr mn4DAA
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x2B
-        _emit 0xC0
-        _emit 0xA3
-        _emit 0xAC
-        _emit 0x4D
-        _emit 0xA3
-        _emit 0xAA
-        _emit 0x4D
-        _emit 0xA3
-        _emit 0xA8
-        _emit 0x4D
-        _emit 0xA3
-        _emit 0xA6
-        _emit 0x4D
-        _emit 0xCB
+        add sp,0x4
+L34:
+        sub ax,ax
+        mov mn4DAC,ax
+        mov mn4DAA,ax
+        mov mn4DA8,ax
+        mov mn4DA6,ax
+        retf
     }
 }

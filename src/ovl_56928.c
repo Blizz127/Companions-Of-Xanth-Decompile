@@ -1,42 +1,27 @@
+extern char __near mb6E5C;
 void far helper_0(void);
 void far helper_1(void);
 int far ovl_56928(void)
 {
     _asm {
-        _emit 0x80
-        _emit 0x3E
-        _emit 0x5C
-        _emit 0x6E
-        _emit 0x00
-        _emit 0x74
-        _emit 0x11
-        _emit 0xA0
-        _emit 0x5C
-        _emit 0x6E
-        _emit 0x2A
-        _emit 0xE4
-        _emit 0x50
+        cmp byte ptr mb6E5C,0x0
+        jz short $+19
+        mov al,mb6E5C
+        sub ah,ah
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xEB
-        _emit 0x10
-        _emit 0x90
-        _emit 0x33
-        _emit 0xC0
-        _emit 0xBA
-        _emit 0x29
-        _emit 0xF0
-        _emit 0x52
-        _emit 0x50
+        add sp,0x2
+        jmp short $+18
+        nop
+L18:
+        xor ax,ax
+        mov dx,0xf029
+        push dx
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xCB
+        add sp,0x4
+L27:
+        mov ax,0x1
+        retf
     }
 }

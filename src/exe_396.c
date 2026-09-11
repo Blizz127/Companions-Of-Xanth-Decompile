@@ -1,74 +1,41 @@
+extern int __near mn0006;
+extern int __near mn0008;
+extern int __near mn000A;
+extern char __near mb0018;
+extern int __near mn0010;
+extern int __near mn000C;
+extern int __near mn000E;
 void far helper_0(void);
 int far exe_396(void)
 {
     _asm {
-        _emit 0x50
-        _emit 0x52
-        _emit 0x33
-        _emit 0xC0
+        push ax
+        push dx
+        xor ax,ax
         call far ptr helper_0
-        _emit 0x2E
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x06
-        _emit 0x00
-        _emit 0x01
-        _emit 0x00
-        _emit 0x2E
-        _emit 0xA3
-        _emit 0x08
-        _emit 0x00
-        _emit 0x2E
-        _emit 0xA3
-        _emit 0x0A
-        _emit 0x00
-        _emit 0x2E
-        _emit 0xC6
-        _emit 0x06
-        _emit 0x18
-        _emit 0x00
-        _emit 0x00
-        _emit 0x8C
-        _emit 0xD8
-        _emit 0x2E
-        _emit 0xA3
-        _emit 0x10
-        _emit 0x00
-        _emit 0x06
-        _emit 0xB4
-        _emit 0x35
-        _emit 0xB0
-        _emit 0x08
-        _emit 0xCD
-        _emit 0x21
-        _emit 0x2E
-        _emit 0x89
-        _emit 0x1E
-        _emit 0x0C
-        _emit 0x00
-        _emit 0x2E
-        _emit 0x8C
-        _emit 0x06
-        _emit 0x0E
-        _emit 0x00
-        _emit 0x07
-        _emit 0x1E
-        _emit 0xB4
-        _emit 0x25
-        _emit 0xB0
-        _emit 0x08
-        _emit 0xBA
-        _emit 0xC8
-        _emit 0x00
-        _emit 0x8C
-        _emit 0xCB
-        _emit 0x8E
-        _emit 0xDB
-        _emit 0xCD
-        _emit 0x21
-        _emit 0x1F
-        _emit 0x5A
-        _emit 0x58
-        _emit 0xCB
+        mov word ptr cs:mn0006,0x1
+        mov cs:mn0008,ax
+        mov cs:mn000A,ax
+        mov byte ptr cs:mb0018,0x0
+        mov ax,ds
+        mov cs:mn0010,ax
+        push es
+        mov ah,0x35
+        mov al,0x8
+        int 0x21
+        mov cs:mn000C,bx
+        mov word ptr cs:mn000E,es
+        pop es
+        push ds
+        mov ah,0x25
+        mov al,0x8
+        mov dx,0xc8
+        mov bx,cs
+        mov ds,bx
+        int 0x21
+        pop ds
+        pop dx
+        pop ax
+        retf
     }
 }

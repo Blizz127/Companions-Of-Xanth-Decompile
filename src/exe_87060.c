@@ -1,21 +1,17 @@
+extern int __near mn634C;
 
 int far exe_87060(void)
 {
     _asm {
-        _emit 0x8B
-        _emit 0x16
-        _emit 0x4C
-        _emit 0x63
-        _emit 0xEC
-        _emit 0xA8
-        _emit 0x08
-        _emit 0x75
-        _emit 0xF7
-        _emit 0xEC
-        _emit 0xA8
-        _emit 0x08
-        _emit 0x74
-        _emit 0xFB
-        _emit 0xCB
+L00:
+        mov dx,mn634C
+        in al,dx
+        test al,0x8
+        jnz short $-7
+L09:
+        in al,dx
+        test al,0x8
+        jz short $-3
+        retf
     }
 }

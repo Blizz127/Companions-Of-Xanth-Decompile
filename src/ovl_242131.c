@@ -6,79 +6,44 @@ void far helper_4(void);
 int far ovl_242131(void)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x0D
-        _emit 0x00
-        _emit 0x50
+        mov ax,0xd
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x00
-        _emit 0x5B
-        _emit 0x50
+        add sp,0x2
+        mov ax,0x5b00
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x19
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x5B
-        _emit 0x50
-        _emit 0xB8
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0x50
+        add sp,0x2
+        mov ax,0x19
+        push ax
+        mov ax,0x5b01
+        push ax
+        mov ax,0xffff
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
+        add sp,0x6
         call far ptr helper_3
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0x2C
-        _emit 0xB8
-        _emit 0x0A
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0xA4
-        _emit 0x03
-        _emit 0xB9
-        _emit 0x8E
-        _emit 0x32
-        _emit 0x51
-        _emit 0x50
+        or ax,ax
+        jnz short $+46
+        mov ax,0xa
+        push ax
+        mov ax,0x3a4
+        mov cx,0x328e
+        push cx
+        push ax
         call far ptr helper_4
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0x14
-        _emit 0xB8
-        _emit 0x3B
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x1A
-        _emit 0x5B
-        _emit 0x50
-        _emit 0xB8
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0x50
+        add sp,0x6
+        or ax,ax
+        jnz short $+22
+        mov ax,0x3b
+        push ax
+        mov ax,0x5b1a
+        push ax
+        mov ax,0xffff
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
-        _emit 0xCB
+        add sp,0x6
+L61:
+        retf
     }
 }

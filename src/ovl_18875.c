@@ -1,39 +1,24 @@
+extern char __near mb6D28;
+extern int __near mn5D98;
+extern int __near mn5D9A;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
 int far ovl_18875(void)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
+        mov ax,0x1
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
+        add sp,0x2
         call far ptr helper_1
-        _emit 0x52
-        _emit 0x50
+        push dx
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xC6
-        _emit 0x06
-        _emit 0x28
-        _emit 0x6D
-        _emit 0x00
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x98
-        _emit 0x5D
-        _emit 0x28
-        _emit 0x6D
-        _emit 0x8C
-        _emit 0x1E
-        _emit 0x9A
-        _emit 0x5D
-        _emit 0xCB
+        add sp,0x4
+        mov byte ptr mb6D28,0x0
+        mov word ptr mn5D98,0x6d28
+        mov word ptr mn5D9A,ds
+        retf
     }
 }

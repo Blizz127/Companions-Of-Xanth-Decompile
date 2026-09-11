@@ -1,24 +1,10 @@
-
-int near exe_178155(void)
-{
-    _asm {
-        _emit 0xFF
-        _emit 0xBA
-        _emit 0x02
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0xBB
-        _emit 0x02
-        _emit 0x6E
-        _emit 0x80
-        _emit 0xC1
-        _emit 0x02
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0xC2
-        _emit 0x02
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0xC3
-    }
-}
+/*
+ * Data region, not an instruction stream: 4 0x02 bytes at a constant 4-byte stride.
+ * exe-code:0x2b7eb, 18 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0xFF, 0xBA, 0x02, 0xFF, 0xFF, 0xBB, 0x02, 0x6E, 0x80, 0xC1, 0x02, 0xFF,
+    0xFF, 0xC2, 0x02, 0xFF, 0xFF, 0xC3,
+};

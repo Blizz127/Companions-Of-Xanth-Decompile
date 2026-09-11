@@ -1,16 +1,11 @@
+extern char __near mbCB32;
 
 int far ovl_51419(void)
 {
     _asm {
-        _emit 0x32
-        _emit 0x74
-        _emit 0x0B
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xD3
-        _emit 0x0A
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xCB
+        xor dh,[si+0xb]
+        push ds
+        xor dl,bl
+        or bl,mbCB32
     }
 }

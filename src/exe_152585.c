@@ -1,26 +1,10 @@
-
-int far exe_152585(void)
-{
-    _asm {
-        _emit 0x23
-        _emit 0xC1
-        _emit 0x1D
-        _emit 0xB9
-        _emit 0x23
-        _emit 0xC1
-        _emit 0x1D
-        _emit 0x17
-        _emit 0x2F
-        _emit 0xC1
-        _emit 0x1D
-        _emit 0x0D
-        _emit 0x2F
-        _emit 0xC1
-        _emit 0x1D
-        _emit 0x03
-        _emit 0x2F
-        _emit 0xC1
-        _emit 0x1D
-        _emit 0xF9
-    }
-}
+/*
+ * Data region, not an instruction stream: 5 0x1d bytes at a constant 4-byte stride.
+ * exe-code:0x25409, 20 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0x23, 0xC1, 0x1D, 0xB9, 0x23, 0xC1, 0x1D, 0x17, 0x2F, 0xC1, 0x1D, 0x0D,
+    0x2F, 0xC1, 0x1D, 0x03, 0x2F, 0xC1, 0x1D, 0xF9,
+};

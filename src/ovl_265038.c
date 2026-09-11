@@ -1,3 +1,6 @@
+extern char __near mb1D00;
+extern int __near mn02A8;
+extern char __near mb0783;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -7,70 +10,37 @@ void far helper_5(void);
 int far ovl_265038(void)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x0B
-        _emit 0x00
-        _emit 0x50
+        mov ax,0xb
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x88
-        _emit 0x13
-        _emit 0x50
+        add sp,0x2
+        mov ax,0x1388
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xC6
-        _emit 0x06
-        _emit 0x00
-        _emit 0x1D
-        _emit 0x00
-        _emit 0xB8
-        _emit 0x19
-        _emit 0x0E
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x5F
-        _emit 0x03
-        _emit 0x50
+        add sp,0x2
+        mov byte ptr mb1D00,0x0
+        mov ax,0xe19
+        push ax
+        mov ax,0x35f
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
+        add sp,0x4
         call far ptr helper_3
-        _emit 0x83
-        _emit 0x3E
-        _emit 0xA8
-        _emit 0x02
-        _emit 0x16
-        _emit 0x75
-        _emit 0x11
-        _emit 0xC6
-        _emit 0x06
-        _emit 0x83
-        _emit 0x07
-        _emit 0x01
-        _emit 0xB8
-        _emit 0x5A
-        _emit 0x00
-        _emit 0x50
+        cmp word ptr mn02A8,0x16
+        jnz short $+19
+        mov byte ptr mb0783,0x1
+        mov ax,0x5a
+        push ax
         call far ptr helper_4
-        _emit 0xEB
-        _emit 0x0A
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x10
-        _emit 0x00
-        _emit 0x50
+        jmp short $+12
+        nop
+L4A:
+        mov ax,0x10
+        push ax
         call far ptr helper_5
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x33
-        _emit 0xC0
-        _emit 0xCB
+L53:
+        add sp,0x2
+        xor ax,ax
+        retf
     }
 }

@@ -1,8 +1,9 @@
-
-int near exe_3820(void)
-{
-    _asm {
-        _emit 0xF8
-        _emit 0xC3
-    }
-}
+/*
+ * Data region, not an instruction stream: only 2 distinct byte values.
+ * exe-code:0xeec, 2 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0xF8, 0xC3,
+};

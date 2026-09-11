@@ -1,63 +1,36 @@
+extern char __near mb18A3;
+extern char __near mb18A2;
+extern int __near mn0286;
+extern int __near mn0284;
+extern int __near mn028A;
+extern int __near mn0288;
 void far helper_0(void);
 void far helper_1(void);
 int far ovl_26572(void)
 {
     _asm {
-        _emit 0x80
-        _emit 0x3E
-        _emit 0xA3
-        _emit 0x18
-        _emit 0x00
-        _emit 0x74
-        _emit 0x13
-        _emit 0x80
-        _emit 0x3E
-        _emit 0xA2
-        _emit 0x18
-        _emit 0x00
-        _emit 0x74
-        _emit 0x0C
-        _emit 0xB8
-        _emit 0x03
-        _emit 0x00
-        _emit 0x50
+        cmp byte ptr mb18A3,0x0
+        jz short $+21
+        cmp byte ptr mb18A2,0x0
+        jz short $+14
+        mov ax,0x3
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x80
-        _emit 0x3E
-        _emit 0xA2
-        _emit 0x18
-        _emit 0x00
-        _emit 0x74
-        _emit 0x0B
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x86
-        _emit 0x02
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x84
-        _emit 0x02
-        _emit 0xEB
-        _emit 0x09
-        _emit 0x90
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x8A
-        _emit 0x02
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x88
-        _emit 0x02
+        add sp,0x2
+L1A:
+        cmp byte ptr mb18A2,0x0
+        jz short $+13
+        push word ptr mn0286
+        push word ptr mn0284
+        jmp short $+11
+        nop
+L2C:
+        push word ptr mn028A
+        push word ptr mn0288
+L34:
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0xCB
+        add sp,0x4
+        mov ax,0xffff
+        retf
     }
 }

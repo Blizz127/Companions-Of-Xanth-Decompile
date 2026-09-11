@@ -2,15 +2,9 @@
 int near ovl_257175(void)
 {
     _asm {
-        _emit 0x32
-        _emit 0x80
-        _emit 0x05
-        _emit 0x1E
-        _emit 0x32
-        _emit 0x4A
-        _emit 0x03
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xC3
+        xor al,[bx+si+0x1e05]
+        xor cl,[bp+si+0x3]
+        push ds
+        xor al,bl
     }
 }

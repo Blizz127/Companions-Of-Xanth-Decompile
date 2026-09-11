@@ -1,29 +1,19 @@
+extern char __near mb0324;
+extern char __near mb036E;
 
 int far ovl_72020(void)
 {
     _asm {
-        _emit 0x80
-        _emit 0x3E
-        _emit 0x24
-        _emit 0x03
-        _emit 0x00
-        _emit 0x74
-        _emit 0x0D
-        _emit 0x80
-        _emit 0x3E
-        _emit 0x6E
-        _emit 0x03
-        _emit 0x00
-        _emit 0x75
-        _emit 0x06
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x03
-        _emit 0x90
-        _emit 0x33
-        _emit 0xC0
-        _emit 0xCB
+        cmp byte ptr mb0324,0x0
+        jz short $+15
+        cmp byte ptr mb036E,0x0
+        jnz short $+8
+        mov ax,0x1
+        jmp short $+5
+        nop
+L14:
+        xor ax,ax
+L16:
+        retf
     }
 }

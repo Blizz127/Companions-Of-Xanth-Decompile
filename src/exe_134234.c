@@ -1,9 +1,9 @@
-
-int far exe_134234(void)
-{
-    _asm {
-        _emit 0x30
-        _emit 0x0D
-        _emit 0x00
-    }
-}
+/*
+ * Data region, not an instruction stream: 3/3 bytes are printable ASCII.
+ * exe-code:0x20c5a, 3 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0x30, 0x0D, 0x00,
+};

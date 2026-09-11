@@ -1,7 +1,9 @@
-
-int far ovl_188397(void)
-{
-    _asm {
-        _emit 0x90
-    }
-}
+/*
+ * Data region, not an instruction stream: only 1 distinct byte values.
+ * ovl-payload:0x2dfed, 1 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0x90,
+};

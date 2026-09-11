@@ -1,16 +1,11 @@
+extern char __near mbDD32;
+extern int __near mnCB32;
 
 int far ovl_256451(void)
 {
     _asm {
-        _emit 0x32
-        _emit 0x20
-        _emit 0x0A
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xDD
-        _emit 0x09
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xCB
+        xor ah,[bx+si]
+        or bl,mbDD32
+        or mnCB32,bx
     }
 }

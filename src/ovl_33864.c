@@ -1,74 +1,50 @@
+extern int __near mn02AC;
+extern int __near mn1B3A;
+extern int __near mn1B3C;
+extern int __near mn1B3E;
+extern int __near mn1B40;
+extern int __near mn1B42;
+extern int __near mn1B44;
 
 int far ovl_33864(void)
 {
     _asm {
-        _emit 0xA1
-        _emit 0xAC
-        _emit 0x02
-        _emit 0x3D
-        _emit 0x15
-        _emit 0x00
-        _emit 0x74
-        _emit 0x36
-        _emit 0x77
-        _emit 0x10
-        _emit 0xFE
-        _emit 0xC8
-        _emit 0x74
-        _emit 0x12
-        _emit 0x2C
-        _emit 0x05
-        _emit 0x74
-        _emit 0x0E
-        _emit 0x2C
-        _emit 0x05
-        _emit 0x74
-        _emit 0x14
-        _emit 0x2C
-        _emit 0x05
-        _emit 0x74
-        _emit 0x1A
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x99
-        _emit 0xEB
-        _emit 0x24
-        _emit 0x90
-        _emit 0xA1
-        _emit 0x3A
-        _emit 0x1B
-        _emit 0x8B
-        _emit 0x16
-        _emit 0x3C
-        _emit 0x1B
-        _emit 0xEB
-        _emit 0x1A
-        _emit 0x90
-        _emit 0xA1
-        _emit 0x3E
-        _emit 0x1B
-        _emit 0x8B
-        _emit 0x16
-        _emit 0x40
-        _emit 0x1B
-        _emit 0xEB
-        _emit 0x10
-        _emit 0x90
-        _emit 0xA1
-        _emit 0x42
-        _emit 0x1B
-        _emit 0x8B
-        _emit 0x16
-        _emit 0x44
-        _emit 0x1B
-        _emit 0xEB
-        _emit 0x06
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x46
-        _emit 0x1B
-        _emit 0x8C
-        _emit 0xDA
-        _emit 0xCB
+        mov ax,mn02AC
+        cmp ax,0x15
+        jz short $+56
+        ja short $+18
+        dec al
+        jz short $+20
+        sub al,0x5
+        jz short $+16
+        sub al,0x5
+        jz short $+22
+        sub al,0x5
+        jz short $+28
+L1A:
+        xor ax,ax
+        cwd
+        jmp short $+38
+        nop
+L20:
+        mov ax,mn1B3A
+        mov dx,mn1B3C
+        jmp short $+28
+        nop
+L2A:
+        mov ax,mn1B3E
+        mov dx,mn1B40
+        jmp short $+18
+        nop
+L34:
+        mov ax,mn1B42
+        mov dx,mn1B44
+        jmp short $+8
+        nop
+L3E:
+        mov ax,0x1b46
+        mov dx,ds
+L43:
+        retf
     }
 }

@@ -1,25 +1,10 @@
-
-int far ovl_1568(void)
-{
-    _asm {
-        _emit 0xFD
-        _emit 0x07
-        _emit 0xCB
-        _emit 0x30
-        _emit 0x17
-        _emit 0x02
-        _emit 0xCB
-        _emit 0x30
-        _emit 0xE3
-        _emit 0x06
-        _emit 0xCB
-        _emit 0x30
-        _emit 0x4D
-        _emit 0x04
-        _emit 0xCB
-        _emit 0x30
-        _emit 0xE1
-        _emit 0x07
-        _emit 0xCB
-    }
-}
+/*
+ * Data region, not an instruction stream: 4 0x30 bytes at a constant 4-byte stride.
+ * ovl-payload:0x620, 19 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0xFD, 0x07, 0xCB, 0x30, 0x17, 0x02, 0xCB, 0x30, 0xE3, 0x06, 0xCB, 0x30,
+    0x4D, 0x04, 0xCB, 0x30, 0xE1, 0x07, 0xCB,
+};

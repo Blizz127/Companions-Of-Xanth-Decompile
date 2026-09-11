@@ -1,3 +1,4 @@
+extern int __near mn3380;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -5,46 +6,25 @@ void far helper_3(void);
 int far ovl_241448(void)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x60
-        _emit 0x00
-        _emit 0xB9
-        _emit 0x8E
-        _emit 0x32
-        _emit 0x51
-        _emit 0x50
+        mov ax,0x60
+        mov cx,0x328e
+        push cx
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x60
-        _emit 0x00
-        _emit 0xB9
-        _emit 0x8E
-        _emit 0x32
-        _emit 0x51
-        _emit 0x50
+        add sp,0x4
+        mov ax,0x60
+        mov cx,0x328e
+        push cx
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x80
-        _emit 0x33
+        add sp,0x4
+        push word ptr mn3380
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0x50
+        add sp,0x2
+        mov ax,0xffff
+        push ax
         call far ptr helper_3
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xCB
+        add sp,0x2
+        retf
     }
 }

@@ -1,16 +1,11 @@
+extern char __near mbDC32;
+extern char __near mbC332;
 
 int near ovl_244583(void)
 {
     _asm {
-        _emit 0x32
-        _emit 0xEE
-        _emit 0x0A
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xDC
-        _emit 0x0A
-        _emit 0x1E
-        _emit 0x32
-        _emit 0xC3
+        xor ch,dh
+        or bl,mbDC32
+        or bl,mbC332
     }
 }

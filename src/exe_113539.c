@@ -14,23 +14,15 @@ int far exe_113539(void)
         call far ptr helper_2
         call far ptr helper_3
         call far ptr helper_4
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
+        mov ax,0x1
+        push ax
         call far ptr helper_5
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
+        add sp,0x2
         call far ptr helper_6
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
+        mov ax,0x1
+        push ax
         call far ptr helper_7
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xCB
+        add sp,0x2
+        retf
     }
 }

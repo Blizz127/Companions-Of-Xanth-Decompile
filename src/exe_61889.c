@@ -1,21 +1,15 @@
+extern int __near mn07E4;
 
 int far exe_61889(void)
 {
     _asm {
-        _emit 0x83
-        _emit 0x3E
-        _emit 0xE4
-        _emit 0x07
-        _emit 0x01
-        _emit 0x75
-        _emit 0x05
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x02
-        _emit 0x33
-        _emit 0xC0
-        _emit 0xCB
+        cmp word ptr mn07E4,0x1
+        jnz short $+7
+        mov ax,0x1
+        jmp short $+4
+L0C:
+        xor ax,ax
+L0E:
+        retf
     }
 }
