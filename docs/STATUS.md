@@ -14,15 +14,15 @@ the numbers that are locked.
 
 | Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
 |---|---|---|---|---|---|---|
-| `exe-code` | 191,656 | 1,253 | 108 | 261 | 353 | 47.07% (90,215 B) |
+| `exe-code` | 191,656 | 1,253 | 108 | 262 | 352 | 47.07% (90,215 B) |
 | `ovl-payload` | 325,595 | 1,591 | 334 | 648 | 225 | 34.74% (113,120 B) |
 
 | Source kind | units |
 |---|---|
 | unaided C (no `_asm`) | 442 |
-| mnemonic `_asm` | 909 |
+| mnemonic `_asm` | 910 |
 | transcribed data (`char` array) | 915 |
-| `_emit` dump | 578 |
+| `_emit` dump | 577 |
 
 Dump-unit shapes (C/asm units are `unknown` because they have no extent
 without `--compile`):
@@ -114,7 +114,7 @@ is longer than retail, mostly mid-function slices that start mid-instruction).
 ### Session 2026-09-11 (third pass) — the fragments are finished
 
 The remaining 504 fragment dumps were transcribed as data arrays, taking the
-dump population from 1,082 to **578** (`exe-code` dump coverage 81.27% →
+dump population from 1,082 to **577** (`exe-code` dump coverage 81.27% →
 47.07%, overlay 53.64% → 34.74%). Two groups:
 
 - 372 with positive data evidence (the classifier above).
@@ -134,9 +134,9 @@ After this pass every remaining dump is code: 560 framed complete functions,
 `81 EC imm16` frame class. There is no fragment left, and nothing left whose
 bytes are data rather than an instruction stream.
 
-### Session 2026-09-11 (fourth pass) — the last 578 are blocked on the assembler
+### Session 2026-09-11 (fourth pass) — the last units are blocked on the assembler
 
-The remaining 578 dumps are all code, and none of them can be spelled as
+The remaining 577 dumps are all code, and none of them can be spelled as
 mnemonics by the pinned toolchain. Four controlled experiments
 (`tools/cl_probe.py`, `nasm`, `as`, `llvm-mc`) bracket the reason:
 
@@ -153,20 +153,20 @@ mnemonics by the pinned toolchain. Four controlled experiments
    result appears with the register spelled `SI`/`Si`, and splitting the
    block or interleaving `_asm` statements does not move the wrapper. `EQU`
    is rejected inside `_asm` (`C2400`), so the register cannot be aliased to
-   hide it. 477 of the 578 units push SI/DI.
+   hide it. 477 of the 577 units push SI/DI.
 3. **A real assembler cannot reproduce the retail encodings either.** NASM
    *can* do the frame (`sub sp, strict word 2` → `81 EC 02 00`, and `-O0`
    does it without `strict`), and adds no SI/DI wrapper — but it encodes
    `mov bp,sp` as `89 E5`, while retail uses `8B EC`; GNU `as` and `llvm-mc`
-   agree with NASM. 561 of the 578 units contain `8B EC`/`8B E5`.
+   agree with NASM. 561 of the 577 units contain `8B EC`/`8B E5`.
 4. Therefore no assembler on this machine produces this encoding profile.
    MASM's preference is the `8B` form for register-to-register `mov` and
    (in the 5.x generation) the `81` form for `sub sp,small`; that profile is
    what the retail bytes show, which points at MASM 5.x, not at the pinned
   CL 1.52. `tools/gen_nasm.py` is the probe built for this: it emits a NASM
    listing with `strict`/`near`/`short` spellings and accepts a unit only
-   when NASM reproduces the bytes with no `db` fallback. It converts 1 of the
-   578.
+   when NASM reproduces the bytes with no `db` fallback. It converts 0 of the
+   577.
 
 Two further negatives close the remaining obvious doors:
 
@@ -184,11 +184,14 @@ of the same era whose output was assembled by it. Neither is on this
 machine: `ML.EXE`, `MASM.EXE`, `TASM.EXE`, `JWASM` and `UASM` are all absent
 (searched `/var/home/blizz`, `/usr`, `/opt`).
 
-Re-running the current converter over the 578 confirms the ceiling: **1 of
-563 complete functions** is still spellable as inline asm; the other 562 need
-something the pinned toolchain does not have.
+Re-running the current converter over the 577 confirms the ceiling: **none**
+of the 563 function-shaped units is spellable as inline asm any more (one
+did convert, `exe_87075`, whose body carried the SI/DI push in the compiler's
+own order); the rest need something the pinned toolchain does not have.
 
-The three ways out, in the order that preserves the project's intent:
+One unit in this class did convert this pass (`exe_87075`, whose body carries the
+SI/DI push in the compiler's own order), taking the population to 577. The three
+ways out for the rest, in the order that preserves the project's intent:
 
 1. Supply the original assembler (MASM 5.x `ML.EXE`, or whatever produced the
    `81 EC` + `8B EC` + source-order `push si/push di` profile). Then these
@@ -262,7 +265,7 @@ once, write once, compile. Do not grind 1–3 byte residues.
 
 ### Next
 
-Everything left is code: 578 dump units, all complete functions or framed
+Everything left is code: 577 dump units, all complete functions or framed
 bodies.
 
 1. The 563 dump *functions* need the C behind their `81 EC imm16` frame and
@@ -278,7 +281,7 @@ bodies.
 
 - Fast suite `tests/test_units.py` carries the ratchets.
 - Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
-  (578 dump units) and `image_source == "cl-link"`.
+  (577 dump units) and `image_source == "cl-link"`.
 - `python3 tools/verify.py` is green: `BINARY-MATCH` for both images.
 
 ---
