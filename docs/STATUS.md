@@ -2297,6 +2297,40 @@ retail by adding a placeholder is not the same artefact as one that
 reproduces it because the types and layout are right, and the first would
 have to be thrown away later.
 
+### exe_111158: the fourth local is allocated and never referenced
+
+The `bp-18h` slot was checked exhaustively rather than from memory. Every
+`bp`-relative operand in the full 142-byte decode is:
+
+```
+[bp-0x10]  [bp-0x12]        inside s, which starts at bp-14h
+[bp-0x14]                   lea di - the struct destination
+[bp-0x16]                   bit, written 1 and compared against 200h
+[bp-0x1a]                   the pointer, set to 4FCEh and += 14h
+[bp+0x6]                    the argument
+```
+
+**Zero references to `bp-18h`.** So retail allocates 26 bytes of frame and
+uses 24 of them; the fourth local is a 2-byte slot that is written nowhere
+and read nowhere in the function.
+
+This is the third unit in the session with that signature — `exe_112795` and
+`exe_112711` both had a slot `CL` allocated for a local it kept in registers.
+The difference here is that all three *used* locals are already accounted for
+(`s`, `bit`, `p`), so this slot belongs to a fourth declaration whose uses
+the optimizer removed entirely. A declared-but-eliminated variable is a
+normal thing to find in original source and it leaves exactly this trace: a
+frame byte that nothing touches.
+
+**Where that leaves the unit:** 140 of 142 bytes, with the two missing bytes
+identified as *the frame slot of an unused local* rather than as missing
+instructions. Everything the function does is reproduced. To close it the
+source needs a fourth 2-byte declaration whose value is computed and never
+used — for example a pointer or index that is assigned once and then
+superseded. That is a specific, testable thing to add, and adding it is not
+fitting the bytes: it is naming a declaration the frame already proves
+existed.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
