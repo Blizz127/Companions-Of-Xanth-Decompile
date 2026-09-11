@@ -2,15 +2,15 @@ void far helper(void);
 void far exe_83832(void)
 {
     _asm {
-        sub sp, 4
-        mov word ptr [bp-4], 630Ch
+        sub sp,0x4
+        mov word ptr [bp-0x4],0x630c
+L08:
         push ds
-        push word ptr [bp-4]
+        push word ptr [bp-0x4]
         call far ptr helper
-        add sp, 4
-        add word ptr [bp-4], 1Ah
-        cmp word ptr [bp-4], 6340h
-        _emit 0x72
-        _emit 0xE9
+        add sp,0x4
+        add word ptr [bp-0x4],0x1a
+        cmp word ptr [bp-0x4],0x6340
+        jc short $+-21
     }
 }

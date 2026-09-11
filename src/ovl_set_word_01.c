@@ -1,20 +1,20 @@
+extern int __near mn02A8;
 int g;
 void far set_word_01(void)
 {
     _asm {
-        mov ax, word ptr [bp+8]
-        or ax, ax
-        _emit 0x74
-        _emit 0x06
+        mov ax,[bp+0x8]
+        or ax,ax
+        jz short $+8
         dec ax
-        _emit 0x74
-        _emit 0x0B
-        _emit 0xEB
-        _emit 0x0F
-        _emit 0x90
-        mov word ptr g, 5
-        _emit 0xEB
-        _emit 0x06
-        mov word ptr g, 6
+        jz short $+13
+        jmp short $+17
+        nop
+L0D:
+        mov word ptr mn02A8,0x5
+        jmp short $+8
+L15:
+        mov word ptr mn02A8,0x6
+L1B:
     }
 }

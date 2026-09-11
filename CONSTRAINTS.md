@@ -9,6 +9,11 @@ This project's bar lives here so a later session can diff it. Tightening it is
 quiet; loosening it is loud. **This file is not weakened to make a change
 pass.**
 
+Last movement: 2026-09-11 converted 44 mixed mnemonic/`_emit` units to pure
+mnemonic `_asm` (see `docs/STATUS.md`), and repaired six registered units that
+referenced undeclared far helpers and so could not compile at all. The whole
+image rebuild under `tools/verify.py` is BINARY-MATCH again.
+
 ## Floor (always enforced)
 
 - No raw `_emit` byte dumps in `src/**`. A byte transcript is not recovered
@@ -43,7 +48,7 @@ on 2026-09-10 with the user's decision, on this evidence (`docs/STATUS.md`):
   (`int` 35, `in`/`out` 27, flag save/restore 18, …). The count is an upper
   bound because some string ops are compiler-producible.
 
-The bar is still strict in the direction that matters: 2,380 of 2,844 units
+The bar is still strict in the direction that matters: 2,334 of 2,844 units
 are byte dumps today, so the gate is red and stays red until they are real
 source. A notebook reconstruction that does not MATCH in `src/` is not a
 recovery.
@@ -71,10 +76,10 @@ improving direction.
 
 | Metric | Today | Direction | Checked by |
 |---|---|---|---|
-| `exe-code` `_emit` dump coverage | 97.8% | must not rise | `tests/test_units.py::test_emit_dump_coverage_does_not_increase` |
+| `exe-code` `_emit` dump coverage | 97.79% | must not rise | `tests/test_units.py::test_emit_dump_coverage_does_not_increase` |
 | `ovl-payload` `_emit` dump coverage | 96.69% | must not rise | same |
 | unaided-C unit count | 442 | must not fall | `tests/test_units.py::test_unaided_c_unit_count_does_not_fall` |
-| complete far functions still in dump form | 1,142 | must not rise | `tests/test_units.py::test_dump_function_count_does_not_increase` |
+| complete far functions still in dump form | 1,141 | must not rise | `tests/test_units.py::test_dump_function_count_does_not_increase` |
 
 How these numbers moved, so a later session can tell a recovery from a
 denominator change:
@@ -89,6 +94,14 @@ denominator change:
   `exe_112795`, `exe_112711` (190 bytes). `exe_2096` is mnemonic `_asm`
   and was already excluded from the 1,145 dump-function count. Overlay
   dump coverage did not move.
+- **2,380 → 2,334 dump units**, **22 → 68 mnemonic `_asm`**, **97.8% →
+  97.79% exe dump coverage**, dump bytes **187,446 → 187,426**,
+  **1,142 → 1,141 dump functions** are the 44 mixed units re-emitted as
+  mnemonics by `tools/gen_mnem.py`. This is a *classification* move, not a
+  byte recovery: those units already compiled to their retail slice, so the
+  small exe byte-coverage drop is 20 bytes of dump-extent bookkeeping that
+  moved from `emit-dump` to `mnemonic-asm` (unsized kinds report 0 bytes).
+  OVL dump coverage is unchanged at 314,821 bytes.
 
 A ratchet moving the *wrong* way is a finding, not a merge. If a change
 genuinely needs to move one, say so in the commit with the new number and why.
@@ -99,14 +112,14 @@ These are the work queue, not decoration. They are the only red gates.
 
 | Gate | Today | Blocked by |
 |---|---|---|
-| `test_recovered_sources_have_no_emit_byte_dumps` | 2,380 dump units | function recovery |
+| `test_recovered_sources_have_no_emit_byte_dumps` | 2,334 dump units | function recovery |
 | `test_each_c_unit_...::image_source == "cl-link"` | `listing-splice` | an EXE symbol/data map, then deleting the listing fallback |
 
 ## Exceptions
 
 | ID | Rule | Path | Reason | Owner | Expires |
 |---|---|---|---|---|---|
-| E1 | `_emit` floor | `src/**` | 2,380 units still to convert; tracked by the ratchet above | 2026-09-11 session | on completion |
+| E1 | `_emit` floor | `src/**` | 2,334 units still to convert; tracked by the ratchet above | 2026-09-11 session | on completion |
 
 ## Not a constraint here
 

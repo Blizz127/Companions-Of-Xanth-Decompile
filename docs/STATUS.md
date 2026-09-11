@@ -14,27 +14,71 @@ the numbers that are locked.
 
 | Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
 |---|---|---|---|---|---|---|
-| `exe-code` | 191,656 | 1,253 | 108 | 21 | 1,124 | 97.8% (187,446 B) |
-| `ovl-payload` | 325,595 | 1,591 | 334 | 1 | 1,256 | 96.69% (314,821 B) |
+| `exe-code` | 191,656 | 1,253 | 108 | 36 | 1,109 | 97.79% (187,426 B) |
+| `ovl-payload` | 325,595 | 1,591 | 334 | 32 | 1,225 | 96.69% (314,821 B) |
 
 | Source kind | units |
 |---|---|
 | unaided C (no `_asm`) | 442 |
-| mnemonic `_asm` | 22 |
-| `_emit` dump | 2,380 |
+| mnemonic `_asm` | 68 |
+| `_emit` dump | 2,334 |
 
 Dump-unit shapes (C/asm units are `unknown` because they have no extent
 without `--compile`):
 
 | Shape | count | meaning |
 |---|---|---|
-| `function` | 1,142 | framed dump that starts `55 8B EC` and ends in a return |
+| `function` | 1,141 | framed dump that starts `55 8B EC` and ends in a return |
 | `unframed-function` | 7 | no frame, ends in a return |
 | `fragment` | 1,171 | mid-function slice, thunk, or data |
-| `unknown` | 524 | 442 C + 22 mnemonic `_asm` + 60 mixed dumps |
+| `unknown` | 525 | 442 C + 68 mnemonic `_asm` + 15 mixed dumps |
 
 Rebuild is still `listing-splice` BINARY-MATCH for both images, not
-CL+LINK. `pc-port` does not exist.
+CL+LINK, and is verified end to end: `python3 tools/verify.py` reports
+`BINARY-MATCH` for `XANTH.EXE` and `XANTH.OVL` with all 2,844 units spliced.
+`pc-port` does not exist.
+
+### Session 2026-09-11 — mixed-unit mnemonic conversion and a compile repair
+
+`tools/gen_mnem.py` now re-emits a dump unit as mnemonic `_asm` and verifies
+the candidate with the real toolchain (`--verify` compiles it and byte-diffs
+against the retail slice; `--write-verified` lands only the clean ones). 44 of
+the 60 mixed units converted: **2,380 → 2,334 dump units**, **22 → 68
+mnemonic `_asm`**. This is a classification move, not a byte recovery — those
+units already spliced to their retail slice.
+
+Spellings the converter had to pin, each verified by controlled experiment
+(`tools/cl_probe.py`):
+
+- conditional jumps: `jcc short $+N`. MASM expands a *backward* conditional
+  jump into `inverse; jmp` and mis-resolves some forward ones; `$+N` is the
+  rel8 the retail image actually uses.
+- `jmp` rel8: `jmp short $+N`; `jmp` rel16: a named label, because MASM
+  shortens a jump whose distance it can resolve in pass 1.
+- a direct DS-relative operand with no base register (`[0x1234]`) is not
+  spellable: MASM rejects it, and `ds:[0x1234]` adds a `3E` prefix the retail
+  bytes do not have. It becomes a declared `extern <type> __near mnADDR;`
+  symbol, so CL emits an OMF fixup that `_relocate` overwrites with the retail
+  address. `extern` matters: a symbol defined in the TU has a known offset and
+  is encoded literally, which `_relocate` cannot rewrite.
+- a segment register load loses its size hint (`mov es, mnADDR`, not
+  `mov es, word ptr mnADDR`), and the override moves outside the brackets
+  (`es:[bx]`, not `[es:bx]`).
+- CL wraps an `_asm` block that writes SI/DI with its own `push si`/`pop si`;
+  `gen_mnem` strips that pair from the frame so it is not emitted twice.
+
+The 15 units that did not convert are the ones whose body begins with the
+compiler's own stack frame: `81 EC imm16` (`sub sp,N`). MASM only ever emits
+the `83 EC imm8` form, so those units cannot be recovered as `_asm`; they need
+the C that produced the frame.
+
+Also repaired: six registered units (`exe_25234`, `exe_26628`, `exe_30807`,
+`exe_31405`, `exe_35139`, `exe_100448`) used `call far ptr helper_N` with no
+declaration, which CL rejects with `C2429 illegal far label reference`. They
+could not compile at all, so the whole-corpus rebuild under `tools/verify.py`
+was failing before this session even though the ratchets were green. Adding
+`void far helper_N(void);` declarations changed no bytes and restored the
+rebuild gate.
 
 ### In the tree — `lift.py` MATCH
 
@@ -80,19 +124,23 @@ once, write once, compile. Do not grind 1–3 byte residues.
 
 ### Next
 
-1. Convert the 60 mixed `_asm` dumps (`shape=unknown`, `kind=dump`) so no
-   `_emit` remains there.
+1. The 15 remaining mixed units need the C behind their `81 EC imm16` frame
+   (MASM cannot spell it). Decode one, `lift.py`, then they stop being dumps.
 2. `python3 tools/coverage.py --list function` — smallest complete dump
-   functions; decode once, `lift.py`.
-3. Classify fragment units (RTLink / data vs code) so coverage separates
+   functions; decode once, `lift.py`. This is the bulk of the queue.
+3. Extend `tools/gen_mnem.py` to the 1,141 pure dump *functions* — the same
+   converter, fed from the `_emit` stream instead of a compile. Frames that
+   use `81 EC` will fail closed; the rest are mechanical.
+4. Classify fragment units (RTLink / data vs code) so coverage separates
    data from unlifted functions. Measurement; no compiler.
-4. Phase 3 (`image_source=cl-link`) after source recovery, not instead of it.
+5. Phase 3 (`image_source=cl-link`) after source recovery, not instead of it.
 
 ### Test status
 
 - Fast suite `tests/test_units.py` carries the ratchets.
 - Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
-  (2,380 dump units) and `image_source == "cl-link"`.
+  (2,334 dump units) and `image_source == "cl-link"`.
+- `python3 tools/verify.py` is green: `BINARY-MATCH` for both images.
 
 ---
 

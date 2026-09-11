@@ -1,32 +1,30 @@
+extern char __near mb030D;
 char g;
 void far helper_ne(void);
 void far if0_range_flag(int a, int b)
 {
     _asm {
-        mov ax, word ptr b
-        or ax, ax
-        _emit 0x74
-        _emit 0x0B
+        mov ax,[bp+0x8]
+        or ax,ax
+        jz short $+13
         dec ax
-        _emit 0x74
-        _emit 0x1B
+        jz short $+29
         dec ax
-        _emit 0x7C
-        _emit 0x1D
-        _emit 0x70
-        _emit 0x1B
+        jl short $+31
+        jo short $+29
         dec ax
-        _emit 0x7F
-        _emit 0x18
-        xor ax, ax
+        jg short $+26
+L12:
+        xor ax,ax
         push ax
-        push word ptr b
-        push word ptr a
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_ne
-        mov sp, bp
-        _emit 0xEB
-        _emit 0x06
-        _emit 0x90
-        mov byte ptr g, 1
+        mov sp,bp
+        jmp short $+8
+        nop
+L25:
+        mov byte ptr mb030D,0x1
+L2A:
     }
 }

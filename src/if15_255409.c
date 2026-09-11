@@ -3,28 +3,27 @@ void far helper2(void);
 int far if15_255409(int a)
 {
     _asm {
-        cmp word ptr a, 15
-        _emit 0x75
-        _emit 0x27
-        mov ax, 11h
+        cmp word ptr [bp+0x6],0xf
+        jnz short $+41
+        mov ax,0x11
         push ax
-        mov ax, 127h
+        mov ax,0x127
         push ax
         call far ptr helper
-        mov sp, bp
-        or ax, ax
-        _emit 0x75
-        _emit 0x14
-        mov ax, 5A03h
+        mov sp,bp
+        or ax,ax
+        jnz short $+22
+        mov ax,0x5a03
         push ax
-        mov ax, 16Fh
+        mov ax,0x16f
         push ax
         call far ptr helper2
-        mov sp, bp
-        xor ax, ax
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        mov ax, 139h
+        mov sp,bp
+        xor ax,ax
+        jmp short $+6
+        nop
+L2D:
+        mov ax,0x139
+L30:
     }
 }

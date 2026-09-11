@@ -1,3 +1,6 @@
+extern int __near mn02A4;
+extern char __near mb278A;
+extern char __near mb278B;
 int g;
 char g0;
 char g1;
@@ -5,41 +8,40 @@ void far helper_mkfp(void);
 int far if15_131563(int a)
 {
     _asm {
-        sub sp, 4
-        cmp word ptr a, 15
-        _emit 0x75
-        _emit 0x34
-        cmp word ptr g, 1
-        _emit 0x76
-        _emit 0x07
-        mov ax, 2796h
-        mov dx, ds
-        _emit 0xEB
-        _emit 0x03
-        xor ax, ax
+        sub sp,0x4
+        cmp word ptr [bp+0x6],0xf
+        jnz short $+54
+        cmp word ptr mn02A4,0x1
+        jna short $+9
+        mov ax,0x2796
+        mov dx,ds
+        jmp short $+5
+L17:
+        xor ax,ax
         cwd
-        mov word ptr [bp-4], ax
-        mov word ptr [bp-2], dx
+L1A:
+        mov [bp-0x4],ax
+        mov [bp-0x2],dx
         push dx
         push ax
-        mov ax, 0Dh
-        mov dx, 0F00Fh
+        mov ax,0xd
+        mov dx,0xf00f
         push dx
         push ax
         call far ptr helper_mkfp
-        add sp, 8
-        xor al, al
-        mov byte ptr g0, al
-        mov byte ptr g1, al
-        _emit 0xEB
-        _emit 0x0D
-        _emit 0x90
-        cmp word ptr g, 1
-        _emit 0x76
-        _emit 0x05
-        mov ax, 9Ch
-        _emit 0xEB
-        _emit 0x03
-        mov ax, 98h
+        add sp,0x8
+        xor al,al
+        mov mb278A,al
+        mov mb278B,al
+        jmp short $+15
+        nop
+L3D:
+        cmp word ptr mn02A4,0x1
+        jna short $+7
+        mov ax,0x9c
+        jmp short $+5
+L49:
+        mov ax,0x98
+L4C:
     }
 }
