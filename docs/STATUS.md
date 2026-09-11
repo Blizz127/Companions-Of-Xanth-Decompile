@@ -923,6 +923,42 @@ step is to fix how the comparison selects the code segment, not to write
 more source. That change would also bear on `exe_18240` and on any unit
 whose translation unit emits more than one segment.
 
+### Fixed: OMF segments were merged, so data clobbered code
+
+The OVL family's `+0` difference was a real bug in the shared OMF parser,
+now fixed in `tools/omf.py`.
+
+**Diagnosis.** Two facts had to be separated first. The LEDATA record
+layout is a **one-byte** segment index followed by a two-byte offset
+(`payload[1:3]`), and my throwaway dump script used two bytes for the
+segment index, which shifted everything by one and made it look as though
+`push bp` was missing from the code. It never was — that caveat is
+withdrawn. The real defect was next door: `ledata_and_fixups` collected
+*every* `0xA0` record into one buffer keyed only by offset. A translation
+unit with string literals emits a second segment whose offsets start at the
+same place, so the twelve bytes of literals **overwrote the first twelve
+bytes of the function** and the comparison was shown data instead of code.
+
+**Fix.** The segment index is taken from the first LEDATA record (CL emits
+the code segment first) and records from other segments are skipped. For
+the single-segment objects that make up the rest of the corpus this is a
+no-op.
+
+**Verification, both directions:**
+
+| check | result |
+|---|---|
+| `exe_2096`, the one recovered unit | still **MATCH**, 16 bytes, trimmed 2 |
+| OVL family source vs `ovl-payload:0x19452` | first difference moved from **+0 to +7** |
+| fast test suite | 9/9 OK |
+
+The family is no longer blocked by tooling. Its remaining difference at `+7`
+is a genuine codegen question: retail lays the function out as
+`cmp / jnz ZERO` (falling through to the string path) where CL emits
+`cmp / jz` and falls through to the zero path, for the same
+`if (a != 0x10) return 0;`. That is the next thing to work, and it is a
+normal source-level question rather than a measurement artefact.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.

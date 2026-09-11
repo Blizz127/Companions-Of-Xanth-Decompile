@@ -58,10 +58,24 @@ def _fixups(payload: bytes, ledata_base: int) -> list[tuple[int, int]]:
 
 
 def ledata_and_fixups(data: bytes) -> tuple[bytes, list[tuple[int, int]]]:
+    """LEDATA of the *code* segment, plus its fixups.
+
+    A translation unit can emit more than one segment: a source containing
+    string literals puts them in a data segment whose LEDATA offsets start
+    at the same place as the code's. Merging every LEDATA by offset — which
+    this used to do — let the literals overwrite the first bytes of the
+    function, so the comparison saw data instead of code and differed at
+    +0. CL emits the code segment first, so its segment index is taken from
+    the first LEDATA record and later segments are ignored. For the
+    single-segment objects that make up the rest of the corpus this is a
+    no-op.
+    """
     i = 0
     chunks: list[tuple[int, bytes]] = []
     fixups: list[tuple[int, int]] = []
     last_base = 0
+    code_segment: int | None = None
+    skipped = 0
     while i + 3 <= len(data):
         typ = data[i]
         length = int.from_bytes(data[i + 1 : i + 3], "little")
@@ -73,6 +87,12 @@ def ledata_and_fixups(data: bytes) -> tuple[bytes, list[tuple[int, int]]]:
         if typ == 0xA0:
             if len(payload) < 3:
                 raise OmfError("short LEDATA")
+            segment = payload[0]
+            if code_segment is None:
+                code_segment = segment
+            if segment != code_segment:
+                skipped += 1
+                continue
             last_base = int.from_bytes(payload[1:3], "little")
             chunks.append((last_base, payload[3:]))
         elif typ == 0x9C and chunks:
