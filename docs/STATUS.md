@@ -2694,6 +2694,42 @@ one compile, and it is named here rather than rediscovered: try
 `if ((int)a == 3 || (int)a == 7)` and, if that still uses memory compares,
 `if (a - 3 == 0 || a - 7 == 0)`.
 
+### exe_109184 classified NEAR_MATCH at 84/85
+
+Both remaining candidates were compiled as named and **both normalise to the
+same 84 bytes as the plain `if`** — first difference at `+21`, unchanged. So
+the cast and the subtracted-equality forms do not move CL off memory compares.
+
+Five forms for the comparison now:
+
+| form | size | compare emitted |
+|---|---|---|
+| `if (a == 3 \|\| a == 7)` | 84 | `cmp word [bp+0Ah],imm` twice |
+| `if ((int)a == 3 \|\| (int)a == 7)` | 84 | identical |
+| `if (a - 3 == 0 \|\| a - 7 == 0)` | 84 | identical |
+| `int t = a;` then `if (t == 3 \|\| t == 7)` | 86 | grows the frame |
+| `switch (a) { case 3: case 7: … }` | 90 | `sub ax,3` / `sub ax,4` chain, wrong layout |
+
+**Classification: NEAR_MATCH at 84 of 85 bytes.** Everything the function does
+is reproduced — the 20-byte record layout, the far-pointer local with its
+`les` reloads, the word parameter `a`, the char parameter `b`, the
+`p->f10 = c` guarded by `a == 3 || a == 7`, and `helper(i, n)` with the cdecl
+argument order. The one byte is CL's choice between `cmp`-against-memory and a
+`sub` chain on a register value.
+
+**A note on how this differs from the other near matches.** Retail uses that
+`sub ax,N` / `sub ax,M` chain in **two** units (`exe_109184` here and
+`exe_112853` in the same family), and CL produces it only for `switch`, where
+it accompanies a bottom-test layout retail does not have. So the chain is a
+real, recurring retail idiom that this compiler reaches only in the wrong
+shape. Recording it as "NEAR_MATCH, one byte, comparison form" for both units
+is more accurate than calling either a source defect, and if the chain is ever
+produced from an `if`, both units fall together.
+
+**Stopping here, per the plan recorded before running these two compiles.**
+Five forms is the point at which a one-byte gap stops paying, and the next
+round is better spent on a fresh unit.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
