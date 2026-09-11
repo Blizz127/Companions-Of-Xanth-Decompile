@@ -1191,6 +1191,50 @@ oddity above is a hint that some objects may order segments differently. If
 a unit ever resolves to a small buffer of zeros with many fixups, this is
 the first thing to check.
 
+### Fixed: the code segment must come from PUBDEF, not record order
+
+The `q1.c` anomaly is diagnosed and fixed, and it was a bug in the heuristic
+I added last round.
+
+**Diagnosis.** Walking both objects shows CL emits the LEDATA records in a
+different order depending on the translation unit:
+
+| object | LEDATA order |
+|---|---|
+| `h1.c` | seg 1 (39 B of code), then seg 2 (13 B of literals) |
+| `q1.c` | **seg 3 (3 B of static data) first**, then seg 1 (59 B of code) |
+
+Taking the code segment from the first LEDATA therefore returned three bytes
+of data for `q1.c` — the "2-byte object with 10 fixups" signature.
+
+**Fix.** The segment index now comes from the **PUBDEF** record, which names
+the segment its symbol lives in. Verified:
+
+| object | before | after |
+|---|---|---|
+| `q1.c` | 2 bytes of zeros | **58 bytes** starting `55 8B EC A0 00 00 25 01 00 3B 46 06` |
+| `h1.c` | 38 bytes | 38 bytes, unchanged |
+| `exe_2096` | MATCH | MATCH, 16 bytes, trimmed 2 |
+| fast suite | 9/9 | 9/9 |
+
+**Retraction: last round's "Correction 1" was itself wrong.** I said the OMF
+record walker was unreliable and that the tables published from it should not
+be trusted. The walker was correct; the sequence it produced for `h1.c`
+reconciles to the object size exactly (`0xFC + 3 + 2 = 0x101 = 257`), and
+the only error was my label table omitting `0x9C`, which is FIXUPP — the
+`?9C` entries were correctly-parsed records I had failed to name. The tables
+stand, including the two-LEDATA/two-segment one that motivated the segment
+fix. The lesson is narrower than the one I wrote down: I should not have
+declared my own tooling unreliable without first checking it against a
+quantity I could verify, the object length, which settled it immediately.
+
+**`exe_99679` with the parser fixed.** The reconstruction
+`if (a == ((char)g & 1)) t[g]++; else if (g < 0xF) { g++; t[g] = 1; }` now
+matches retail's **first 13 bytes exactly** — `push bp / mov bp,sp /
+mov al,[4F28h] / and ax,1 / cmp ax,[bp+6] / jnz` — so the flag read as a byte
+and the cast reading are confirmed right. It is 58 bytes against retail's 48,
+so the divergence is in the two update blocks and needs another pass.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
