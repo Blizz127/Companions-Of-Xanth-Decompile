@@ -193,6 +193,40 @@ def _masm(mnemonic: str, symgen) -> str:
     return text
 
 
+def target_aware_decode(blob: bytes) -> list[dict]:
+    """Decode `blob`, forcing an instruction boundary at every jump target.
+
+    A linear sweep can decode an instruction that straddles a branch target,
+    which leaves the target unreachable as a label (`C2094`) or a short jump
+    out of range (`C2427`). Splitting the stream at those targets and decoding
+    each piece makes the listing describe the control flow the bytes imply.
+    """
+    insns = ndisasm(blob)
+    for _ in range(8):
+        starts = {insn["addr"] for insn in insns}
+        forced = set()
+        for insn in insns:
+            match = _JMP.match(insn["mnemonic"])
+            if match is None:
+                continue
+            target = int(match.group(2), 16)
+            if 0 <= target < len(blob) and target not in starts:
+                forced.add(target)
+        if not forced:
+            return insns
+        bounds = sorted(starts | forced | {len(blob)})
+        rebuilt: list[dict] = []
+        for start, end in zip(bounds, bounds[1:]):
+            if end <= start:
+                continue
+            for insn in ndisasm(blob[start:end]):
+                insn["addr"] += start
+                rebuilt.append(insn)
+        rebuilt.sort(key=lambda item: item["addr"])
+        insns = rebuilt
+    return insns
+
+
 def convert(unit: dict, root: Path | None = None) -> dict:
     """Return the new file-scope declarations, `_asm` body, and a note."""
     root = root or ROOT
@@ -201,7 +235,7 @@ def convert(unit: dict, root: Path | None = None) -> dict:
     body, calls = body_for(unit, text, root)
     if not body:
         raise ConvertError("empty instruction stream")
-    insns = ndisasm(body)
+    insns = target_aware_decode(body)
     helper_names = re.findall(r"call\s+far\s+ptr\s+([A-Za-z_]\w*)", text)
     if len(helper_names) < len(calls):
         helper_names = helper_names + [
@@ -339,6 +373,7 @@ def convert(unit: dict, root: Path | None = None) -> dict:
 
 
 def _imm16_group(text: str, addr: int, decls: list[str]) -> str | None:
+    """Make the immediate of an `81 /r` instruction relocatable."""
     """Make the immediate of an `81 /r` instruction relocatable.
 
     Returns None for an AX destination, where MASM insists on the
