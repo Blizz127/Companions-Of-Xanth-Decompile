@@ -1817,6 +1817,43 @@ question rather than a spelling question.
 with `_inp`/`_outp`, which takes any port-I/O unit from far calls to
 inline `in`/`out`. That lever is unaffected by the counter question.
 
+### Port-I/O scan: the count is an overestimate, and two units from it
+
+**Correction to my own scan first.** Searching the corpus for the bytes
+`EC`/`EE` (and `8B 16 xx xx EC`) found 106 units, but a byte match is not
+an opcode match: the very first candidate examined, `exe_87918`, contains
+those bytes inside the *address* `42ECh` in `push word [42ECh]`. It has no
+`in`/`out` at all. So **106 is an upper bound and the real count needs a
+mnemonic-level filter**, which is what the next pass should use. The
+`_inp`/`_outp` lever is still real — it was proved on `exe_790`, where the
+disassembly genuinely shows `in al,dx` — but the size of the affected
+population is not yet known.
+
+**`exe_87918` (exe-code:0x1576E, 65 B)** is not I/O at all. It is a
+two-call wrapper and it reconstructs cleanly from the pushes:
+
+```c
+extern unsigned __near g634e, g42ec, g42ee;
+void far sub1(int a, int b, int c);
+void far sub2(int a, int b, int c, int d, int e);
+
+void far f(int flags, int a, int b, int c, int d)
+{
+    if (flags & 0x80)
+        sub1(1, g634e, 0xA);
+    else
+        sub1(g42ee, g634e, g42ec);
+    sub2(flags, a, b, c, d);
+}
+```
+
+The `test byte [bp+6],80h` guard and both call sites with their argument
+orders were read off the pushes rather than guessed. It compiles to **68
+bytes against retail's 65**, first difference at `+8` — inside the first
+call's push sequence, so the shape is right and the argument order or one
+push is not. Recorded in progress; the unit is a clean wrapper and worth
+finishing.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
