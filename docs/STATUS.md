@@ -1429,6 +1429,47 @@ why the first two attempts failed at 50 and 66 bytes:
 That is the second zero-trim recovery, and the second unit where the
 `__near` lever transferred directly.
 
+### Recovered: exe_112711, third zero-trim recovery
+
+`exe-code:0x1B847`, 84 bytes — the loop member of the same global-table
+family as `exe_112795`:
+
+```c
+extern unsigned __near g_idx;
+extern int __near g_cnt[];
+extern char far * __near g_tbl[];
+
+void far exe_112711(int v)
+{
+    char far *p;
+    int i, off;
+
+    i = 0;
+    if (g_cnt[g_idx] > 0) {
+        off = 0;
+        do {
+            p = g_tbl[g_idx] + off;
+            if (*(int *)(p + 10) == v)
+                p[1] |= 0x80;
+            off += 20;
+            i++;
+        } while (g_cnt[g_idx] > i);
+    }
+}
+```
+
+`tools/lift.py`: **MATCH, 84 bytes, trimmed 0**.
+
+The one new lever here is **declaration order**. The first attempt compiled
+to exactly 84 bytes and differed only in the stack-slot offsets: retail has
+`i` at `bp-6` and `off` at `bp-8`, which only happens if the four-byte
+`p` is declared **first** and occupies the top of the frame — even though
+CL never references the slot, keeping the pointer in `es:di`. Declaring
+`p` after the two ints moved `i` to `bp-2` and put the unit two bytes off.
+That is the third unit in a row where a local CL keeps in registers is
+still allocated stack space, and the first where the *order* of declaration
+is observable.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
