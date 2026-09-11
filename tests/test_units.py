@@ -48,7 +48,9 @@ class DumpExtentTests(unittest.TestCase):
                     )
                 position += 1 if want is not None else 5
             checked += 1
-        self.assertGreater(checked, 2000)
+        # Floor tracks the live dump population; it shrank from 2,380 to
+        # 1,753 units as `tools/gen_mnem.py` re-emitted them as mnemonics.
+        self.assertGreater(checked, 1700)
 
     def test_function_shaped_units_are_framed_and_end_with_a_return(self):
         seen = 0
@@ -63,19 +65,20 @@ class DumpExtentTests(unittest.TestCase):
             # gap that let the splitter glue `__pascal` functions together.
             self.assertTrue(units.ends_in_return(blob), row["source"])
             seen += 1
-        self.assertGreater(seen, 1000)
+        # 560 complete functions are still dump-shaped (was 1,142).
+        self.assertGreater(seen, 550)
 
 
 class CoverageReportTests(unittest.TestCase):
     # See CONSTRAINTS.md: these are ratchets, not targets. They may only
     # move in the improving direction, and moving one is a deliberate edit
     # carrying the new number and its evidence.
-    # Locked 2026-09-11 from `python3 tools/coverage.py` after the four
-    # Sept-10 recoveries (exe_2096 / exe_99679 / exe_112795 / exe_112711)
-    # and the fourteen glue splits.
-    DUMP_PERCENT_CEILING = {"exe-code": 97.8, "ovl-payload": 96.69}
+    # Locked 2026-09-11 from `python3 tools/coverage.py` after the 60 mixed
+    # units and 581 complete dump functions were re-emitted as mnemonics by
+    # `tools/gen_mnem.py` (on top of the Sept-10 recoveries and splits).
+    DUMP_PERCENT_CEILING = {"exe-code": 88.73, "ovl-payload": 64.61}
     UNAIDED_C_UNIT_FLOOR = 442
-    DUMP_FUNCTION_CEILING = 1142
+    DUMP_FUNCTION_CEILING = 560
 
     def test_report_is_self_consistent(self):
         data = report()
@@ -84,8 +87,14 @@ class CoverageReportTests(unittest.TestCase):
             self.assertEqual(sum(info["kinds"].values()), info["units"], name)
             self.assertEqual(sum(info["shapes"].values()), info["units"], name)
             self.assertLessEqual(info["bytes_by_kind"]["emit-dump"], info["bytes"])
-            self.assertGreater(info["dump_percent"], 90, name)
             self.assertLess(info["dump_percent"], 100, name)
+            # dump_percent is the *covered* byte ratio, not a magic bound.
+            self.assertAlmostEqual(
+                info["dump_percent"],
+                round(100 * info["bytes_by_kind"]["emit-dump"] / info["bytes"], 2),
+                places=2,
+                msg=name,
+            )
         self.assertEqual(
             data["totals"]["units"], sum(info["units"] for info in data["images"].values())
         )

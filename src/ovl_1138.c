@@ -6,66 +6,41 @@ void far helper_4(void);
 int far ovl_1138(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x02
+        sub sp,0x2
         call far ptr helper_0
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFE
+        mov [bp-0x2],ax
         call far ptr helper_1
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x1D
+        or ax,ax
+        jz short $+31
         call far ptr helper_2
-        _emit 0x2D
-        _emit 0x03
-        _emit 0x00
-        _emit 0x74
-        _emit 0x0B
-        _emit 0x2D
-        _emit 0x18
-        _emit 0x00
-        _emit 0x74
-        _emit 0x1A
-        _emit 0xB8
-        _emit 0x20
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x18
-        _emit 0x90
+        sub ax,0x3
+        jz short $+13
+        sub ax,0x18
+        jz short $+28
+        mov ax,0x20
+        jmp short $+26
+        nop
+L29:
         call far ptr helper_3
-        _emit 0xEB
-        _emit 0x19
-        _emit 0x90
-        _emit 0x83
-        _emit 0x7E
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x74
-        _emit 0x18
-        _emit 0xF6
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x02
-        _emit 0x74
-        _emit 0x0C
-        _emit 0xB8
-        _emit 0x1B
-        _emit 0x00
-        _emit 0x50
+        jmp short $+27
+        nop
+L31:
+        cmp word ptr [bp-0x2],0x0
+        jz short $+26
+        test byte ptr [bp-0x2],0x2
+        jz short $+14
+L3D:
+        mov ax,0x1b
+L40:
+        push ax
         call far ptr helper_4
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x03
-        _emit 0x90
-        _emit 0x33
-        _emit 0xC0
+        add sp,0x2
+L49:
+        mov ax,0x1
+        jmp short $+5
+        nop
+L4F:
+        xor ax,ax
+L51:
     }
 }

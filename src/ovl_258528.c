@@ -1,73 +1,33 @@
+extern int __near mn5B26;
+extern int __near mn02D0;
 
 int far ovl_258528(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x98
-        _emit 0x34
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x39
-        _emit 0x07
-        _emit 0x74
-        _emit 0x10
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x02
-        _emit 0x81
-        _emit 0x7E
-        _emit 0xFC
-        _emit 0xA2
-        _emit 0x34
-        _emit 0x72
-        _emit 0xE8
-        _emit 0xEB
-        _emit 0x1C
-        _emit 0x8E
-        _emit 0x06
-        _emit 0x26
-        _emit 0x5B
-        _emit 0xB1
-        _emit 0x04
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0xD0
-        _emit 0x02
-        _emit 0x8B
-        _emit 0xC3
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xD8
-        _emit 0x03
-        _emit 0x5E
-        _emit 0xFE
-        _emit 0xD3
-        _emit 0xE3
-        _emit 0x26
-        _emit 0x8A
-        _emit 0x87
-        _emit 0xC0
-        _emit 0x05
+        sub sp,0x4
+        mov word ptr [bp-0x2],0x0
+        mov word ptr [bp-0x4],0x3498
+L0D:
+        mov ax,[bp+0x6]
+        mov bx,[bp-0x4]
+        cmp [bx],ax
+        jz short $+18
+        inc word ptr [bp-0x2]
+        add word ptr [bp-0x4],0x2
+        cmp word ptr [bp-0x4],0x34a2
+        jc short $-22
+        jmp short $+30
+L27:
+        mov es, mn5B26
+        mov cl,0x4
+        mov bx,mn02D0
+        mov ax,bx
+        add bx,bx
+        add bx,bx
+        add bx,ax
+        add bx,[bp-0x2]
+        shl bx,cl
+        mov al,es:[bx+0x5c0]
+L43:
     }
 }

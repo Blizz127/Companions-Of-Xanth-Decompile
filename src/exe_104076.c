@@ -4,55 +4,29 @@ void far helper_2(void);
 int far exe_104076(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x14
-        _emit 0xC6
-        _emit 0x46
-        _emit 0xEC
-        _emit 0x00
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x0C
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x0A
-        _emit 0x8D
-        _emit 0x46
-        _emit 0xEC
-        _emit 0x16
-        _emit 0x50
+        sub sp,0x14
+        mov byte ptr [bp-0x14],0x0
+        push word ptr [bp+0xc]
+        push word ptr [bp+0xa]
+        lea ax,[bp-0x14]
+        push ss
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x08
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x20
-        _emit 0x8D
-        _emit 0x46
-        _emit 0xEC
-        _emit 0x16
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        add sp,0x8
+        or ax,ax
+        jz short $+34
+        lea ax,[bp-0x14]
+        push ss
+        push ax
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x08
-        _emit 0x8D
-        _emit 0x46
-        _emit 0xEC
-        _emit 0x16
-        _emit 0x50
+        add sp,0x8
+        lea ax,[bp-0x14]
+        push ss
+        push ax
         call far ptr helper_2
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
+        mov ax,0x1
+L3E:
     }
 }

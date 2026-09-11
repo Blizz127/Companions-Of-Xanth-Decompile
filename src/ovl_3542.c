@@ -2,74 +2,36 @@
 int far ovl_3542(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x02
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x2D
-        _emit 0x14
-        _emit 0x00
-        _emit 0x3D
-        _emit 0x10
-        _emit 0x00
-        _emit 0x7D
-        _emit 0x0B
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x2D
-        _emit 0x14
-        _emit 0x00
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFE
-        _emit 0xEB
-        _emit 0x19
-        _emit 0xB8
-        _emit 0xB4
-        _emit 0x00
-        _emit 0x2B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x3D
-        _emit 0x10
-        _emit 0x00
-        _emit 0x7D
-        _emit 0x09
-        _emit 0xB8
-        _emit 0xB4
-        _emit 0x00
-        _emit 0x2B
-        _emit 0x46
-        _emit 0x08
-        _emit 0xEB
-        _emit 0xE8
-        _emit 0x90
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x0F
-        _emit 0x00
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x02
-        _emit 0x75
-        _emit 0x05
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
-        _emit 0xEB
-        _emit 0x08
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFE
-        _emit 0x8A
-        _emit 0x87
-        _emit 0x52
-        _emit 0x17
-        _emit 0x98
+        sub sp,0x2
+        mov ax,[bp+0x8]
+        sub ax,0x14
+        cmp ax,0x10
+        jnl short $+13
+        mov ax,[bp+0x8]
+        sub ax,0x14
+L14:
+        mov [bp-0x2],ax
+        jmp short $+27
+L19:
+        mov ax,0xb4
+        sub ax,[bp+0x8]
+        cmp ax,0x10
+        jnl short $+11
+        mov ax,0xb4
+        sub ax,[bp+0x8]
+        jmp short $-22
+        nop
+L2D:
+        mov word ptr [bp-0x2],0xf
+L32:
+        cmp word ptr [bp+0x6],0x2
+        jnz short $+7
+        mov ax,[bp-0x2]
+        jmp short $+10
+L3D:
+        mov bx,[bp-0x2]
+        mov al,[bx+0x1752]
+        cbw
+L45:
     }
 }

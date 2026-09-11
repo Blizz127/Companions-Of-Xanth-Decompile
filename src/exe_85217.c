@@ -1,56 +1,32 @@
+extern int __near mn6348;
+extern int __near mn634A;
+extern int __near mn6340;
 void far helper_0(void);
 int far exe_85217(int a)
 {
     _asm {
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0xA3
-        _emit 0x48
-        _emit 0x63
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0xA3
-        _emit 0x4A
-        _emit 0x63
-        _emit 0xC4
-        _emit 0x1E
-        _emit 0x40
-        _emit 0x63
-        _emit 0x26
-        _emit 0x80
-        _emit 0x7F
-        _emit 0x03
-        _emit 0x00
-        _emit 0x75
-        _emit 0x1F
-        _emit 0x99
-        _emit 0x83
-        _emit 0xE2
-        _emit 0x07
-        _emit 0x03
-        _emit 0xC2
-        _emit 0xB9
-        _emit 0x03
-        _emit 0x00
-        _emit 0xD3
-        _emit 0xF8
-        _emit 0x40
-        _emit 0x50
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x99
-        _emit 0x83
-        _emit 0xE2
-        _emit 0x07
-        _emit 0x03
-        _emit 0xC2
-        _emit 0xD3
-        _emit 0xF8
-        _emit 0x40
-        _emit 0x50
+        mov ax,[bp+0x6]
+        mov mn6348,ax
+        mov ax,[bp+0x8]
+        mov mn634A,ax
+        les bx, mn6340
+        cmp byte ptr es:[bx+0x3],0x0
+        jnz short $+33
+        cwd
+        and dx,0x7
+        add ax,dx
+        mov cx,0x3
+        sar ax,cl
+        inc ax
+        push ax
+        mov ax,[bp+0x6]
+        cwd
+        and dx,0x7
+        add ax,dx
+        sar ax,cl
+        inc ax
+        push ax
         call far ptr helper_0
+L36:
     }
 }

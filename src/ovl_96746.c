@@ -1,70 +1,45 @@
+extern int __near mn6A06;
+extern int __near mn0290;
 void far helper_0(void);
 void far helper_1(void);
 int far ovl_96746(int a)
 {
     _asm {
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x2D
-        _emit 0x06
-        _emit 0x00
-        _emit 0x75
-        _emit 0x3D
-        _emit 0xA1
-        _emit 0x06
-        _emit 0x6A
-        _emit 0x2D
-        _emit 0x12
-        _emit 0x00
-        _emit 0x74
-        _emit 0x05
-        _emit 0x48
-        _emit 0x74
-        _emit 0x2C
-        _emit 0xEB
-        _emit 0x30
-        _emit 0xB8
-        _emit 0xBC
-        _emit 0x23
-        _emit 0x1E
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x90
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x51
-        _emit 0x00
-        _emit 0x50
+        mov ax,[bp+0x6]
+        sub ax,0x6
+        jnz short $+63
+        mov ax,mn6A06
+        sub ax,0x12
+        jz short $+7
+        dec ax
+        jz short $+46
+        jmp short $+50
+L15:
+        mov ax,0x23bc
+        push ds
+        push ax
+        push word ptr mn0290
+        mov ax,0x51
+        push ax
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x52
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x21
-        _emit 0x00
-        _emit 0xBA
-        _emit 0x16
-        _emit 0xF0
-        _emit 0x52
-        _emit 0x50
+        mov sp,bp
+        push dx
+        push ax
+        mov ax,0x21
+L2E:
+        mov dx,0xf016
+        push dx
+        push ax
         call far ptr helper_1
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x08
-        _emit 0xB8
-        _emit 0x20
-        _emit 0x00
-        _emit 0xEB
-        _emit 0xEA
-        _emit 0x90
-        _emit 0x33
-        _emit 0xC0
+        mov sp,bp
+        mov ax,0x1
+        jmp short $+10
+L3F:
+        mov ax,0x20
+        jmp short $-20
+        nop
+L45:
+        xor ax,ax
+L47:
     }
 }

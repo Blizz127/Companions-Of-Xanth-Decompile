@@ -1,77 +1,41 @@
+extern int __near mn4EA0;
+extern char __near mb4E9E;
+extern int __near mn642C;
+extern int __near mn642E;
+extern int __near mn6430;
+extern int __near mn6432;
+extern int __near mn642A;
+extern int __near mn6428;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
 int far exe_99727(int a)
 {
     _asm {
-        _emit 0xC7
-        _emit 0x06
-        _emit 0xA0
-        _emit 0x4E
-        _emit 0x01
-        _emit 0x00
-        _emit 0xA0
-        _emit 0x9E
-        _emit 0x4E
-        _emit 0x25
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
+        mov word ptr mn4EA0,0x1
+        mov al,mb4E9E
+        and ax,0x1
+        push ax
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0xA3
-        _emit 0x2C
-        _emit 0x64
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0xA3
-        _emit 0x2E
-        _emit 0x64
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0A
-        _emit 0xA3
-        _emit 0x30
-        _emit 0x64
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0C
-        _emit 0xA3
-        _emit 0x32
-        _emit 0x64
-        _emit 0xF6
-        _emit 0x06
-        _emit 0x9E
-        _emit 0x4E
-        _emit 0x01
-        _emit 0x74
-        _emit 0x18
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x2A
-        _emit 0x64
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x28
-        _emit 0x64
+        mov sp,bp
+        mov ax,[bp+0x6]
+        mov mn642C,ax
+        mov ax,[bp+0x8]
+        mov mn642E,ax
+        mov ax,[bp+0xa]
+        mov mn6430,ax
+        mov ax,[bp+0xc]
+        mov mn6432,ax
+        test byte ptr mb4E9E,0x1
+        jz short $+26
+        push word ptr mn642A
+        push word ptr mn6428
         call far ptr helper_1
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x05
+        mov sp,bp
+        or ax,ax
+        jz short $+7
         call far ptr helper_2
-        _emit 0xC7
-        _emit 0x06
-        _emit 0xA0
-        _emit 0x4E
-        _emit 0x00
-        _emit 0x00
+L4B:
+        mov word ptr mn4EA0,0x0
     }
 }

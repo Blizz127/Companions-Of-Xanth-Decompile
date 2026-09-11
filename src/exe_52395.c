@@ -1,74 +1,33 @@
+extern int __near mn0102;
+extern int __near mn5A32;
 
 int far exe_52395(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x06
-        _emit 0xA1
-        _emit 0x02
-        _emit 0x01
-        _emit 0x48
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0x83
-        _emit 0x3E
-        _emit 0x02
-        _emit 0x01
-        _emit 0x00
-        _emit 0x7E
-        _emit 0x2B
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x00
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8E
-        _emit 0x06
-        _emit 0x32
-        _emit 0x5A
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFA
-        _emit 0x26
-        _emit 0x39
-        _emit 0x07
-        _emit 0x74
-        _emit 0x11
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x02
-        _emit 0xA1
-        _emit 0x02
-        _emit 0x01
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x39
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x7C
-        _emit 0xE2
-        _emit 0xEB
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFC
+        sub sp,0x6
+        mov ax,mn0102
+        dec ax
+        mov [bp-0x4],ax
+        mov word ptr [bp-0x2],0x0
+        cmp word ptr mn0102,0x0
+        jng short $+45
+        mov word ptr [bp-0x6],0x0
+L1B:
+        mov ax,[bp+0x6]
+        mov es, mn5A32
+        mov bx,[bp-0x6]
+        cmp es:[bx],ax
+        jz short $+19
+        add word ptr [bp-0x6],0x2
+        mov ax,mn0102
+        inc word ptr [bp-0x2]
+        cmp [bp-0x2],ax
+        jl short $-28
+        jmp short $+8
+L3B:
+        mov ax,[bp-0x2]
+        mov [bp-0x4],ax
+L41:
+        mov ax,[bp-0x4]
     }
 }

@@ -2,62 +2,27 @@ void far helper_0(void);
 int far exe_117502(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x39
-        _emit 0x46
-        _emit 0x0A
-        _emit 0x72
-        _emit 0x2A
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0A
-        _emit 0x26
-        _emit 0x8A
-        _emit 0x07
-        _emit 0x88
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x26
-        _emit 0xC6
-        _emit 0x07
-        _emit 0x00
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        sub sp,0x4
+        mov ax,[bp+0x6]
+        cmp [bp+0xa],ax
+        jc short $+44
+        les bx, [bp+0xa]
+        mov al,es:[bx]
+        mov [bp-0x4],al
+        mov byte ptr es:[bx],0x0
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x8A
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0A
-        _emit 0x26
-        _emit 0x88
-        _emit 0x07
-        _emit 0xEB
-        _emit 0x06
-        _emit 0x90
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
+        add sp,0x4
+        mov [bp-0x2],ax
+        mov al,[bp-0x4]
+        les bx, [bp+0xa]
+        mov es:[bx],al
+        jmp short $+8
+        nop
+L35:
+        mov word ptr [bp-0x2],0x0
+L3A:
+        mov ax,[bp-0x2]
     }
 }

@@ -4,108 +4,41 @@ void far helper_2(void);
 int far exe_106798(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x02
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x0B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x74
-        _emit 0x68
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x26
-        _emit 0x80
-        _emit 0x3F
-        _emit 0x00
-        _emit 0x74
-        _emit 0x5F
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x47
-        _emit 0x12
-        _emit 0x26
-        _emit 0x0B
-        _emit 0x47
-        _emit 0x10
-        _emit 0x74
-        _emit 0x37
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x47
-        _emit 0x0C
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x57
-        _emit 0x0E
-        _emit 0x26
-        _emit 0xC4
-        _emit 0x5F
-        _emit 0x10
-        _emit 0x26
-        _emit 0x89
-        _emit 0x47
-        _emit 0x18
-        _emit 0x26
-        _emit 0x89
-        _emit 0x57
-        _emit 0x1A
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x77
-        _emit 0x12
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x77
-        _emit 0x10
+        sub sp,0x2
+        mov ax,[bp+0x8]
+        or ax,[bp+0x6]
+        jz short $+106
+        les bx, [bp+0x6]
+        cmp byte ptr es:[bx],0x0
+        jz short $+97
+        mov ax,es:[bx+0x12]
+        or ax,es:[bx+0x10]
+        jz short $+57
+        mov ax,es:[bx+0xc]
+        mov dx,es:[bx+0xe]
+        les bx, es:[bx+0x10]
+        mov es:[bx+0x18],ax
+        mov es:[bx+0x1a],dx
+        les bx, [bp+0x6]
+        push word ptr es:[bx+0x12]
+        push word ptr es:[bx+0x10]
         call far ptr helper_0
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x77
-        _emit 0x12
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x77
-        _emit 0x10
+        les bx, [bp+0x6]
+        push word ptr es:[bx+0x12]
+        push word ptr es:[bx+0x10]
         call far ptr helper_1
-        _emit 0xEB
-        _emit 0x18
-        _emit 0x90
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x47
-        _emit 0x0E
-        _emit 0x26
-        _emit 0x0B
-        _emit 0x47
-        _emit 0x0C
-        _emit 0x74
-        _emit 0x0D
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x77
-        _emit 0x0E
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x77
-        _emit 0x0C
+        jmp short $+26
+        nop
+L55:
+        mov ax,es:[bx+0xe]
+        or ax,es:[bx+0xc]
+        jz short $+15
+        push word ptr es:[bx+0xe]
+        push word ptr es:[bx+0xc]
         call far ptr helper_2
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x26
-        _emit 0xC6
-        _emit 0x07
-        _emit 0x00
+L6C:
+        les bx, [bp+0x6]
+        mov byte ptr es:[bx],0x0
+L73:
     }
 }

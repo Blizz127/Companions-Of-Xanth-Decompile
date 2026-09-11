@@ -3,50 +3,30 @@ void far helper_1(void);
 int far ovl_170281(int a)
 {
     _asm {
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
+        xor ax,ax
+        push ax
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x29
-        _emit 0xB8
-        _emit 0x0A
-        _emit 0x00
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        mov sp,bp
+        or ax,ax
+        jz short $+43
+        mov ax,0xa
+        push ax
+        push word ptr [bp+0x6]
         call far ptr helper_1
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0x17
-        _emit 0xB8
-        _emit 0x12
-        _emit 0x00
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        mov sp,bp
+        or ax,ax
+        jnz short $+25
+        mov ax,0x12
+        push ax
+        push word ptr [bp+0x6]
         call far ptr helper_1
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0x05
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x02
-        _emit 0x33
-        _emit 0xC0
+        mov sp,bp
+        or ax,ax
+        jnz short $+7
+        mov ax,0x1
+        jmp short $+4
+L37:
+        xor ax,ax
+L39:
     }
 }

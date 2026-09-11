@@ -2,82 +2,33 @@
 int far ovl_132704(int a)
 {
     _asm {
-        _emit 0x81
-        _emit 0x7E
-        _emit 0x06
-        _emit 0xA7
-        _emit 0x00
-        _emit 0x74
-        _emit 0x44
-        _emit 0x81
-        _emit 0x7E
-        _emit 0x06
-        _emit 0xA6
-        _emit 0x00
-        _emit 0x74
-        _emit 0x3D
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x76
-        _emit 0x74
-        _emit 0x37
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x7F
-        _emit 0x74
-        _emit 0x31
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x6E
-        _emit 0x74
-        _emit 0x2B
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x6F
-        _emit 0x74
-        _emit 0x25
-        _emit 0x81
-        _emit 0x7E
-        _emit 0x06
-        _emit 0xB1
-        _emit 0x00
-        _emit 0x74
-        _emit 0x1E
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x7E
-        _emit 0x74
-        _emit 0x18
-        _emit 0x81
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x8F
-        _emit 0x00
-        _emit 0x74
-        _emit 0x11
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x75
-        _emit 0x74
-        _emit 0x0B
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x78
-        _emit 0x74
-        _emit 0x05
-        _emit 0x32
-        _emit 0xC0
-        _emit 0xEB
-        _emit 0x03
-        _emit 0x90
-        _emit 0xB0
-        _emit 0x01
+        cmp word ptr [bp+0x6],0xa7
+        jz short $+70
+        cmp word ptr [bp+0x6],0xa6
+        jz short $+63
+        cmp word ptr [bp+0x6],0x76
+        jz short $+57
+        cmp word ptr [bp+0x6],0x7f
+        jz short $+51
+        cmp word ptr [bp+0x6],0x6e
+        jz short $+45
+        cmp word ptr [bp+0x6],0x6f
+        jz short $+39
+        cmp word ptr [bp+0x6],0xb1
+        jz short $+32
+        cmp word ptr [bp+0x6],0x7e
+        jz short $+26
+        cmp word ptr [bp+0x6],0x8f
+        jz short $+19
+        cmp word ptr [bp+0x6],0x75
+        jz short $+13
+        cmp word ptr [bp+0x6],0x78
+        jz short $+7
+        xor al,al
+        jmp short $+5
+        nop
+L4B:
+        mov al,0x1
+L4D:
     }
 }

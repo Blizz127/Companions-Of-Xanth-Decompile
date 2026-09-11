@@ -2,117 +2,47 @@
 int far exe_99186(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x14
-        _emit 0xB8
-        _emit 0x40
-        _emit 0x01
-        _emit 0xF7
-        _emit 0x66
-        _emit 0x0C
-        _emit 0x03
-        _emit 0x46
-        _emit 0x0A
-        _emit 0x2B
-        _emit 0xD2
-        _emit 0x2B
-        _emit 0xC2
-        _emit 0x81
-        _emit 0xDA
-        _emit 0x00
-        _emit 0x60
-        _emit 0x89
-        _emit 0x46
-        _emit 0xF8
-        _emit 0x89
-        _emit 0x56
-        _emit 0xFA
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x10
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x45
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x56
-        _emit 0x08
-        _emit 0x89
-        _emit 0x46
-        _emit 0xF4
-        _emit 0x89
-        _emit 0x56
-        _emit 0xF6
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xF8
-        _emit 0x8B
-        _emit 0x56
-        _emit 0xFA
-        _emit 0x89
-        _emit 0x46
-        _emit 0xF0
-        _emit 0x89
-        _emit 0x56
-        _emit 0xF2
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x10
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x13
-        _emit 0x90
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xF4
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xF4
-        _emit 0x26
-        _emit 0x8A
-        _emit 0x07
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xF0
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xF0
-        _emit 0x26
-        _emit 0x88
-        _emit 0x07
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xFF
-        _emit 0x4E
-        _emit 0xFC
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0xE4
-        _emit 0x81
-        _emit 0x46
-        _emit 0xF8
-        _emit 0x40
-        _emit 0x01
-        _emit 0x83
-        _emit 0x46
-        _emit 0x06
-        _emit 0x10
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
-        _emit 0xFF
-        _emit 0x4E
-        _emit 0xFE
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0xB1
+        sub sp,0x14
+        mov ax,0x140
+        mul word ptr [bp+0xc]
+        add ax,[bp+0xa]
+        sub dx,dx
+        sub ax,dx
+        sbb dx,0x6000
+        mov [bp-0x8],ax
+        mov [bp-0x6],dx
+        mov word ptr [bp-0x2],0x10
+        jmp short $+71
+L21:
+        mov ax,[bp+0x6]
+        mov dx,[bp+0x8]
+        mov [bp-0xc],ax
+        mov [bp-0xa],dx
+        mov ax,[bp-0x8]
+        mov dx,[bp-0x6]
+        mov [bp-0x10],ax
+        mov [bp-0xe],dx
+        mov word ptr [bp-0x4],0x10
+        jmp short $+21
+        nop
+L41:
+        les bx, [bp-0xc]
+        inc word ptr [bp-0xc]
+        mov al,es:[bx]
+        les bx, [bp-0x10]
+        inc word ptr [bp-0x10]
+        mov es:[bx],al
+L53:
+        mov ax,[bp-0x4]
+        dec word ptr [bp-0x4]
+        or ax,ax
+        jnz short $-26
+        add word ptr [bp-0x8],0x140
+        add word ptr [bp+0x6],0x10
+L66:
+        mov ax,[bp-0x2]
+        dec word ptr [bp-0x2]
+        or ax,ax
+        jnz short $-77
     }
 }

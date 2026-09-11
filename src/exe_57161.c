@@ -1,71 +1,33 @@
+extern int __near mn5A4C;
 
 int far exe_57161(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xC8
-        _emit 0x02
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8E
-        _emit 0x06
-        _emit 0x4C
-        _emit 0x5A
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x26
-        _emit 0x39
-        _emit 0x07
-        _emit 0x74
-        _emit 0x11
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x06
-        _emit 0x81
-        _emit 0x7E
-        _emit 0xFC
-        _emit 0xD8
-        _emit 0x04
-        _emit 0x72
-        _emit 0xE3
-        _emit 0xEB
-        _emit 0x13
-        _emit 0x90
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFE
-        _emit 0x8B
-        _emit 0xC3
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xD8
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x9F
-        _emit 0xCA
-        _emit 0x02
-        _emit 0xEB
-        _emit 0x02
-        _emit 0x33
-        _emit 0xC0
+        sub sp,0x4
+        mov word ptr [bp-0x2],0x0
+        mov word ptr [bp-0x4],0x2c8
+L0D:
+        mov ax,[bp+0x6]
+        mov es, mn5A4C
+        mov bx,[bp-0x4]
+        cmp es:[bx],ax
+        jz short $+19
+        inc word ptr [bp-0x2]
+        add word ptr [bp-0x4],0x6
+        cmp word ptr [bp-0x4],0x4d8
+        jc short $-27
+        jmp short $+21
+        nop
+L2D:
+        mov bx,[bp-0x2]
+        mov ax,bx
+        add bx,bx
+        add bx,ax
+        add bx,bx
+        call dword ptr es:[bx+0x2ca]
+        jmp short $+4
+L3F:
+        xor ax,ax
+L41:
     }
 }

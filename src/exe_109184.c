@@ -2,79 +2,33 @@ void far helper_0(void);
 int far exe_109184(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x14
-        _emit 0x00
-        _emit 0xF7
-        _emit 0x6E
-        _emit 0x08
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xDB
-        _emit 0xC4
-        _emit 0x9F
-        _emit 0xC2
-        _emit 0x67
-        _emit 0x03
-        _emit 0xD8
-        _emit 0x89
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x8C
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x8A
-        _emit 0x46
-        _emit 0x0A
-        _emit 0x26
-        _emit 0x88
-        _emit 0x07
-        _emit 0x8A
-        _emit 0x46
-        _emit 0x0C
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x26
-        _emit 0x88
-        _emit 0x47
-        _emit 0x01
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0A
-        _emit 0x2D
-        _emit 0x03
-        _emit 0x00
-        _emit 0x74
-        _emit 0x05
-        _emit 0x2D
-        _emit 0x04
-        _emit 0x00
-        _emit 0x75
-        _emit 0x0A
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0E
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x26
-        _emit 0x89
-        _emit 0x47
-        _emit 0x0A
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        sub sp,0x4
+        mov ax,0x14
+        imul word ptr [bp+0x8]
+        mov bx,[bp+0x6]
+        add bx,bx
+        add bx,bx
+        les bx, [bx+0x67c2]
+        add bx,ax
+        mov [bp-0x4],bx
+        mov word ptr [bp-0x2],es
+        mov al,[bp+0xa]
+        mov es:[bx],al
+        mov al,[bp+0xc]
+        les bx, [bp-0x4]
+        mov es:[bx+0x1],al
+        mov ax,[bp+0xa]
+        sub ax,0x3
+        jz short $+7
+        sub ax,0x4
+        jnz short $+12
+L39:
+        mov ax,[bp+0xe]
+        les bx, [bp-0x4]
+        mov es:[bx+0xa],ax
+L43:
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_0
     }
 }

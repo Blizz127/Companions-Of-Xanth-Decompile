@@ -1,97 +1,43 @@
+extern int __near mn6428;
+extern int __near mn4F24;
+extern int __near mn642A;
+extern int __near mn4F26;
 
 int far exe_98676(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0xA1
-        _emit 0x28
-        _emit 0x64
-        _emit 0x2B
-        _emit 0x06
-        _emit 0x24
-        _emit 0x4F
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x8B
-        _emit 0x0E
-        _emit 0x2A
-        _emit 0x64
-        _emit 0x2B
-        _emit 0x0E
-        _emit 0x26
-        _emit 0x4F
-        _emit 0x89
-        _emit 0x4E
-        _emit 0xFC
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x7F
-        _emit 0x07
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x0A
-        _emit 0x3D
-        _emit 0x30
-        _emit 0x01
-        _emit 0x7C
-        _emit 0x05
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x30
-        _emit 0x01
-        _emit 0x83
-        _emit 0x7E
-        _emit 0xFC
-        _emit 0x00
-        _emit 0x7F
-        _emit 0x08
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x00
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x0D
-        _emit 0x90
-        _emit 0x81
-        _emit 0x7E
-        _emit 0xFC
-        _emit 0xB8
-        _emit 0x00
-        _emit 0x7C
-        _emit 0x05
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xB8
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x26
-        _emit 0x89
-        _emit 0x07
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0A
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x26
-        _emit 0x89
-        _emit 0x07
+        sub sp,0x4
+        mov ax,mn6428
+        sub ax,mn4F24
+        mov [bp-0x2],ax
+        mov cx,mn642A
+        sub cx,mn4F26
+        mov [bp-0x4],cx
+        or ax,ax
+        jg short $+9
+        mov word ptr [bp-0x2],0x0
+        jmp short $+12
+L23:
+        cmp ax,0x130
+        jl short $+7
+        mov word ptr [bp-0x2],0x130
+L2D:
+        cmp word ptr [bp-0x4],0x0
+        jg short $+10
+        mov word ptr [bp-0x4],0x0
+        jmp short $+15
+        nop
+L3B:
+        cmp word ptr [bp-0x4],0xb8
+        jl short $+7
+        mov word ptr [bp-0x4],0xb8
+L47:
+        mov ax,[bp-0x2]
+        les bx, [bp+0x6]
+        mov es:[bx],ax
+        mov ax,[bp-0x4]
+        les bx, [bp+0xa]
+        mov sp,bp
+        mov es:[bx],ax
     }
 }

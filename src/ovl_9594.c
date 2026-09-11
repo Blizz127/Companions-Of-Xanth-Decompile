@@ -3,82 +3,37 @@ void far helper_1(void);
 int far ovl_9594(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x08
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        sub sp,0x8
+        mov word ptr [bp-0x2],0x0
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x35
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0xC8
-        _emit 0x03
-        _emit 0xC0
-        _emit 0x03
-        _emit 0xC1
-        _emit 0x03
-        _emit 0xC0
-        _emit 0x05
-        _emit 0x66
-        _emit 0x00
-        _emit 0xB9
-        _emit 0xA1
-        _emit 0x23
-        _emit 0x89
-        _emit 0x46
-        _emit 0xF8
-        _emit 0x89
-        _emit 0x4E
-        _emit 0xFA
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xF8
-        _emit 0x26
-        _emit 0x80
-        _emit 0x3F
-        _emit 0x01
-        _emit 0x74
-        _emit 0x03
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xFE
-        _emit 0xFF
-        _emit 0x76
-        _emit 0xFC
+        add sp,0x4
+        mov [bp-0x4],ax
+        or ax,ax
+        jz short $+55
+        mov ax,[bp+0x6]
+        mov cx,ax
+        add ax,ax
+        add ax,cx
+        add ax,ax
+        add ax,0x66
+        mov cx,0x23a1
+        mov [bp-0x8],ax
+        mov [bp-0x6],cx
+L34:
+        les bx, [bp-0x8]
+        cmp byte ptr es:[bx],0x1
+        jz short $+5
+        inc word ptr [bp-0x2]
+L40:
+        push word ptr [bp-0x4]
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0xE2
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
+        add sp,0x2
+        mov [bp-0x4],ax
+        or ax,ax
+        jnz short $-28
+L52:
+        mov ax,[bp-0x2]
     }
 }

@@ -5,110 +5,46 @@ void far helper_3(void);
 int far exe_110357(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x14
-        _emit 0x00
-        _emit 0xF7
-        _emit 0x6E
-        _emit 0x08
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xDB
-        _emit 0xC4
-        _emit 0x9F
-        _emit 0xC2
-        _emit 0x67
-        _emit 0x03
-        _emit 0xD8
-        _emit 0x89
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x8C
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x26
-        _emit 0x80
-        _emit 0x3F
-        _emit 0x05
-        _emit 0x75
-        _emit 0x57
-        _emit 0x26
-        _emit 0xC4
-        _emit 0x5F
-        _emit 0x0A
-        _emit 0x26
-        _emit 0x80
-        _emit 0x3F
-        _emit 0x00
-        _emit 0x74
-        _emit 0x4D
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x26
-        _emit 0x80
-        _emit 0x4F
-        _emit 0x01
-        _emit 0x80
+        sub sp,0x4
+        mov ax,0x14
+        imul word ptr [bp+0x8]
+        mov bx,[bp+0x6]
+        add bx,bx
+        add bx,bx
+        les bx, [bx+0x67c2]
+        add bx,ax
+        mov [bp-0x4],bx
+        mov word ptr [bp-0x2],es
+        cmp byte ptr es:[bx],0x5
+        jnz short $+89
+        les bx, es:[bx+0xa]
+        cmp byte ptr es:[bx],0x0
+        jz short $+79
+        les bx, [bp-0x4]
+        or byte ptr es:[bx+0x1],0x80
         call far ptr helper_0
-        _emit 0xB8
-        _emit 0x0A
-        _emit 0x00
-        _emit 0x50
+        mov ax,0xa
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x47
-        _emit 0x08
-        _emit 0x2D
-        _emit 0x02
-        _emit 0x00
-        _emit 0x50
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x47
-        _emit 0x06
-        _emit 0x2D
-        _emit 0x03
-        _emit 0x00
-        _emit 0x50
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x47
-        _emit 0x04
-        _emit 0x05
-        _emit 0x02
-        _emit 0x00
-        _emit 0x50
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x47
-        _emit 0x02
-        _emit 0x05
-        _emit 0x03
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x82
-        _emit 0x00
-        _emit 0x50
+        add sp,0x2
+        les bx, [bp-0x4]
+        mov ax,es:[bx+0x8]
+        sub ax,0x2
+        push ax
+        mov ax,es:[bx+0x6]
+        sub ax,0x3
+        push ax
+        mov ax,es:[bx+0x4]
+        add ax,0x2
+        push ax
+        mov ax,es:[bx+0x2]
+        add ax,0x3
+        push ax
+        mov ax,0x82
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x0A
+        add sp,0xa
         call far ptr helper_3
+L79:
     }
 }
