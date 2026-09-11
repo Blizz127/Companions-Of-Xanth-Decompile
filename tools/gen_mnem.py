@@ -40,12 +40,14 @@ TRAILERS = (b"\x8b\xe5\x5d\xcb", b"\x8b\xe5\x5d\xc3")
 _JMP = re.compile(r"^(j[a-z]+|loop[a-z]*)\s+0x([0-9a-f]+)$")
 _BARE_ABS = re.compile(r"\[(0x[0-9a-f]+)\]")
 _SEG_OPEN = re.compile(r"\[(cs|es|ss|ds):")
-_SIZE = re.compile(r"\b(word|byte|dword)\s+((?:cs|es|ss|ds):)?\[")
+_SIZE = re.compile(r"\b(word|byte|dword)\s+(?:near\s+)?((?:cs|es|ss|ds):)?\[")
+_FAR_JMP = re.compile(r"\b(jmp)\s+word\s+far\s+")
 _SEG_LOAD = re.compile(r"\b(mov)\s+(es|ds|ss|cs)\s*,\s*(?:word|byte|dword)\s+ptr\s+")
 _PTR_LOAD = re.compile(r"\b(les|lds)\s+(\w+)\s*,\s*(?:word|byte|dword)\s+ptr\s+")
 _FAR_CALL = re.compile(r"\bcall\s+word\s+far\s+")
 _NEAR_CALL = re.compile(r"^call\s+0x([0-9a-f]+)$")
 _RET_IMM = re.compile(r"\b(retf?)\s+word\s+(0x[0-9a-f]+)$")
+_BIG_CONST = re.compile(r"\b0x([0-9a-f]{5,})\b")
 # `81 EC iw` / `81 C4 iw`: the compiler's own stack adjust. MASM picks the
 # imm8 form for a value it can fold, so the immediate is expressed as a
 # relocatable symbol instead — `offset sym` forces the imm16 encoding and the
@@ -152,6 +154,16 @@ def _operand_size(mnemonic: str) -> int:
 
 
 def _masm(mnemonic: str, symgen) -> str:
+    # ndisasm prints a sign-extended imm8 as a 64-bit value
+    # (`cmp word [x],0xffffffffffffffff`), which MASM rejects as "constant too
+    # big". Take the low 16 bits and, when the sign bit is set, write it as a
+    # negative decimal so MASM picks the sign-extended imm8 form the retail
+    # bytes actually use.
+    def narrow(match: re.Match[str]) -> str:
+        value = int(match.group(1), 16) & 0xFFFF
+        return str(value - 0x10000) if value >= 0x8000 else f"0x{value:x}"
+
+    mnemonic = _BIG_CONST.sub(narrow, mnemonic)
     text = _INT.sub("int ", mnemonic)
     # A direct DS-relative absolute operand has no base register, so MASM
     # rejects `[0x1234]` and `ds:[0x1234]` would add a `3E` prefix. A named
@@ -167,6 +179,7 @@ def _masm(mnemonic: str, symgen) -> str:
     # an indirect far call through memory is `call dword ptr ..`.
     text = _PTR_LOAD.sub(r"\1 \2, ", text)
     text = _FAR_CALL.sub("call dword ptr ", text)
+    text = _FAR_JMP.sub(r"\1 dword ptr ", text)
     # `retf word 8` is an epilogue with a stack-pop count; MASM takes it bare.
     text = _RET_IMM.sub(r"\1 \2", text)
     size = _operand_size(mnemonic)

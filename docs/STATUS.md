@@ -14,25 +14,25 @@ the numbers that are locked.
 
 | Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
 |---|---|---|---|---|---|---|
-| `exe-code` | 191,656 | 1,253 | 108 | 262 | 352 | 47.07% (90,215 B) |
-| `ovl-payload` | 325,595 | 1,591 | 334 | 648 | 225 | 34.74% (113,120 B) |
+| `exe-code` | 191,656 | 1,253 | 108 | 272 | 342 | 45.81% (87,798 B) |
+| `ovl-payload` | 325,595 | 1,591 | 334 | 649 | 224 | 34.42% (112,056 B) |
 
 | Source kind | units |
 |---|---|
 | unaided C (no `_asm`) | 442 |
-| mnemonic `_asm` | 910 |
+| mnemonic `_asm` | 921 |
 | transcribed data (`char` array) | 915 |
-| `_emit` dump | 577 |
+| `_emit` dump | 566 |
 
 Dump-unit shapes (C/asm units are `unknown` because they have no extent
 without `--compile`):
 
 | Shape | count | meaning |
 |---|---|---|
-| `function` | 560 | framed dump that starts `55 8B EC` and ends in a return |
+| `function` | 549 | framed dump that starts `55 8B EC` and ends in a return |
 | `unframed-function` | 3 | no frame, ends in a return |
 | `fragment` | 0 | no fragment dump remains |
-| `unknown` | 2,281 | 442 C + 909 mnemonic `_asm` + 915 data + 15 mixed dumps |
+| `unknown` | 2,292 | 442 C + 921 mnemonic `_asm` + 915 data + 14 mixed dumps |
 
 Rebuild is still `listing-splice` BINARY-MATCH for both images, not
 CL+LINK, and is verified end to end: `python3 tools/verify.py` reports
@@ -198,6 +198,26 @@ facts, fails the `mov` one), and NASM against the MASM-syntax probe reports
 `ASSEMBLE-FAIL` for all three, which is what an assembler with the wrong
 dialect should look like.
 
+### Session 2026-09-11 (fifth pass) — two spellings that were still fixable
+
+`tools/gen_mnem.py` converts 11 more units (dump population 577 → 566, and
+they are large ones: 108–425 bytes each). Both fixes are pure spelling:
+
+- ndisasm prints a sign-extended imm8 as a 64-bit value
+  (`cmp word [x],0xffffffffffffffff`), which MASM rejects as "constant too
+  big". Narrowing it to the low 16 bits and writing a set sign bit as a
+  negative decimal (`-1`) makes MASM pick the same sign-extended imm8 form
+  the retail bytes use.
+- ndisasm prints indirect jumps as e.g. `jmp word near cs:[bx+0x495f]`; MASM
+  wants the size hint as a `ptr` with the override outside the brackets.
+
+Both moved units from `COMPILE-FAIL` to MATCH; three more classes were tried
+and are genuinely unspellable here (probes with `tools/cl_probe.py`):
+`push -102` (`C2415` — 186+ push-immediate is illegal at this assembler's CPU
+level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
+lodsb` silently drops the prefix and emits `AC`), and a direct far jump
+(`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
+
 Re-running the current converter over the 577 confirms the ceiling: **none**
 of the 563 function-shaped units is spellable as inline asm any more (one
 did convert, `exe_87075`, whose body carried the SI/DI push in the compiler's
@@ -279,7 +299,7 @@ once, write once, compile. Do not grind 1–3 byte residues.
 
 ### Next
 
-Everything left is code: 577 dump units, all complete functions or framed
+Everything left is code: 566 dump units, all complete functions or framed
 bodies.
 
 1. The 563 dump *functions* need the C behind their `81 EC imm16` frame and
@@ -295,7 +315,7 @@ bodies.
 
 - Fast suite `tests/test_units.py` carries the ratchets.
 - Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
-  (577 dump units) and `image_source == "cl-link"`.
+  (566 dump units) and `image_source == "cl-link"`.
 - `python3 tools/verify.py` is green: `BINARY-MATCH` for both images.
 
 ---
