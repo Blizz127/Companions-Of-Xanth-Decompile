@@ -2730,6 +2730,69 @@ produced from an `if`, both units fall together.
 Five forms is the point at which a one-byte gap stops paying, and the next
 round is better spent on a fresh unit.
 
+### exe_110357 decoded; 130 of 128 on the first attempt
+
+`exe-code:0x1AF15`, 128 bytes — the next family member that spills its far
+pointer to a local, chosen because that predictor held for `exe_109184`:
+
+```
+sub sp,4
+ax = 20 * arg2 ; bx = arg1 * 4
+es:bx = g_tbl[bx+67C2h] ; bx += ax
+[bp-4] = bx ; [bp-2] = es
+if ([es:bx] != 5) goto L1
+  q = *(far **)((char far *)p + 0Ah)     ; les bx,[es:bx+0Ah]
+  if (q->g0 == 0) goto L1
+  p->f1 |= 80h
+  sub1() ; sub2(0Ah)
+L1:
+  sub3(82h, p->f2+3, p->f4+2, p->f6-3, p->f8-2)
+  sub4()
+```
+
+and the reconstruction, which compiles to **130 bytes against retail's 128**
+on the first attempt, first difference at `+7`:
+
+```c
+struct T { char g0; char pad[3]; int g4; };
+struct S { char f0; char f1; int f2; int f4; int f6; int f8; struct T far *f10; };
+
+extern struct S far * __near g_tbl[];
+void far sub1(void);
+void far sub2(int a);
+void far sub3(int a, int b, int c, int d, int e);
+void far sub4(void);
+
+void far exe_110357(int i, int n)
+{
+    struct S far *p;
+
+    p = g_tbl[i] + n;
+    if (p->f0 == 5) {
+        if (p->f10->g0 != 0) {
+            p->f1 |= 0x80;
+            sub1();
+            sub2(0xA);
+        }
+    }
+    sub3(0x82, p->f2 + 3, p->f4 + 2, p->f6 - 3, p->f8 - 2);
+    sub4();
+}
+```
+
+**An observation that matters more than the two bytes.** This record has a
+**far pointer at offset 10**, where `exe_109184` stored a plain `int` at the
+same offset. Both index the same table with the same 20-byte stride. So either
+the family uses more than one record type, or offset 10 is a union field. That
+was not visible from the two units recovered before this one, and it means the
+`struct S` shared by the family cannot be assumed identical across members —
+each unit's struct has to be read from its own accesses, which is what has
+been happening, but the reason is now explicit rather than accidental.
+
+The first difference at `+7` is inside the `imul` setup, so the arithmetic
+that leads into the table lookup is where the two bytes are, not the call
+sequence at the end.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
