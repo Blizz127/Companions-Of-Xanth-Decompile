@@ -959,6 +959,32 @@ is a genuine codegen question: retail lays the function out as
 `if (a != 0x10) return 0;`. That is the next thing to work, and it is a
 normal source-level question rather than a measurement artefact.
 
+### OVL family: branch direction fixed, one byte left
+
+Putting the zero case last changes the layout to match retail's:
+
+```c
+char far *far f(int a)
+{
+    if (a == 0x10)
+        return g ? "AAAA" : "BBBBBB";
+    return 0;
+}
+```
+
+The first difference moves from `+7` to `+8` — the `jnz` direction was the
+whole of the previous gap, and that is now resolved. The compiled unit is
+**34 bytes against retail's 35**, so one byte remains. Retail's body
+contains two `EB xx 90` sequences (a forward `jmp` followed by a `nop`)
+where the compiled version emits at most one, which is the likely source of
+the missing byte; that is where the next probe should look rather than at
+the branch structure, which now matches.
+
+`exe_18240` was re-tested after the segment fix and is unchanged at `+3`:
+its object has a single segment and one fixup, so segment selection was
+never its problem. Its `push ds` versus `push [bp+0Ch]` difference stands as
+previously characterised.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
