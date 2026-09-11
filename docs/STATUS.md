@@ -1143,6 +1143,54 @@ same exit/placement question already characterised elsewhere, and it is the
 one thing left: the case set, the actions, the subtraction chain and the
 epilogue all match.
 
+### exe_99679 decoded; and two corrections to my own earlier claims
+
+**The decode.** `exe-code:0x1855F`, 48 bytes:
+
+```
+mov al,[4F28h] ; and ax,1 ; cmp ax,[bp+6] ; jnz OTHER
+mov bx,[4F28h] ; inc byte [bx+4F2Ah] ; jmp FIN
+OTHER: cmp word [4F28h],0Fh ; jnc FIN
+inc word [4F28h] ; mov bx,[4F28h] ; mov byte [bx+4F2Ah],1
+FIN: mov sp,bp ; pop bp ; retf
+```
+
+The flag is read as a **byte** (`mov al,[g]`) while the same address is
+updated as a **word** (`inc word [g]`, `cmp word [g],0Fh`), which points at a
+cast in the source rather than a `char` global. The shape is
+
+```c
+if (a == ((char)g & 1))
+    t[g]++;
+else if (g < 0xF) {
+    g++;
+    t[g] = 1;
+}
+```
+
+with `t` byte-indexed by `g` and the array base folded into the displacement.
+The first reconstruction compiled to a **2-byte object with 10 fixups**, so
+the function body was not emitted at all; the attempt is inconclusive rather
+than a disproof, and this unit is left unclassified.
+
+**Correction 1: my OMF record walker is unreliable.** It reported no LEDATA
+records at all in a 301-byte object that certainly contains them, and in
+earlier rounds it emitted `?9C` entries it should have named FIXUPP. The
+tables I published from it — including the "two LEDATA records in two
+segments" table — are therefore **not trustworthy as exhaustive listings**
+and should not be built on. The *conclusion* drawn from them is separately
+supported: the segment fix moved the OVL family's first difference from `+0`
+to `+7` and left `exe_2096` matching, which is direct evidence that segments
+were being merged. The conclusion stands; the tables do not.
+
+**Correction 2: a heuristic I introduced needs stating.** `tools/omf.py` now
+takes the code segment index from the **first** LEDATA record. That is true
+for the two objects examined and is a no-op for the single-segment objects
+that make up the corpus, but it is a heuristic, not a rule, and the `q1.c`
+oddity above is a hint that some objects may order segments differently. If
+a unit ever resolves to a small buffer of zeros with many fixups, this is
+the first thing to check.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
