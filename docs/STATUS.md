@@ -2654,6 +2654,46 @@ and that is what the next attempt should aim at.
 candidate for exactly that. It is one compile and it is named here so the
 next round starts from the distinction above rather than rediscovering it.
 
+### exe_109184: the `sub` chain is a reuse, not a special idiom
+
+The `int t = a;` form was compiled as named and **fails for a measurable
+reason**: it adds a frame slot, giving 86 bytes and a first difference at
+`+5` (the frame) rather than at the comparison. So the value has to reach `AX`
+without a new local.
+
+That leads to a better reading of retail's sequence than the one recorded last
+round. Rewriting the tail with the sizes attached:
+
+```
+retail  47  8B 46 0A     mov ax,[bp+0Ah]        3
+        50  2D 03 00     sub ax,3               3
+        53  74 0B        jz                     2
+        55  2D 04 00     sub ax,4               3   <- continues from ax = a-3
+        58  75 0A        jnz                    2
+                                             = 13
+
+mine    2F  83 7E 0A 03  cmp word [bp+0Ah],3    4
+        33  74 06        jz                     2
+        35  83 7E 0A 07  cmp word [bp+0Ah],7    4
+        39  75 0A        jnz                    2
+                                             = 12
+```
+
+The `cmp`-against-memory form is **shorter**, so CL's choice of the `sub`
+chain in retail means it was not choosing for size: the second `sub ax,4`
+operates on the *result* of the first, which only makes sense if `AX` held the
+value and was being reused. That is evidence the source produced a chained
+test on a value already in a register — not a `switch` (whose layout is
+wrong), and not a plain `if` (which CL compiles to memory compares), and not
+`int t = a` (which grows the frame).
+
+**What this leaves:** a construct that puts `a` in `AX` for the test without
+declaring a local. A comparison whose operand is an expression rather than a
+plain variable is the natural candidate, since CL must materialise it. That is
+one compile, and it is named here rather than rediscovered: try
+`if ((int)a == 3 || (int)a == 7)` and, if that still uses memory compares,
+`if (a - 3 == 0 || a - 7 == 0)`.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
