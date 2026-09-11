@@ -2075,6 +2075,51 @@ Recording this as a withdrawal rather than quietly rewriting the previous
 section, because the previous section drew a conclusion (that the unit was
 recoverable as C and not assembly) that the evidence does not support.
 
+### Resolved from raw object bytes: CL saves DI/SI when the function references them
+
+The decisive check was to dump the compiled object's LEDATA **without any
+relocation**, for the source that has exactly one `push di; push si` pair:
+
+```
+as1.c  558BEC 57 56 57 56 8A6606 9A00000000 5E 5F 5E 5F 8BE5 5DCB 90
+at1.c  558BEC 8A6606 9A00000000 8BE5 5DCB 90
+```
+
+The duplicate is **in CL's output, not in my splice path** — the object
+genuinely contains four pushes and four pops from a source with one pair.
+And the two objects together explain it:
+
+- `as1.c` **mentions DI and SI** in its `_asm` text (the explicit pushes).
+  CL concludes the function uses those registers and emits its **own**
+  `push di ; push si` … `pop si ; pop di` around the block — which is why
+  the listing showed two pairs.
+- `at1.c` **does not mention them**, so CL emits no save at all.
+
+So the mechanism is real after all, and it is: **CL saves DI/SI when the
+function (including its `_asm` text) references them.** That also means
+retail's `exe_714` decomposes exactly:
+
+```
+3  55 8B EC         prologue
++2 57 56            CL's own save, because something references DI/SI
++3 8A 66 06         mov ah,[bp+6]
++5 9A ..            call far
++2 5E 5F            CL's own restore
++2 5D CB            epilogue
+= 17 bytes, retail's size exactly
+```
+
+The conclusion I withdrew one section ago was **wrong to withdraw**: the
+saves are CL's code. What was wrong was my *explanation of the test* — I
+attributed the outer pair to CL and the inner pair to the source, when in
+fact CL's pair is generated *because* the source's pair is present. The
+withdrawal section stands as written; this section supersedes its conclusion
+on the basis of object bytes rather than a listing.
+
+**What this leaves to find:** a source that references DI/SI without its own
+pushes, so CL's save appears alone. A register variable in the function is
+the obvious candidate, and it is a single compile to test.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
