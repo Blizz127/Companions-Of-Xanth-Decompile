@@ -2432,6 +2432,43 @@ is known (`s`, `bit`, it, `p`). What is not known is which source expression
 produces a value that CL keeps in a register for the whole function without
 ever needing it in memory.
 
+### exe_111158 classified STRUCTURE_UNCERTAIN at 140/142
+
+The last shape tried was a register-resident scalar rather than a pointer —
+a saved mask. Both variants still store their slot:
+
+| fourth declaration | size |
+|---|---|
+| pointer used in the loop | 144 |
+| pointer assigned then copied | 144 |
+| pointer initialised at declaration | 144 |
+| `int` holding the scaled index | 144 |
+| `unsigned m = arg` used as `bit & m` | 146 |
+| `unsigned m = g680e` used as `bit & m` | 144 |
+
+**Six shapes, one compile each, and every one emits `mov [bp-18h],ax`.** Retail
+emits no store to that slot at all. So the difference is not a spelling this
+session failed to guess: it is a declaration whose *only* use keeps the value
+in a register for the whole function, and none of the six ordinary shapes
+produces that.
+
+**Classification: `STRUCTURE_UNCERTAIN`, 140 of 142 bytes.** Everything the
+function does is reproduced and independently verified — the 20-byte record
+with a 20-byte stride, the signed `g680c`, the `rep movsw` struct assignment,
+the `long` argument at offset 2, the DS-built far pointer over a near walker,
+the bottom-tested `do/while (bit <= 0x200)`, and a 26-byte frame of four
+locals. The single unresolved item is the kind of the fourth local, which is
+2 bytes and never touches memory.
+
+**Stopping, and the reason is in the arithmetic of effort.** This unit has now
+taken six rounds for two bytes. The characterisation improved far more than
+the byte count — it began as an undecoded 142-byte dump and now has every
+element pinned but one declaration — but the yield per round is far below the
+session's average, and the remaining question is not obviously answerable from
+the bytes available. Recording it as `STRUCTURE_UNCERTAIN` with the six ruled
+out is more useful to the next session than a seventh guess, and it keeps the
+honest reading of the corpus rather than flattering it.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
