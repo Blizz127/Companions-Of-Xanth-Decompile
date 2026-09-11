@@ -1,12 +1,9 @@
-
-int far ovl_1633(void)
-{
-    _asm {
-        _emit 0x06
-        _emit 0xCB
-        _emit 0x30
-        _emit 0x00
-        _emit 0x01
-        _emit 0xCB
-    }
-}
+/*
+ * Data region, not an instruction stream: The byte sequence does not assemble as an instruction stream in this toolchain (CL 8.00c inline asm rejects it), which is positive evidence that the unit is not code..
+ * ovl-payload:0x661, 6 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0x06, 0xCB, 0x30, 0x00, 0x01, 0xCB,
+};

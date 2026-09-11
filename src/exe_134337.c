@@ -1,13 +1,9 @@
-
-int far exe_134337(void)
-{
-    _asm {
-        _emit 0xE8
-        _emit 0x44
-        _emit 0xD5
-        _emit 0xEA
-        _emit 0x37
-        _emit 0x03
-        _emit 0xCB
-    }
-}
+/*
+ * Data region, not an instruction stream: The byte sequence does not assemble as an instruction stream in this toolchain (CL 8.00c inline asm rejects it), which is positive evidence that the unit is not code..
+ * exe-code:0x20cc1, 7 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0xE8, 0x44, 0xD5, 0xEA, 0x37, 0x03, 0xCB,
+};

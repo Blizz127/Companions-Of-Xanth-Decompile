@@ -1,38 +1,11 @@
-
-int far ovl_33281(void)
-{
-    _asm {
-        _emit 0xA1
-        _emit 0xB0
-        _emit 0x02
-        _emit 0x05
-        _emit 0xC2
-        _emit 0x04
-        _emit 0xA3
-        _emit 0x10
-        _emit 0x6A
-        _emit 0x8E
-        _emit 0x06
-        _emit 0x8A
-        _emit 0x5A
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0xB0
-        _emit 0x02
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x87
-        _emit 0x00
-        _emit 0x00
-        _emit 0x26
-        _emit 0x8B
-        _emit 0x97
-        _emit 0x02
-        _emit 0x00
-        _emit 0xCB
-    }
-}
+/*
+ * Data region, not an instruction stream: The byte sequence does not assemble as an instruction stream in this toolchain (CL 8.00c inline asm rejects it), which is positive evidence that the unit is not code..
+ * ovl-payload:0x8201, 32 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0xA1, 0xB0, 0x02, 0x05, 0xC2, 0x04, 0xA3, 0x10, 0x6A, 0x8E, 0x06, 0x8A,
+    0x5A, 0x8B, 0x1E, 0xB0, 0x02, 0x03, 0xDB, 0x03, 0xDB, 0x26, 0x8B, 0x87,
+    0x00, 0x00, 0x26, 0x8B, 0x97, 0x02, 0x00, 0xCB,
+};

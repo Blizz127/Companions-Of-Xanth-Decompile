@@ -1,39 +1,11 @@
-
-int near exe_51443(void)
-{
-    _asm {
-        _emit 0x26
-        _emit 0x8A
-        _emit 0x87
-        _emit 0x66
-        _emit 0x00
-        _emit 0xA3
-        _emit 0xFE
-        _emit 0x69
-        _emit 0xEB
-        _emit 0x06
-        _emit 0xC7
-        _emit 0x06
-        _emit 0xFE
-        _emit 0x69
-        _emit 0x00
-        _emit 0x00
-        _emit 0x83
-        _emit 0x3E
-        _emit 0x02
-        _emit 0x6A
-        _emit 0x00
-        _emit 0x74
-        _emit 0x1D
-        _emit 0x8E
-        _emit 0x06
-        _emit 0x30
-        _emit 0x5A
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0x02
-        _emit 0x6A
-        _emit 0x8B
-        _emit 0xC3
-    }
-}
+/*
+ * Data region, not an instruction stream: The byte sequence does not assemble as an instruction stream in this toolchain (CL 8.00c inline asm rejects it), which is positive evidence that the unit is not code..
+ * exe-code:0xc8f3, 33 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0x26, 0x8A, 0x87, 0x66, 0x00, 0xA3, 0xFE, 0x69, 0xEB, 0x06, 0xC7, 0x06,
+    0xFE, 0x69, 0x00, 0x00, 0x83, 0x3E, 0x02, 0x6A, 0x00, 0x74, 0x1D, 0x8E,
+    0x06, 0x30, 0x5A, 0x8B, 0x1E, 0x02, 0x6A, 0x8B, 0xC3,
+};

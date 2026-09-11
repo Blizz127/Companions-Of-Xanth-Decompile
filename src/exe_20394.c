@@ -1,29 +1,10 @@
-
-int near exe_20394(void)
-{
-    _asm {
-        _emit 0x56
-        _emit 0x65
-        _emit 0x72
-        _emit 0x73
-        _emit 0x69
-        _emit 0x6F
-        _emit 0x6E
-        _emit 0x20
-        _emit 0x31
-        _emit 0x2E
-        _emit 0x30
-        _emit 0x33
-        _emit 0x0D
-        _emit 0x0A
-        _emit 0xEA
-        _emit 0x54
-        _emit 0x58
-        _emit 0x2B
-        _emit 0xC4
-        _emit 0xA3
-        _emit 0x9A
-        _emit 0x44
-        _emit 0xC3
-    }
-}
+/*
+ * Data region, not an instruction stream: The byte sequence does not assemble as an instruction stream in this toolchain (CL 8.00c inline asm rejects it), which is positive evidence that the unit is not code..
+ * exe-code:0x4faa, 23 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x20, 0x31, 0x2E, 0x30, 0x33,
+    0x0D, 0x0A, 0xEA, 0x54, 0x58, 0x2B, 0xC4, 0xA3, 0x9A, 0x44, 0xC3,
+};

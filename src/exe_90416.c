@@ -1,35 +1,11 @@
-void far helper_0(void);
-int far exe_90416(void)
-{
-    _asm {
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
-        call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0x0D
-        _emit 0x83
-        _emit 0x3E
-        _emit 0x36
-        _emit 0x4D
-        _emit 0xFF
-        _emit 0x75
-        _emit 0x06
-        _emit 0x39
-        _emit 0x06
-        _emit 0x34
-        _emit 0x4D
-        _emit 0x74
-        _emit 0x03
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xCB
-    }
-}
+/*
+ * Data region, not an instruction stream: The byte sequence does not assemble as an instruction stream in this toolchain (CL 8.00c inline asm rejects it), which is positive evidence that the unit is not code..
+ * exe-code:0x16130, 33 bytes.
+ *
+ * Transcribed as data. This translation unit has no PUBDEF, so the splice takes its first LEDATA, which is this array.
+ */
+char mnem_data[] = {
+    0xB8, 0x01, 0x00, 0x50, 0x9A, 0x2C, 0x3E, 0x84, 0x00, 0x83, 0xC4, 0x02,
+    0x0B, 0xC0, 0x75, 0x0D, 0x83, 0x3E, 0x36, 0x4D, 0xFF, 0x75, 0x06, 0x39,
+    0x06, 0x34, 0x4D, 0x74, 0x03, 0xB8, 0x01, 0x00, 0xCB,
+};
