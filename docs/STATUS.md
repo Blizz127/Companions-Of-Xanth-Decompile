@@ -1703,6 +1703,58 @@ work a larger function end to end, or shift effort to the CL+LINK lane,
 where the 94-116 library-classified units would be satisfied by linking
 rather than by writing source at all.
 
+### exe_790 in progress, and a new lever: _inp/_outp intrinsics
+
+`exe-code:0x316`, 35 bytes, fresh and previously unexamined. A device poll
+loop:
+
+```
+mov dx,[3FF8h] ; mov cx,0FFFFh
+L:  in al,dx ; test al,40h ; jz READY ; loop L
+    sub ax,ax ; jmp END          ; counter expired -> return 0
+READY: mov dx,[3FF6h] ; mov al,[bp+6] ; out dx,al ; mov ax,1
+END: pop bp ; retf
+```
+
+So it polls `3FF8h` until bit 6 is clear, then writes the argument to
+`3FF6h` and returns 1; if the counter runs out first it returns 0. That is
+a keyboard-controller handshake shape.
+
+**The lever.** A first attempt with `inp`/`outp` from `conio.h` compiled to
+62 bytes because in the large model they lower to **far calls**. Adding
+
+```c
+#include <conio.h>
+#pragma intrinsic(_inp, _outp)
+```
+
+with `_inp`/`_outp` brings it to 52 bytes and emits `in al,dx` /
+`out dx,al` inline, which is retail's form. This is the same mechanism that
+made `_disable`/`_enable` work earlier, and it is the second header-supplied
+intrinsic found this way: **port I/O needs `#pragma intrinsic(_inp, _outp)`
+or it becomes a call.**
+
+**Where it stands:** 52 bytes against retail's 35, first difference at
+`+3`, i.e. in the loop setup rather than the I/O — the `mov cx,0FFFFh` and
+loop structure still differ. Not resolved, recorded as in progress with the
+lever established so the next attempt starts from 52 bytes and a known
+lowering rather than from 62 and a call.
+
+```c
+int far exe_790(int v)
+{
+    unsigned i;
+
+    for (i = 0xFFFF; i != 0; i--)
+        if (!(_inp(g_poll) & 0x40))
+            goto ready;
+    return 0;
+ready:
+    _outp(g_data, v);
+    return 1;
+}
+```
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
