@@ -589,7 +589,14 @@ def _verify(
             attempt = dict(result)
             attempt["body"] = result["variants"][variant_index]["body"]
             attempt["decls"] = result["variants"][variant_index]["decls"]
-            path.write_text(render(result["text"], attempt), encoding="utf-8")
+            rendered = render(result["text"], attempt)
+            # A regression that clobbers the unit's source text would render a
+            # bare instruction list; refuse to compile that quietly.
+            if "_asm {" not in rendered or not attempt["body"].strip():
+                raise ConvertError(
+                    f"candidate {path.name} has no `_asm` block or an empty body"
+                )
+            path.write_text(rendered, encoding="utf-8")
             return path
 
         def build(path: Path):
