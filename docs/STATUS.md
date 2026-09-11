@@ -1510,14 +1510,25 @@ Two things had to be right and both were found by compiling:
   `mov [bp-2],bx`.
 - All three globals `__near`, the lever from earlier rounds.
 
-**The remaining difference is two bytes**: the compiled unit is **76 against
-retail's 78**. This is unexplained, and the first explanation I wrote for it
-was wrong: I claimed CL hoisted the second shift above the far call, but
-dumping the compiled listing shows the second `mov cl,4` present at `+2E`,
-immediately after the call, exactly where retail has its corresponding one.
-So the two bytes are missing somewhere else and no cause is asserted here.
-Recorded as an unexplained two-byte gap rather than with a guessed
-mechanism.
+**The gap is located, by diffing the two listings from `+0`.** Retail has
+`mov [bp-2],bx` (89 5E FE, three bytes) at `+16`, storing the local
+pointer into its stack slot; the compiled version does not, because CL
+eliminates the store — it keeps the pointer in `bx` and never reads the
+slot back. Everything around it, including `mov cl,4` before the clear and
+again after the far call, is present in both.
+
+The arithmetic nearly balances: retail spends three bytes on the store and
+the compiled unit is two bytes shorter overall, so CL also spends one byte
+more somewhere else. That last byte is not yet identified, and no cause is
+asserted for it — an earlier explanation I wrote for this gap (that CL
+hoisted a shift) was wrong and is withdrawn.
+
+This is the same shape of difference as `exe_112795` and `exe_117397`,
+where the local's stack slot was allocated but unreferenced: retail keeps
+work involving a local that CL removes. In those two units the slot alone
+was enough to match; here retail also writes to it, so the source needs
+something that forces a dead store — a second use of `p`, or a
+declaration form that stops CL treating it as a register candidate.
 
 ### Test status
 
