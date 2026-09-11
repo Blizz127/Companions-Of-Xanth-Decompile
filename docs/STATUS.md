@@ -3042,6 +3042,35 @@ right reading is a liveness difference to be recovered from the source, not a
 shared limitation to be classified. Testing the hypothesis cost one compile
 and it changed the classification, which is the useful outcome.
 
+### exe_109083: the liveness reading is not yet verified
+
+The variant intended to test it — keeping `p` live across the calls by reading
+the fields through the pointer rather than the copy — compiles to **110 bytes**
+and diverges at `+5`, the frame, because the extra far-pointer local grows it.
+So the test did not isolate liveness; it changed two things at once and
+neither result is evidence about the cleanup form.
+
+**What stands from the previous round:** `add sp,N` is producible — measured
+directly, 1 word gives `pop bx`, 2 words give `add sp,4`, 4 words give
+`add sp,8`. That is a fact about CL.
+
+**What does not stand:** the inference that the one-word case in
+`exe_109083` is a liveness decision. It is a plausible reading of the
+measurement and it is *not* confirmed. The experiment that would confirm it
+must keep a register live across the call **without introducing a local**, and
+the attempt here failed to do that.
+
+**State:** 98 of 101. Two adjacent instructions differ — `push ss`/`pop es`
+against `mov ax,ss`/`mov es,ax`, and `pop bx` against `add sp,2`. Everything
+else reproduces, including the 20-byte struct copy, the two-load table access
+and the four calls with cdecl order.
+
+**Correction discipline.** The previous round's note said the liveness reading
+"reframes" the two units. It reframes the *question* — it rules out a missing
+capability — but it does not answer it, and recording it as an answer would
+have been the same mistake as the withdrawn `les` and hoisting conclusions.
+The distinction is now in the file.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
