@@ -886,6 +886,43 @@ their own segment and their own addresses, rather than the per-unit splice
 which compares one contiguous code blob. Both of these blockers are Lane B
 work.
 
+### OVL family: the +0 difference is a comparison artefact, not codegen
+
+Dumping the OMF records for the family source explains the comparison
+failure directly. The object contains **two LEDATA records in two
+segments**:
+
+| record | segment | offset | length | content |
+|---|---|---|---|---|
+| LEDATA | 1 | `0x5500` | 38 | the function's code |
+| LEDATA | 2 | `0x4100` | 12 | `41 41 41 00 42 42 42 42 42 42 00`, the string literals |
+
+So CL puts the literals in their own segment, while the tool's code buffer
+is a concatenation that leads with them — which is why the comparison
+differed at `+0` and why `cl_probe` printed the literals first. The source
+is not misplaced; the comparison is reading the wrong segment. That is the
+hypothesis this round was meant to test, and it holds.
+
+**Two caveats, recorded rather than glossed.**
+
+1. The record walk also emitted two `?9C` entries, and `0x9C` is not a
+   valid OMF record type. That means the walk **drifted** and the record
+   list may be incomplete, so the table above should be treated as
+   indicative rather than exhaustive. A correct walk is needed before any
+   tooling change is made on the strength of it.
+2. The code record's 38 bytes begin `8b ec` with **no `push bp`**, and the
+   function reads `[bp+6]` while freeing `bp` in its epilogue. Either the
+   prologue is emitted in a record the drifting walk missed, or something
+   in the compile path is already trimming it. Until that is resolved the
+   byte lengths (38 vs retail's 35) should not be read as a codegen
+   difference in the source.
+
+Net: the family is still the best available target — four identical
+pure-C units, one idiom, no calls and no segment access — but the next
+step is to fix how the comparison selects the code segment, not to write
+more source. That change would also bear on `exe_18240` and on any unit
+whose translation unit emits more than one segment.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
