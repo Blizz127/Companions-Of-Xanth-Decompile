@@ -2,81 +2,44 @@ void far helper_0(void);
 int far exe_16130(int a)
 {
     _asm {
-        _emit 0x56
-        _emit 0xB4
-        _emit 0x2A
-        _emit 0xCD
-        _emit 0x21
-        _emit 0x8B
-        _emit 0xDA
-        _emit 0x8B
-        _emit 0xF1
-        _emit 0xB4
-        _emit 0x2C
-        _emit 0xCD
-        _emit 0x21
-        _emit 0xB4
-        _emit 0x00
-        _emit 0x8A
-        _emit 0xC6
-        _emit 0x50
-        _emit 0x8A
-        _emit 0xC1
-        _emit 0x50
-        _emit 0x8A
-        _emit 0xC5
-        _emit 0x50
-        _emit 0x50
-        _emit 0xB4
-        _emit 0x2A
-        _emit 0xCD
-        _emit 0x21
-        _emit 0x3B
-        _emit 0xDA
-        _emit 0x58
-        _emit 0x74
-        _emit 0x08
-        _emit 0x3C
-        _emit 0x17
-        _emit 0x75
-        _emit 0x04
-        _emit 0x8B
-        _emit 0xD3
-        _emit 0x8B
-        _emit 0xCE
-        _emit 0xB4
-        _emit 0x00
-        _emit 0x8A
-        _emit 0xC2
-        _emit 0x50
-        _emit 0x8A
-        _emit 0xC6
-        _emit 0x50
-        _emit 0x81
-        _emit 0xE9
-        _emit 0xBC
-        _emit 0x07
-        _emit 0x51
+        mov ah,0x2a
+        int 0x21
+        mov bx,dx
+        mov si,cx
+        mov ah,0x2c
+        int 0x21
+        mov ah,0x0
+        mov al,dh
+        push ax
+        mov al,cl
+        push ax
+        mov al,ch
+        push ax
+        push ax
+        mov ah,0x2a
+        int 0x21
+        cmp bx,dx
+        pop ax
+        jz short $+10
+        cmp al,0x17
+        jnz short $+6
+        mov dx,bx
+        mov cx,si
+lbl2A:
+        mov ah,0x0
+        mov al,dl
+        push ax
+        mov al,dh
+        push ax
+        sub cx,0x7bc
+        push cx
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x0C
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x08
-        _emit 0x00
-        _emit 0x74
-        _emit 0x0A
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x26
-        _emit 0x89
-        _emit 0x57
-        _emit 0x02
-        _emit 0x26
-        _emit 0x89
-        _emit 0x07
-        _emit 0x5E
+        add sp,0xc
+        cmp word ptr [bp+0x8],0x0
+        jz short $+12
+        les bx, [bp+0x6]
+        mov es:[bx+0x2],dx
+        mov es:[bx],ax
+lbl4F:
     }
 }

@@ -2,71 +2,29 @@ void far helper_0(void);
 int near exe_8018(int a)
 {
     _asm {
-        _emit 0x56
-        _emit 0x8B
-        _emit 0x76
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x00
-        _emit 0x02
-        _emit 0x50
+        mov si,[bp+0x4]
+        mov ax,0x200
+        push ax
         call far ptr helper_0
-        _emit 0x59
-        _emit 0x8B
-        _emit 0xDE
-        _emit 0x81
-        _emit 0xEB
-        _emit 0x20
-        _emit 0x54
-        _emit 0x81
-        _emit 0xC3
-        _emit 0x10
-        _emit 0x55
-        _emit 0x0B
-        _emit 0xD2
-        _emit 0x74
-        _emit 0x0B
-        _emit 0x80
-        _emit 0x4C
-        _emit 0x0A
-        _emit 0x08
-        _emit 0xC7
-        _emit 0x47
-        _emit 0x02
-        _emit 0x00
-        _emit 0x02
-        _emit 0xEB
-        _emit 0x0E
-        _emit 0x80
-        _emit 0x4C
-        _emit 0x0A
-        _emit 0x04
-        _emit 0xC7
-        _emit 0x47
-        _emit 0x02
-        _emit 0x01
-        _emit 0x00
-        _emit 0x8C
-        _emit 0xDA
-        _emit 0x8D
-        _emit 0x47
-        _emit 0x01
-        _emit 0x89
-        _emit 0x54
-        _emit 0x02
-        _emit 0x89
-        _emit 0x04
-        _emit 0x89
-        _emit 0x54
-        _emit 0x08
-        _emit 0x89
-        _emit 0x44
-        _emit 0x06
-        _emit 0xC7
-        _emit 0x44
-        _emit 0x04
-        _emit 0x00
-        _emit 0x00
-        _emit 0x5E
+        pop cx
+        mov bx,si
+        sub bx,0x5420
+        add bx,0x5510
+        or dx,dx
+        jz short $+13
+        or byte ptr [si+0xa],0x8
+        mov word ptr [bx+0x2],0x200
+        jmp short $+16
+lbl27:
+        or byte ptr [si+0xa],0x4
+        mov word ptr [bx+0x2],0x1
+        mov dx,ds
+        lea ax,[bx+0x1]
+lbl35:
+        mov [si+0x2],dx
+        mov [si],ax
+        mov [si+0x8],dx
+        mov [si+0x6],ax
+        mov word ptr [si+0x4],0x0
     }
 }

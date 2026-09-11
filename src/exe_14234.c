@@ -2,86 +2,51 @@
 int far exe_14234(int a)
 {
     _asm {
-        _emit 0x57
-        _emit 0x56
-        _emit 0x1E
-        _emit 0xC5
-        _emit 0x76
-        _emit 0x06
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x99
-        _emit 0x33
-        _emit 0xDB
-        _emit 0xAC
-        _emit 0x3C
-        _emit 0x20
-        _emit 0x74
-        _emit 0xFB
-        _emit 0x3C
-        _emit 0x09
-        _emit 0x74
-        _emit 0xF7
-        _emit 0x50
-        _emit 0x3C
-        _emit 0x2D
-        _emit 0x74
-        _emit 0x04
-        _emit 0x3C
-        _emit 0x2B
-        _emit 0x75
-        _emit 0x01
-        _emit 0xAC
-        _emit 0x3C
-        _emit 0x39
-        _emit 0x77
-        _emit 0x1F
-        _emit 0x2C
-        _emit 0x30
-        _emit 0x72
-        _emit 0x1B
-        _emit 0xD1
-        _emit 0xE3
-        _emit 0xD1
-        _emit 0xD2
-        _emit 0x8B
-        _emit 0xCB
-        _emit 0x8B
-        _emit 0xFA
-        _emit 0xD1
-        _emit 0xE3
-        _emit 0xD1
-        _emit 0xD2
-        _emit 0xD1
-        _emit 0xE3
-        _emit 0xD1
-        _emit 0xD2
-        _emit 0x03
-        _emit 0xD9
-        _emit 0x13
-        _emit 0xD7
-        _emit 0x03
-        _emit 0xD8
-        _emit 0x83
-        _emit 0xD2
-        _emit 0x00
-        _emit 0xEB
-        _emit 0xDC
-        _emit 0x58
-        _emit 0x3C
-        _emit 0x2D
-        _emit 0x93
-        _emit 0x75
-        _emit 0x07
-        _emit 0xF7
-        _emit 0xD8
-        _emit 0x83
-        _emit 0xD2
-        _emit 0x00
-        _emit 0xF7
-        _emit 0xDA
-        _emit 0x1F
-        _emit 0x5E
-        _emit 0x5F
+        push ds
+        lds si, [bp+0x6]
+        xor ax,ax
+        cwd
+        xor bx,bx
+lbl0B:
+        lodsb
+        cmp al,0x20
+        jz short $-3
+        cmp al,0x9
+        jz short $-7
+        push ax
+        cmp al,0x2d
+        jz short $+6
+        cmp al,0x2b
+        jnz short $+3
+lbl1D:
+        lodsb
+lbl1E:
+        cmp al,0x39
+        ja short $+33
+        sub al,0x30
+        jc short $+29
+        shl bx,1
+        rcl dx,1
+        mov cx,bx
+        mov di,dx
+        shl bx,1
+        rcl dx,1
+        shl bx,1
+        rcl dx,1
+        add bx,cx
+        adc dx,di
+        add bx,ax
+        adc dx,0x0
+        jmp short $-34
+lbl41:
+        pop ax
+        cmp al,0x2d
+        xchg ax,bx
+        jnz short $+9
+        neg ax
+        adc dx,0x0
+        neg dx
+lbl4E:
+        pop ds
     }
 }

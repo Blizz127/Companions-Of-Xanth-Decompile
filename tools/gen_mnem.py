@@ -298,7 +298,43 @@ def convert(unit: dict, root: Path | None = None) -> dict:
     note = ""
     if helper_index != len(calls):
         note = f"only {helper_index}/{len(calls)} far calls placed"
-    return {"decls": decls, "body": "\n".join(lines) + "\n", "note": note, "text": text}
+    bodies = ["\n".join(lines) + "\n"]
+    variant = _drop_wrapper_pair(lines)
+    if variant is not None:
+        bodies.append("\n".join(variant) + "\n")
+    return {
+        "decls": decls,
+        "bodies": bodies,
+        "body": bodies[0],
+        "note": note,
+        "text": text,
+    }
+
+
+def _drop_wrapper_pair(lines: list[str]) -> list[str] | None:
+    """Leave an asm-authored SI/DI save pair for CL's own wrapper to emit.
+
+    CL inserts `push di; push si` ... `pop si; pop di` around any block that
+    mentions SI/DI, so a body that already spells that exact pair (in that
+    order) would emit it twice. Dropping the body's pair and letting the
+    wrapper provide it reproduces the retail bytes whenever the block still
+    writes SI/DI somewhere else.
+    """
+    starts = [index for index, line in enumerate(lines) if not line.strip().endswith(":")]
+    if len(starts) < 2:
+        return None
+    first = [lines[index].strip() for index in starts[:2]]
+    last = [lines[index].strip() for index in starts[-2:]]
+    if first == ["push di", "push si"] and last == ["pop si", "pop di"]:
+        drop = set(starts[:2]) | set(starts[-2:])
+        return [line for index, line in enumerate(lines) if index not in drop]
+    single = lines[starts[0]].strip()
+    if single in ("push si", "push di") and lines[starts[-1]].strip() == single.replace(
+        "push", "pop"
+    ):
+        drop = {starts[0], starts[-1]}
+        return [line for index, line in enumerate(lines) if index not in drop]
+    return None
 
 
 def render(source_text: str, result: dict) -> str:
@@ -501,11 +537,13 @@ def _verify(
     images = unit_index.image_bytes(root)
     with tempfile.TemporaryDirectory(prefix="mnem_") as tmp:
         work = Path(tmp)
-        paths: list[Path] = []
-        for index, (unit, result) in enumerate(selected):
-            path = work / f"cand{index:04d}.c"
-            path.write_text(render(result["text"], result), encoding="utf-8")
-            paths.append(path)
+
+        def candidate(index: int, body_index: int, result: dict) -> Path:
+            path = work / f"cand{index:04d}_{body_index}.c"
+            attempt = dict(result)
+            attempt["body"] = result["bodies"][body_index]
+            path.write_text(render(result["text"], attempt), encoding="utf-8")
+            return path
 
         def build(path: Path):
             try:
@@ -513,24 +551,66 @@ def _verify(
             except RetailError as exc:
                 return exc
 
-        if jobs > 1:
-            with ThreadPoolExecutor(max_workers=jobs) as pool:
-                built = list(pool.map(build, paths))
-        else:
-            built = [build(path) for path in paths]
+        def compile_all(paths: list[Path]) -> list:
+            if jobs > 1:
+                with ThreadPoolExecutor(max_workers=jobs) as pool:
+                    return list(pool.map(build, paths))
+            return [build(path) for path in paths]
+
+        def evaluate(unit: dict, value):
+            if isinstance(value, RetailError):
+                return None
+            compiled, fixups = value
+            return check_compiled(unit, compiled, fixups, images)
+
+        outcomes: list[dict | None] = [None] * len(selected)
+        errors: list[RetailError | None] = [None] * len(selected)
+        chosen: dict[int, int] = {}
+        first = compile_all([candidate(i, 0, result) for i, (_u, result) in enumerate(selected)])
+        for index, (unit, _result) in enumerate(selected):
+            if isinstance(first[index], RetailError):
+                errors[index] = first[index]
+                continue
+            outcomes[index] = evaluate(unit, first[index])
+
+        # Units whose first spelling did not match get a second attempt with
+        # the asm-authored SI/DI save pair left to CL's own wrapper.
+        retry = [
+            index
+            for index, (unit, result) in enumerate(selected)
+            if len(result["bodies"]) > 1
+            and (outcomes[index] is None or outcomes[index]["result"] != "MATCH")
+        ]
+        if retry:
+            retry_built = compile_all([candidate(i, 1, selected[i][1]) for i in retry])
+            for index, value in zip(retry, retry_built):
+                if isinstance(value, RetailError):
+                    continue
+                outcome = evaluate(selected[index][0], value)
+                if outcome is not None and outcome["result"] == "MATCH":
+                    outcomes[index] = outcome
+                    errors[index] = None
+                    chosen[index] = 1
 
         good = 0
         ok: dict[str, bool] = {}
-        for (unit, _result), outcome_value in zip(selected, built):
-            if isinstance(outcome_value, RetailError):
-                lines = [line for line in str(outcome_value).strip().splitlines() if line.strip()]
+        for index, (unit, result) in enumerate(selected):
+            if outcomes[index] is None:
+                exc = errors[index]
+                lines = (
+                    [line for line in str(exc).strip().splitlines() if line.strip()]
+                    if exc is not None
+                    else ["no candidate assembled"]
+                )
                 print(f"{unit['source']:<28} COMPILE-FAIL {' | '.join(lines[:3])}")
                 ok[unit["source"]] = False
                 continue
-            compiled, fixups = outcome_value
-            outcome = check_compiled(unit, compiled, fixups, images)
+            outcome = outcomes[index]
             print(summary_line(outcome))
             matched = outcome["result"] == "MATCH"
+            if matched and chosen.get(index):
+                # The winning spelling is the one that has to be written out.
+                result["body"] = result["bodies"][chosen[index]]
             # A source registered at more than one offset is only replaced
             # when every one of its registrations matches.
             ok[unit["source"]] = ok.get(unit["source"], True) and matched

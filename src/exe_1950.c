@@ -2,71 +2,30 @@
 int far exe_1950(int a)
 {
     _asm {
-        _emit 0x56
-        _emit 0x2B
-        _emit 0xDB
-        _emit 0xB9
-        _emit 0x10
-        _emit 0x00
-        _emit 0xF6
-        _emit 0x87
-        _emit 0x7C
-        _emit 0x40
-        _emit 0x01
-        _emit 0x75
-        _emit 0x29
-        _emit 0xFA
-        _emit 0xC6
-        _emit 0x87
-        _emit 0x7C
-        _emit 0x40
-        _emit 0x01
-        _emit 0xC4
-        _emit 0x76
-        _emit 0x06
-        _emit 0x89
-        _emit 0xB7
-        _emit 0x7F
-        _emit 0x40
-        _emit 0x8C
-        _emit 0x87
-        _emit 0x81
-        _emit 0x40
-        _emit 0x26
-        _emit 0xC7
-        _emit 0x04
-        _emit 0x00
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0A
-        _emit 0x89
-        _emit 0x87
-        _emit 0x7D
-        _emit 0x40
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0x10
-        _emit 0x26
-        _emit 0xC7
-        _emit 0x04
-        _emit 0xFF
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x09
-        _emit 0x90
-        _emit 0x83
-        _emit 0xC3
-        _emit 0x07
-        _emit 0xE2
-        _emit 0xCB
-        _emit 0xBB
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0xFB
-        _emit 0x8B
-        _emit 0xC3
-        _emit 0x5E
+        sub bx,bx
+        mov cx,0x10
+lbl06:
+        test byte ptr [bx+0x407c],0x1
+        jnz short $+43
+        cli
+        mov byte ptr [bx+0x407c],0x1
+        les si, [bp+0x6]
+        mov [bx+0x407f],si
+        mov word ptr [bx+0x4081],es
+        mov word ptr es:[si],0x0
+        mov ax,[bp+0xa]
+        mov [bx+0x407d],ax
+        or ax,ax
+        jnz short $+18
+        mov word ptr es:[si],0xff
+        jmp short $+11
+        nop
+lbl36:
+        add bx,0x7
+        loop lbl06
+        mov bx,0xffff
+lbl3E:
+        sti
+        mov ax,bx
     }
 }

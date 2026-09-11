@@ -2,61 +2,34 @@
 int far exe_95822(int a)
 {
     _asm {
-        _emit 0x57
-        _emit 0x56
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x0E
-        _emit 0x00
-        _emit 0x74
-        _emit 0x2E
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x56
-        _emit 0x08
-        _emit 0x39
-        _emit 0x46
-        _emit 0x0A
-        _emit 0x75
-        _emit 0x05
-        _emit 0x39
-        _emit 0x56
-        _emit 0x0C
-        _emit 0x74
-        _emit 0x1E
-        _emit 0x1E
-        _emit 0x56
-        _emit 0x57
-        _emit 0x8B
-        _emit 0x4E
-        _emit 0x0E
-        _emit 0x8B
-        _emit 0x56
-        _emit 0x10
-        _emit 0xC5
-        _emit 0x76
-        _emit 0x0A
-        _emit 0xC4
-        _emit 0x7E
-        _emit 0x06
-        _emit 0xAC
-        _emit 0x3A
-        _emit 0xC2
-        _emit 0x74
-        _emit 0x03
-        _emit 0x26
-        _emit 0x88
-        _emit 0x05
-        _emit 0x47
-        _emit 0x49
-        _emit 0x75
-        _emit 0xF4
-        _emit 0x5F
-        _emit 0x5E
-        _emit 0x1F
-        _emit 0x5E
-        _emit 0x5F
+        cmp word ptr [bp+0xe],0x0
+        jz short $+48
+        mov ax,[bp+0x6]
+        mov dx,[bp+0x8]
+        cmp [bp+0xa],ax
+        jnz short $+7
+        cmp [bp+0xc],dx
+        jz short $+32
+lbl18:
+        push ds
+        push si
+        push di
+        mov cx,[bp+0xe]
+        mov dx,[bp+0x10]
+        lds si, [bp+0xa]
+        les di, [bp+0x6]
+lbl27:
+        lodsb
+        cmp al,dl
+        jz short $+5
+        mov es:[di],al
+lbl2F:
+        inc di
+        dec cx
+        jnz short $-10
+        pop di
+        pop si
+        pop ds
+lbl36:
     }
 }
