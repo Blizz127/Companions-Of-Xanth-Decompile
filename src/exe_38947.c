@@ -8,6 +8,16 @@ extern int __near mn69F6;
 extern int __near mn0070;
 extern int __near mn002E;
 extern int __near mn002C;
+extern int __near mn0056;
+extern int __near mn69F2;
+extern int __near mn0256;
+extern int __near mn69F4;
+extern int __near mn5A1E;
+extern int __near mn42E8;
+extern int __near mn69F6;
+extern int __near mn0070;
+extern int __near mn002E;
+extern int __near mn002C;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -34,8 +44,8 @@ int far exe_38947(int a)
         sub sp,0x8
         cmp word ptr mn0056,0x1
         jnz short $+5
-        jmp L1A2
-L0D:
+        jmp lbl1A2
+lbl0D:
         call far ptr helper_0
         mov word ptr mn69F2,0x0
         push word ptr mn0256
@@ -56,7 +66,7 @@ L0D:
         push word ptr [bp-0x4]
         call far ptr helper_5
         add sp,0x2
-L52:
+lbl52:
         mov ax,mn69F4
         cmp [bp-0x4],ax
         jnz short $+43
@@ -68,13 +78,13 @@ L52:
         jz short $+24
         cmp word ptr mn42E8,0x0
         jnz short $+5
-        jmp L125
-L77:
+        jmp lbl125
+lbl77:
         push ax
         call far ptr helper_6
         add sp,0x2
-        jmp L125
-L83:
+        jmp lbl125
+lbl83:
         mov word ptr mn69F2,0x1
         mov ax,[bp-0x4]
         mov mn69F4,ax
@@ -103,7 +113,7 @@ L83:
         mov word ptr mn69F6,0x1
         jmp short $+81
         nop
-LD7:
+lblD7:
         xor ax,ax
         push ax
         push word ptr mn69F4
@@ -126,9 +136,9 @@ LD7:
         push ax
         call far ptr helper_12
         add sp,0x4
-L11F:
+lbl11F:
         mov word ptr mn69F6,0x0
-L125:
+lbl125:
         mov ax,0x16
         push ax
         push word ptr mn0256
@@ -137,20 +147,20 @@ L125:
         or ax,ax
         jz short $+8
         mov word ptr mn69F6,0x0
-L13F:
+lbl13F:
         call far ptr helper_14
         call far ptr helper_15
         cmp word ptr mn69F6,0x0
         jz short $+9
         call far ptr helper_16
         jmp short $+77
-L157:
+lbl157:
         mov word ptr mn69F6,0x1
         call far ptr helper_17
         cmp word ptr mn42E8,0x0
         jnz short $+7
         call far ptr helper_16
-L16E:
+lbl16E:
         les bx, [bp-0x8]
         cmp byte ptr es:[bx],0x0
         jz short $+28
@@ -162,12 +172,12 @@ L16E:
         push word ptr [bp-0x8]
         call far ptr helper_18
         add sp,0x4
-L191:
+lbl191:
         cmp word ptr mn42E8,0x0
         jz short $+7
         call far ptr helper_16
-L19D:
+lbl19D:
         call far ptr helper_19
-L1A2:
+lbl1A2:
     }
 }

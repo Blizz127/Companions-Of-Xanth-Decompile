@@ -1,5 +1,7 @@
 extern int __near mn4D34;
 extern int __near mn4D36;
+extern int __near mn4D34;
+extern int __near mn4D36;
 void far helper_0(void);
 int far exe_90449(int a)
 {
@@ -20,7 +22,7 @@ int far exe_90449(int a)
         call far ptr helper_0
         add sp,0xa
         jmp short $+88
-L2D:
+lbl2D:
         cmp word ptr mn4D36,-1
         jnz short $+69
         mov byte ptr [bp-0xf],0x7
@@ -51,11 +53,11 @@ L2D:
         mov [bp-0x2],ax
         jmp short $+15
         nop
-L77:
+lbl77:
         mov ax,mn4D36
         mov [bp-0x2],ax
         mov word ptr mn4D36,0xffff
-L83:
+lbl83:
         mov ax,[bp-0x2]
     }
 }

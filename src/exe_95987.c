@@ -9,12 +9,12 @@ int far exe_95987(int a)
         jnz short $+10
         cmp [bp+0xc],dx
         jnz short $+5
-        jmp L11D
-L16:
+        jmp lbl11D
+lbl16:
         test word ptr [bp+0x10],0xffff
         jnz short $+5
-        jmp L10D
-L20:
+        jmp lbl10D
+lbl20:
         mov [bp-0x4],ax
         mov [bp-0x2],dx
         mov cx,[bp+0xa]
@@ -23,13 +23,13 @@ L20:
         mov [bp-0x6],bx
         cmp bx,dx
         jna short $+5
-        jmp LD1
-L39:
+        jmp lblD1
+lbl39:
         jc short $+9
         cmp cx,ax
         jc short $+5
-        jmp LD1
-L42:
+        jmp lblD1
+lbl42:
         mov ax,[bp+0xe]
         mov dx,[bp+0x10]
         add ax,[bp-0x8]
@@ -42,7 +42,7 @@ L42:
         ja short $+7
         cmp ax,[bp-0x4]
         jna short $+113
-L62:
+lbl62:
         mov ax,[bp+0xe]
         mov dx,[bp+0x10]
         add ax,[bp-0x8]
@@ -58,7 +58,7 @@ L62:
         mov cx,0xc
         shl ax,cl
         add [bp-0x2],ax
-L8C:
+lbl8C:
         mov ax,[bp+0xe]
         mov dx,[bp+0x10]
         sub word ptr [bp+0xe],0x1
@@ -68,7 +68,7 @@ L8C:
         jg short $+6
         or ax,ax
         jz short $+123
-LA4:
+lblA4:
         add word ptr [bp-0x8],-1
         sbb ax,ax
         not ax
@@ -86,7 +86,7 @@ LA4:
         jmp short $-65
         nop
         nop
-LD1:
+lblD1:
         mov ax,[bp+0xe]
         mov dx,[bp+0x10]
         sub word ptr [bp+0xe],0x1
@@ -96,27 +96,27 @@ LD1:
         jg short $+6
         or ax,ax
         jz short $+54
-LE9:
+lblE9:
         les bx, [bp-0x8]
         add word ptr [bp-0x8],0x1
         jnc short $+7
         add word ptr [bp-0x6],0x1000
-LF7:
+lblF7:
         mov al,es:[bx]
         les bx, [bp-0x4]
         add word ptr [bp-0x4],0x1
         jnc short $+7
         add word ptr [bp-0x2],0x1000
-L108:
+lbl108:
         mov es:[bx],al
         jmp short $-58
-L10D:
+lbl10D:
         push word ptr [bp+0xe]
         push word ptr [bp+0xc]
         push word ptr [bp+0xa]
         push dx
         push ax
         call far ptr helper_0
-L11D:
+lbl11D:
     }
 }

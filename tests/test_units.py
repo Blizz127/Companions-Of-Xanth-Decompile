@@ -49,7 +49,7 @@ class DumpExtentTests(unittest.TestCase):
                 position += 1 if want is not None else 5
             checked += 1
         # Floor tracks the live dump population; it shrank from 2,380 to
-        # 566 units as `tools/gen_mnem.py` re-emitted them as mnemonics or
+        # 561 units as `tools/gen_mnem.py` re-emitted them as mnemonics or
         # transcribed them as data.
         self.assertGreater(checked, 520)
 
@@ -66,7 +66,7 @@ class DumpExtentTests(unittest.TestCase):
             # gap that let the splitter glue `__pascal` functions together.
             self.assertTrue(units.ends_in_return(blob), row["source"])
             seen += 1
-        # 549 complete functions are still dump-shaped (was 1,142).
+        # 544 complete functions are still dump-shaped (was 1,142).
         self.assertGreater(seen, 520)
 
 
@@ -77,7 +77,7 @@ class CoverageReportTests(unittest.TestCase):
     # Locked 2026-09-11 from `python3 tools/coverage.py` after the 60 mixed
     # units and 581 complete dump functions were re-emitted as mnemonics by
     # `tools/gen_mnem.py` (on top of the Sept-10 recoveries and splits).
-    DUMP_PERCENT_CEILING = {"exe-code": 45.81, "ovl-payload": 34.42}
+    DUMP_PERCENT_CEILING = {"exe-code": 45.68, "ovl-payload": 33.63}
     UNAIDED_C_UNIT_FLOOR = 442
     DUMP_FUNCTION_CEILING = 560
 

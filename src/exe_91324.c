@@ -3,6 +3,11 @@ extern int __near mn4D3A;
 extern int __near mn4DA0;
 extern int __near mn4DA2;
 extern int __near mn4DA4;
+extern int __near mn4D38;
+extern int __near mn4D3A;
+extern int __near mn4DA0;
+extern int __near mn4DA2;
+extern int __near mn4DA4;
 
 int far exe_91324(int a)
 {
@@ -17,12 +22,12 @@ int far exe_91324(int a)
         cmp [bp+0x6],ax
         jnz short $+8
         mov word ptr mn4D38,0xffff
-L22:
+lbl22:
         xor ax,ax
         mov mn4D3A,ax
         mov [bp-0x2],ax
         mov word ptr [bp-0x4],0x6354
-L2F:
+lbl2F:
         mov bx,[bp-0x4]
         cmp word ptr [bx],-1
         jz short $+22
@@ -33,7 +38,7 @@ L2F:
         jnl short $+8
         mov ax,[bp-0x2]
         mov mn4D38,ax
-L4B:
+lbl4B:
         inc word ptr [bp-0x2]
         add word ptr [bp-0x4],0x2
         cmp word ptr [bp-0x4],0x6358
@@ -42,6 +47,6 @@ L4B:
         mov mn4DA0,ax
         mov mn4DA2,ax
         mov mn4DA4,ax
-L65:
+lbl65:
     }
 }
