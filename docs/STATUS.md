@@ -2793,6 +2793,49 @@ The first difference at `+7` is inside the `imul` setup, so the arithmetic
 that leads into the table lookup is where the two bytes are, not the call
 sequence at the end.
 
+### exe_110357: stride fixed; the last 2 bytes are a pointer materialisation
+
+**A decode bug found and fixed by tracing `+7`.** My struct was 14 bytes and
+retail's record is 20, which showed up as a wrong `imul` immediate:
+
+```
+retail  06  B8 14 00     mov ax,14h        ; 20
+mine    06  B8 0E 00     mov ax,0Eh        ; 14
+```
+
+Adding a 6-byte tail made the struct 20 bytes and the `imul` matched
+(`mov ax,14h`), moving the first difference from `+7` to `+21`. That is the
+second time this session the stride has been the tell — and it is a good
+check to run first, since `sizeof` is reflected directly in the `imul`
+operand and nothing else.
+
+**The remaining 2 bytes** are in the table-load region:
+
+```
+retail  13  C4 9F C2 67   les bx,word [bx+67C2h]
+        17  03 D8          add bx,ax
+        19  89 5E FC       mov [bp-4],bx        <- straight to the local
+        1C  8C 46 FE       mov word [bp-2],es
+
+mine    13  C4 9F 00 00   les bx,word [bx+0]
+        17  03 D8          add bx,ax
+        19  8B C3          mov ax,bx            <- materialised
+        1B  8C C2          mov dx,es            <- first
+        1D  89 5E FC       mov [bp-4],bx
+        20  8C 46 FE       mov word [bp-2],es
+```
+
+CL copies the pointer into `AX:DX` before storing it, where retail stores
+`BX`/`ES` in place. `exe_109184` — the same access pattern, same table, same
+local — stored in place with no materialisation, so this is not a property of
+the table or the local; it is triggered by something in this function's use of
+the pointer. The nested dereference (`p->f10->g0`, a far pointer read from a
+far record) is the obvious difference and the thing to vary next.
+
+**State:** 130 against 128, with the call sequence reproducing and the
+divergence confined to four instructions in the prologue. Both facts above are
+new this round, and the stride one is a generalisable check.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
