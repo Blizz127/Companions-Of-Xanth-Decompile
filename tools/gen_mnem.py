@@ -277,18 +277,18 @@ def convert(unit: dict, root: Path | None = None) -> dict:
                 # MASM shortens a `jmp` whose distance is already known, so a
                 # rel16 jump has to name a label it cannot resolve in pass 1.
                 if insn["raw"][:1] == b"\xeb":
-                    lines.append(f"        jmp short {offset}")
+                    lines.append(f"        jmp short lbl{target:02X}")
                 else:
                     lines.append(f"        jmp lbl{target:02X}")
                 continue
-            # MASM expands a backward conditional jump to `inverse; jmp`, and
-            # mis-resolves some forward ones; `$` pins the rel8 the retail
-            # image actually uses.
+            # `short` pins the rel8 the retail image uses; without it MASM
+            # expands a backward conditional jump to `inverse; jmp`. A
+            # `$`-relative displacement is avoided because the compiler ICEs
+            # on some of them (see the seventh-pass notes).
             if name == "jcxz" or name.startswith("loop"):
-                # `jcxz $+N` and `loop $+N` are rejected by the assembler.
                 lines.append(f"        {name} lbl{target:02X}")
             else:
-                lines.append(f"        {name} short {offset}")
+                lines.append(f"        {name} short lbl{target:02X}")
             continue
         asm_text = _masm(mnemonic, symgen)
         if insn["raw"][:1] == b"\x81":
