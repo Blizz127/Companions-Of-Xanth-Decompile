@@ -778,6 +778,24 @@ function bodies. Nothing was recovered and nothing was lost; the denominator
 was wrong. This is flagged rather than slipped through, and it is the first
 movement of any ratchet in this project.
 
+### The split units pass the real splice pipeline
+
+Extent arithmetic is not the same as a working unit, so the new dumps were
+run through `tools/lift.py`, which compiles each source with the pinned
+toolchain and applies the real `c_units._relocate` trimming:
+
+| unit | result |
+|---|---|
+| `exe_30576` | MATCH, 171 bytes, trimmed 1 |
+| `exe_18274` | MATCH, 704 bytes, trimmed 2 |
+| `exe_30534` | MATCH, 42 bytes, trimmed 4 |
+| `exe_18240` | MATCH, 34 bytes, trimmed 4 |
+
+4/4 MATCH. So the generated dump format is correct and the corpus change
+does not endanger the rebuild. The trims are the documented `_relocate`
+behaviour for `_asm` units and stay visible in the report rather than being
+hidden.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
