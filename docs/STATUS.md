@@ -1530,6 +1530,29 @@ was enough to match; here retail also writes to it, so the source needs
 something that forces a dead store — a second use of `p`, or a
 declaration form that stops CL treating it as a register candidate.
 
+### exe_115231: two more forms tried for the dead store, neither forces it
+
+After locating the gap as retail's `mov [bp-2],bx` at `+16`, two source
+forms were compiled to try to make CL keep that store:
+
+| form | result |
+|---|---|
+| `int __near *p = &g_a[g_idx];` (initialised at declaration) | 76 bytes, store still eliminated |
+| `p[0]` used for both the test and the clear | 76 bytes, store still eliminated |
+
+Both still differ at retail's `+16`, so the store is not something a
+declaration or a re-use in these positions brings back. Three forms have now
+been tried for it. The one lever not yet tried is qualifying the pointer
+itself `volatile`, which would force the store but also force reloads of
+`p` that retail does not have, so it is expected to overshoot rather than
+match — recorded as the next thing to test, with that expectation stated up
+front rather than discovered afterwards.
+
+**Where this round landed.** One recovery (`exe_112711`, zero trims), one
+near match located to a single missing instruction (`exe_115231`), and one
+retraction of my own wrong explanation. Four units were recovered across the
+session: `exe_2096`, `exe_99679`, `exe_112795`, `exe_112711`.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
