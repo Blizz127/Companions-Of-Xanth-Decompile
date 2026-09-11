@@ -2331,6 +2331,40 @@ superseded. That is a specific, testable thing to add, and adding it is not
 fitting the bytes: it is naming a declaration the frame already proves
 existed.
 
+### exe_111158: frame reproduced — the fourth slot is a 2-byte local
+
+Declaring a second 2-byte pointer alongside the first reproduces retail's
+frame exactly:
+
+```
+retail  0003  83 EC 1A   sub sp,1Ah
+this    0003  83 EC 1A   sub sp,1Ah
+```
+
+and the first difference moves from `+5` to `+13`, i.e. the whole frame
+region now matches. That settles the open question: **the fourth local is 2
+bytes**, not padding and not part of `s`.
+
+The variant is not the answer though — it compiles to **144 against retail's
+142**, because using the second pointer in the loop emits code retail does
+not have. So the fourth declaration is 2 bytes and is either register-resident
+(never spilled, like the `si` counter in `exe_790` and the far pointer in
+`exe_112711`) or written and never read. Both leave a bare slot; only one
+adds no code.
+
+**What is now known about this unit, from evidence rather than inference:**
+the record is 20 bytes with a 20-byte stride; `g680c` is signed (`F7 2E`);
+the struct assignment produces `rep movsw` with `cx = 0Ah`; the first call
+takes a `long` at offset 2; `callB` takes a far pointer built from DS and a
+near pointer that walks by 20; the loop is `do/while (bit <= 0x200)` with the
+test at the bottom; and the frame is 26 bytes = 20 + 2 + 2 + 2, four locals.
+
+That is a 142-byte function reconstructed to 140 with the last two bytes
+identified precisely as a declaration, which is a better place to stop than
+the alternative of declaring an unused variable to pad the frame — that would
+produce the right bytes for the wrong reason and would have to be thrown away
+the moment the real declaration was found.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
