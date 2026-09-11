@@ -14189,6 +14189,46 @@
       "image": "ovl-payload",
       "offset": 62755,
       "source": "src/ovl_62755.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 18274,
+      "source": "src/exe_18274.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 25234,
+      "source": "src/exe_25234.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 26628,
+      "source": "src/exe_26628.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 30576,
+      "source": "src/exe_30576.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 30807,
+      "source": "src/exe_30807.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 31405,
+      "source": "src/exe_31405.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 35139,
+      "source": "src/exe_35139.c"
+    },
+    {
+      "image": "exe-code",
+      "offset": 100448,
+      "source": "src/exe_100448.c"
     }
   ]
 }
