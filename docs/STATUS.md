@@ -796,52 +796,46 @@ does not endanger the rebuild. The trims are the documented `_relocate`
 behaviour for `_asm` units and stay visible in the report rather than being
 hidden.
 
-### Near match: exe_18240 — a long-returning callback store
+### exe_18240: source recovered; the residue is module context, not source
 
-`exe-code:0x4740`, 34 bytes. Retail:
-
-```
-push bp ; mov bp,sp
-push ds ; push bx
-lds bx,[bp+6]              ; p, held in DS:BX across the call
-push word [bp+0Ch] ; push word [bp+0Ah]    ; the long argument `a`
-push word [bx+2] ; push word [bx]          ; the current *p
-push cs ; call +0A5h                       ; same-segment far call
-mov [bx],ax ; mov [bx+2],dx                ; *p = the returned long
-pop bx ; pop ds ; pop bp ; retf 8
-```
-
-so it is `*p = helper(*p, a)` with a `long` return, a `long` argument and a
-`long far *p`, and the outer function pops 8 bytes of arguments
-(`retf 8`) — a `__pascal`/`__stdcall` far function.
+`__stdcall` does not exist in this compiler (`C2143: missing '{' before
+'modifier'`), but the instructions are reproduced exactly by a `__pascal`
+reading with the parameters in the opposite order:
 
 ```c
-long far helper(long x, long y);
+long __pascal far helper(long x, long y);
 
-void far f(long far *p, long a)
+void __pascal far f(long a, long far *p)
 {
-    *p = helper(*p, a);
+    *p = helper(a, *p);
 }
 ```
 
-compiles to the same instruction sequence, the same push order and the same
-`mov [bx],ax; mov [bx+2],dx` store-back, but differs in exactly three ways:
+This gets the parameter offsets (`p` at `bp+6`, `a` at `bp+0Ah`), the push
+order (`a` high then low, then `*p` high then low), `retf 8`, and the
+`mov [bx],ax; mov [bx+2],dx` store-back all correct. The earlier attempt
+with `f(long far *p, long a)` had the arguments reversed and produced the
+wrong offsets — the convention is pascal, the parameter order is `a` first.
+
+Two differences remain, and both are consequences of compiling a single
+unit outside its original module:
 
 | retail | this compiler |
 |---|---|
-| `push ds; push bx; lds bx,[bp+6]` — pointer in **DS**:BX, saved across the call | `les bx,[bp+6]` — pointer in **ES**:BX, not saved |
-| `push cs; call rel16` (callee in this segment) | `call far ptr helper` (5-byte `9A` + fixup) |
-| `retf 8` (pops its own arguments) | `retf` (cdecl) |
+| `push ds; push bx; lds bx,[bp+6]` … `pop bx; pop ds` — pointer in DS:BX, saved across the call | `les bx,[bp+6]` … `les bx,[bp+6]` — ES:BX, reloaded after the call |
+| `push cs; call rel16` — the helper is in this code segment | `call far ptr helper` (5-byte `9A` plus fixup) |
 
-The third is a declaration (`__pascal`/`__stdcall` on `f`), the second is a
-consequence of the helper being in the same segment as the caller, and the
-first is the open question: what makes CL hold the far pointer in DS:BX
-rather than ES:BX. Nothing else in the function is unexplained, and the
-argument order and long-store are confirmed correct by the identical push
-sequence.
+The second is the cause of the first: `push cs; call` only appears when the
+callee is defined in the same module, and it was tested directly — putting
+the helper in the translation unit makes CL emit it *before* `f`, giving 60
+bytes and a first difference at `+3`, so a per-unit compile cannot produce
+the same-module call form.
 
-`f`'s own argument count is consistent: `p` (4 bytes) plus `a` (4 bytes) is
-the 8 bytes `retf 8` pops.
+This is a new category of blocker and it matters beyond this unit: some
+retail functions can only be reproduced once the original *module* grouping
+is known, because the compiler's call encoding and register strategy both
+depend on it. Those units belong to the CL+LINK lane, not to per-unit source
+recovery, and no amount of per-unit spelling will reach them.
 
 ### Test status
 
