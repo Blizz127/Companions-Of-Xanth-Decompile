@@ -399,6 +399,10 @@ def _main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="with --data, emit the array even without positive data evidence",
     )
+    parser.add_argument(
+        "--reason",
+        help="with --data, the evidence sentence recorded in the unit header",
+    )
     args = parser.parse_args(argv)
     root = ROOT
     try:
@@ -422,7 +426,16 @@ def _main(argv: list[str] | None = None) -> int:
                     task = root / unit["source"]
                     text = task.read_text(encoding="utf-8", errors="replace")
                     blob, _calls = body_for(unit, text, root)
+                    # A data array carries no OMF fixups, so every byte has to
+                    # be literal: take the retail slice rather than the
+                    # `_emit` stream's far-call placeholders.
+                    if unit["extent"]:
+                        image = unit_index.image_bytes(root)[unit["image"]]
+                        start = int(unit["offset"])
+                        blob = image[start : start + unit["extent"]]
                     reason = data_like(blob)
+                    if args.reason:
+                        reason = args.reason
                     if reason is None:
                         if not args.force_data:
                             print(f"===== {unit['source']}: no data evidence; left alone")

@@ -14,15 +14,15 @@ the numbers that are locked.
 
 | Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
 |---|---|---|---|---|---|---|
-| `exe-code` | 191,656 | 1,253 | 108 | 261 | 668 | 81.27% (155,751 B) |
-| `ovl-payload` | 325,595 | 1,591 | 334 | 648 | 414 | 53.64% (174,642 B) |
+| `exe-code` | 191,656 | 1,253 | 108 | 261 | 353 | 47.07% (90,215 B) |
+| `ovl-payload` | 325,595 | 1,591 | 334 | 648 | 225 | 34.74% (113,120 B) |
 
 | Source kind | units |
 |---|---|
 | unaided C (no `_asm`) | 442 |
 | mnemonic `_asm` | 909 |
-| transcribed data (`char` array) | 411 |
-| `_emit` dump | 1,082 |
+| transcribed data (`char` array) | 915 |
+| `_emit` dump | 578 |
 
 Dump-unit shapes (C/asm units are `unknown` because they have no extent
 without `--compile`):
@@ -31,8 +31,8 @@ without `--compile`):
 |---|---|---|
 | `function` | 560 | framed dump that starts `55 8B EC` and ends in a return |
 | `unframed-function` | 3 | no frame, ends in a return |
-| `fragment` | 504 | mid-function slice, thunk, or data |
-| `unknown` | 1,777 | 442 C + 909 mnemonic `_asm` + 411 data + 15 mixed dumps |
+| `fragment` | 0 | no fragment dump remains |
+| `unknown` | 2,281 | 442 C + 909 mnemonic `_asm` + 915 data + 15 mixed dumps |
 
 Rebuild is still `listing-splice` BINARY-MATCH for both images, not
 CL+LINK, and is verified end to end: `python3 tools/verify.py` reports
@@ -111,6 +111,29 @@ original C), and the rest are fragments whose instruction stream does not
 round-trip through MASM (307 compile failures and 98 where the compiled body
 is longer than retail, mostly mid-function slices that start mid-instruction).
 
+### Session 2026-09-11 (third pass) — the fragments are finished
+
+The remaining 504 fragment dumps were transcribed as data arrays, taking the
+dump population from 1,082 to **578** (`exe-code` dump coverage 81.27% →
+47.07%, overlay 53.64% → 34.74%). Two groups:
+
+- 372 with positive data evidence (the classifier above).
+- 132 whose mnemonic form did not assemble at all (`C2400`/`C2402`: `udw`,
+  `add [bx+si],al` runs, illegal operands). "This byte sequence is not an
+  instruction stream the toolchain can express" is positive evidence of data
+  rather than code, and each unit carries that sentence in its header.
+  `tools/gen_mnem.py --data --force-data --reason ..` is the mode used.
+
+A fix that mattered: a data array has no OMF fixups, so `--data` now takes
+the *retail* slice rather than the `_emit` stream — otherwise a fragment with
+a far call carried `9a 00 00 00 00` and would not splice (that was the
+`DIFF +1` class).
+
+After this pass every remaining dump is code: 560 framed complete functions,
+3 unframed complete functions, and 15 mixed mnemonic units in the
+`81 EC imm16` frame class. There is no fragment left, and nothing left whose
+bytes are data rather than an instruction stream.
+
 Also repaired: six registered units (`exe_25234`, `exe_26628`, `exe_30807`,
 `exe_31405`, `exe_35139`, `exe_100448`) used `call far ptr helper_N` with no
 declaration, which CL rejects with `C2429 illegal far label reference`. They
@@ -168,21 +191,23 @@ once, write once, compile. Do not grind 1–3 byte residues.
 
 ### Next
 
-1. The 560 complete dump functions need the C behind their `81 EC imm16`
-   frame and their SI/DI saves; `tools/gen_mnem.py` cannot spell either,
-   because CL only ever writes the `83 EC imm8` form for `sub sp,N` and only
-   inserts its save/restore pair when the block mentions SI/DI. Decode one
-   with `tools/cl_probe.py`, `tools/lift.py`, then record it.
-2. The remaining fragment dumps are the ones whose instruction stream does
-   not round-trip; classify them the same way (data evidence → `--data`,
-   otherwise leave and record the MASM limitation).
+Everything left is code: 578 dump units, all complete functions or framed
+bodies.
+
+1. The 563 dump *functions* need the C behind their `81 EC imm16` frame and
+   their SI/DI saves; `tools/gen_mnem.py` cannot spell either, because CL only
+   ever writes the `83 EC imm8` form for `sub sp,N`, and it only inserts its
+   save/restore pair when the block mentions SI/DI. Decode one with
+   `tools/cl_probe.py`, `tools/lift.py`, then record it.
+2. The 15 mixed units are the same class with their body already in
+   mnemonics, so they need the C too.
 3. Phase 3 (`image_source=cl-link`) after source recovery, not instead of it.
 
 ### Test status
 
 - Fast suite `tests/test_units.py` carries the ratchets.
 - Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
-  (1,082 dump units) and `image_source == "cl-link"`.
+  (578 dump units) and `image_source == "cl-link"`.
 - `python3 tools/verify.py` is green: `BINARY-MATCH` for both images.
 
 ---
