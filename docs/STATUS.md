@@ -1786,6 +1786,37 @@ plain-local `do/while`) each cost only one compile.
 `_inp`/`_outp`. Without it these are far calls and the unit is 62 bytes;
 with it the `in`/`out` are inline as retail has them.
 
+### exe_790: the two-register hypothesis is disproved
+
+The hypothesis recorded before this experiment — that a second
+register-resident value would push the counter into `cx` — was tested and
+**failed**. Three more forms, all measured:
+
+| form | size |
+|---|---|
+| two `register` locals (counter + cached port), `do/while` | 44 |
+| `register` counter with a `for` loop | 46 |
+| `while (--i)` with a plain local | 44 |
+| retail | **35** |
+
+Seven forms have now been tried on this unit and none lands the counter in
+`cx` with a bare `loop`. Every failure was cheap (one compile each) and
+each is recorded with its size, so this is a bounded, honestly-reported
+gap rather than an open-ended hunt.
+
+**What is still unexplained:** retail's `mov cx,0FFFFh` + `loop`, with no
+prologue save and no frame. CL puts a single register counter in `si`, a
+plain local on the stack, and neither choice depends on a second variable.
+The `loop` instruction is the crux — it is a one-byte back edge that CL
+only reaches through a source shape not yet found, and it is possible the
+original was hand-written assembly rather than C. That possibility is not
+asserted; it is noted as the reason the remaining gap may be a provenance
+question rather than a spelling question.
+
+**What did carry over from this unit:** `#pragma intrinsic(_inp, _outp)`
+with `_inp`/`_outp`, which takes any port-I/O unit from far calls to
+inline `in`/`out`. That lever is unaffected by the counter question.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
