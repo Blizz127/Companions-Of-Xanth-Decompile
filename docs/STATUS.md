@@ -3012,6 +3012,36 @@ in the copy setup and the first call. Everything else reproduces: the 20-byte
 struct copy, the two-load table access, the field offsets at 2/4/6/8, and the
 four calls with their cdecl orders.
 
+### The cleanup form: `add sp,N` is producible, so this is liveness not capability
+
+The discriminating experiment for the cleanup pattern, three minimal shapes
+varying only the argument count:
+
+| call | cleanup emitted |
+|---|---|
+| 1 word | `pop bx` (1 byte) |
+| 2 words | `add sp,4` (3 bytes) |
+| 4 words | `add sp,8` (3 bytes) |
+
+**So CL does emit `add sp,N`** — it is not a construct this compiler lacks.
+It uses `pop` for a single word and `add sp,N` from two words up.
+
+That reframes the residues in `exe_109083` and `exe_91501`, where retail uses
+`add sp,2` and `mov sp,bp` respectively for a **one-word** call and CL uses
+`pop bx` in both. Since the two-word form is clearly reachable, the one-word
+case must be a **register-liveness decision**: `pop bx` requires `bx` to be
+dead at the call site, and when it is not, CL falls back to `add sp,N` — which
+is exactly what retail has. So the question for those units is not "can CL
+emit this" but "what is live across the call in the original", and in
+`exe_109083` the struct copy has just used `cx` and `dx`, which is the region
+where the difference sits.
+
+**This retires the joint-`COMPILER_LIMITED` idea** floated in the previous
+handoff. Two units, three call sites, and the instruction is producible; the
+right reading is a liveness difference to be recovered from the source, not a
+shared limitation to be classified. Testing the hypothesis cost one compile
+and it changed the classification, which is the useful outcome.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
