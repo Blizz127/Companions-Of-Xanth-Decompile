@@ -1621,6 +1621,25 @@ restore; the same `mov sp,bp` appears in several earlier units
 match with the difference localised to that one instruction, not as a
 compiler limitation, because only one spelling has been tried here.
 
+### exe_91501: two more forms for the cleanup, neither matches
+
+Following the near match at 84/84 bytes whose only difference is the first
+call's argument cleanup:
+
+| form | size | cleanup after `helper(0)` |
+|---|---|---|
+| plain `helper(0);` | 84 | `pop bx` |
+| the same wrapped in a bare block | 84 | `pop bx` (identical output) |
+| argument passed through a local `r = 0; helper(r);` | 86 | no better, and a frame local appears |
+
+So the block does not change anything and the local overshoots by two. Three
+forms tried at that site. The remaining untried lever is the calling
+convention: declaring `helper` `__pascal` would move the cleanup into the
+callee and change the push order, so it is expected to fail for a different
+reason — worth one probe to close the question, but not before the corpus
+work, since `mov sp,bp` after argument pushes appears in `exe_5398` and
+`exe_24910` too and one answer would cover all three.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
