@@ -134,6 +134,57 @@ After this pass every remaining dump is code: 560 framed complete functions,
 `81 EC imm16` frame class. There is no fragment left, and nothing left whose
 bytes are data rather than an instruction stream.
 
+### Session 2026-09-11 (fourth pass) — the last 578 are blocked on the assembler
+
+The remaining 578 dumps are all code, and none of them can be spelled as
+mnemonics by the pinned toolchain. Four controlled experiments
+(`tools/cl_probe.py`, `nasm`, `as`, `llvm-mc`) bracket the reason:
+
+1. **The `81 EC imm16` frame is not this compiler's output.** A C function
+   with a 2-byte, 4-byte or 6-byte local compiles to `83 EC imm8` under every
+   optimization flag tried (`/Od /Ot /Os /Ox /Oa /Ol`, `/Ze`, `/Zg`,
+   `/AL /AM`, `/Gx-`). So the 90 units carrying `81 EC`/`81 C4` were not
+   produced by MSVC 1.52's compiler — and its *assembler* only ever spells
+   `sub sp,N` as `83 EC` too.
+2. **CL's inline-asm path always wraps SI/DI.** `_asm { push si; ... }` gains
+   the compiler's own `push si` plus a matching `pop si` (order `push di;
+   push si` at the very top, before anything else in the block). Not
+   suppressible: `/Od`, `/Ox`, `/AM`, `/Gx-` all behave the same, the same
+   result appears with the register spelled `SI`/`Si`, and splitting the
+   block or interleaving `_asm` statements does not move the wrapper. `EQU`
+   is rejected inside `_asm` (`C2400`), so the register cannot be aliased to
+   hide it. 477 of the 578 units push SI/DI.
+3. **A real assembler cannot reproduce the retail encodings either.** NASM
+   *can* do the frame (`sub sp, strict word 2` → `81 EC 02 00`, and `-O0`
+   does it without `strict`), and adds no SI/DI wrapper — but it encodes
+   `mov bp,sp` as `89 E5`, while retail uses `8B EC`; GNU `as` and `llvm-mc`
+   agree with NASM. 561 of the 578 units contain `8B EC`/`8B E5`.
+4. Therefore no assembler on this machine produces this encoding profile.
+   MASM's preference is the `8B` form for register-to-register `mov` and
+   (in the 5.x generation) the `81` form for `sub sp,small`; that profile is
+   what the retail bytes show, which points at MASM 5.x, not at the pinned
+   CL 1.52. `tools/gen_nasm.py` is the probe built for this: it emits a NASM
+   listing with `strict`/`near`/`short` spellings and accepts a unit only
+   when NASM reproduces the bytes with no `db` fallback. It converts 1 of the
+   578.
+
+Re-running the current converter over the 578 confirms the ceiling: **1 of
+563 complete functions** is still spellable as inline asm; the other 562 need
+something the pinned toolchain does not have.
+
+The three ways out, in the order that preserves the project's intent:
+
+1. Supply the original assembler (MASM 5.x `ML.EXE`, or whatever produced the
+   `81 EC` + `8B EC` + source-order `push si/push di` profile). Then these
+   units become ordinary mnemonic listings and the bar is met as written.
+2. Record them as `COMPILER-LIMITED` and keep the `_emit` transcription,
+   which leaves the bar red for exactly these units.
+3. Accept a data-array transcription for them, which would be a byte
+   transcript for code — the thing the bar exists to prevent.
+
+`tools/verify.py` is BINARY-MATCH either way; this is a question about
+recovered-source form, not about the rebuilt image.
+
 Also repaired: six registered units (`exe_25234`, `exe_26628`, `exe_30807`,
 `exe_31405`, `exe_35139`, `exe_100448`) used `call far ptr helper_N` with no
 declaration, which CL rejects with `C2429 illegal far label reference`. They

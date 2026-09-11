@@ -65,6 +65,19 @@ are byte dumps today, so the gate is red and stays red until they are real
 source. A notebook reconstruction that does not MATCH in `src/` is not a
 recovery.
 
+**Open question for the next session (not a bar change).** That 578 is not a
+spelling backlog any more. They are the units whose retail bytes carry an
+encoding profile the pinned toolchain does not produce: an `81 EC imm16`
+stack frame (MSVC 1.52's compiler emits `83 EC imm8` under every optimization
+flag, and its assembler only ever emits that), an `8B EC` register-to-register
+`mov` (NASM, GNU `as` and `llvm-mc` all emit `89 E5`), and source-order
+`push si`/`push di` (CL wraps any block that mentions SI/DI in its own
+save/restore pair and cannot be made not to). The measurements are in
+`docs/STATUS.md`, 2026-09-11 fourth pass. Either an assembler matching that
+profile (the MASM 5.x generation) is supplied, or those units stay
+transcribed bytes. Transcribing *code* as a data array is not an option this
+file permits — that is the byte transcript the bar exists to prevent.
+
 ## Enforced with numbers
 
 | Dimension | Rule | Checked by | Runs at |

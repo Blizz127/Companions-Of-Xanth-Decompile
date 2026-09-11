@@ -15,12 +15,14 @@ class ListingError(RuntimeError):
 _INSN = re.compile(r"^([0-9A-Fa-f]+)\s+([0-9A-Fa-f]+)\s+(.*)$")
 
 
-def ndisasm(blob: bytes, *, bits: int = 16) -> list[dict]:
+def ndisasm(blob: bytes, *, bits: int = 16, origin: int = 0) -> list[dict]:
     with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as handle:
         handle.write(blob)
         path = Path(handle.name)
     try:
-        out = subprocess.check_output(["ndisasm", "-b", str(bits), str(path)], text=True)
+        out = subprocess.check_output(
+            ["ndisasm", "-b", str(bits), "-o", hex(origin), str(path)], text=True
+        )
     except FileNotFoundError as exc:
         raise ListingError("ndisasm not on PATH") from exc
     finally:
