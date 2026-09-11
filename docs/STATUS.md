@@ -2395,6 +2395,43 @@ rather than padded to 142 with an unused variable — the frame proves a
 declaration existed, but an unnamed placeholder would be an artefact, and the
 narrowing above is worth more than two bytes of apparent coverage.
 
+### exe_111158: the fourth slot is never stored to
+
+The two-byte overshoot is now identified exactly. Comparing the pointer
+initialisation:
+
+```
+retail  C7 46 E6 CE 4F        mov word [bp-1Ah],4FCEh        (7 bytes, one store)
+mine    B8 CE 4F              mov ax,4FCEh
+        89 46 E8              mov [bp-18h],ax                <- the extra store
+        89 46 E6              mov [bp-1Ah],ax
+```
+
+So every variant that declares a fourth 2-byte local gets an extra
+`mov [bp-18h],ax` — **two bytes, exactly the overshoot** — because whatever
+that declaration is, CL writes it once. Retail has **no store to `bp-18h`
+anywhere**, which matches the earlier exhaustive scan: the slot is written
+nowhere and read nowhere.
+
+That is a precise and slightly unusual statement of what the original
+declares: a 2-byte local whose slot exists, whose value is never written to
+memory and never read from memory. In CL terms the value lives entirely in a
+register for its whole life. `exe_112711` showed the same signature for a
+4-byte far pointer, so this is a known CL behaviour rather than an anomaly —
+a declared local that the register allocator keeps resident still consumes a
+frame slot, and it consumes *nothing else*.
+
+**The forms ruled out, each by one compile:** a pointer used in the loop (144,
+extra store), a pointer assigned then copied (144, extra store), a pointer
+initialised at declaration (144, extra store), and an `int` holding the
+scaled index (144, extra store). Each writes its slot once.
+
+**State:** 140 of 142. The gap is one declaration, its size is known, its
+usage is known to be register-only, and its position in the declaration order
+is known (`s`, `bit`, it, `p`). What is not known is which source expression
+produces a value that CL keeps in a register for the whole function without
+ever needing it in memory.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
