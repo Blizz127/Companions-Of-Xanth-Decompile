@@ -2974,6 +2974,44 @@ honest reading is that the source shape which makes CL choose the `mov` form
 has not been found — not that it is unreachable. The unit is recorded at
 98 of 101 with the residue localised to two adjacent instructions.
 
+### exe_109083: two residues, and the /Ot hypothesis tested and rejected
+
+Dumping both listings from the copy onward shows the 3-byte gap is **two
+separate differences**, not one:
+
+```
+retail  35  8C D0        mov ax,ss          (2)
+        37  8E C0        mov es,ax          (2)
+mine    26  16           push ss            (1)
+        27  07           pop es             (1)
+
+retail  55  83 C4 02     add sp,2           (3)
+mine    38  5B           pop bx             (1)
+```
+
+Both are cases where **CL picks the shorter encoding and retail picks the
+longer one** — `push`/`pop` instead of `mov`, and `pop` instead of
+`add sp,N`. That is the signature of favouring speed over size, so `/Ot` was
+compiled as a discriminating test.
+
+**Tested and rejected.** `/c /f- /AL /Gs /Ot /nologo /Zl` produces **exactly
+the same 98 bytes** with the same first difference. So the optimisation level
+is not what makes CL choose these forms, the pinned `/Os` is not wrong, and
+this class of residue is not a flag artefact. That was worth one compile and it
+closes a hypothesis that would otherwise have sat under several units.
+
+**The cleanup form recurs, and that is now the more interesting fact.** Retail
+uses `add sp,N` here where CL uses `pop bx`, and `mov sp,bp` in `exe_91501`
+where CL also uses a `pop`. Two units, three call sites, the same pattern:
+CL discards argument bytes with the shortest possible instruction and retail
+does not. Recording it as the shared observation across those units is more
+useful than treating each as a separate one-byte mystery.
+
+**State:** 98 of 101 with the residue localised to two adjacent instructions
+in the copy setup and the first call. Everything else reproduces: the 20-byte
+struct copy, the two-load table access, the field offsets at 2/4/6/8, and the
+four calls with their cdecl orders.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
