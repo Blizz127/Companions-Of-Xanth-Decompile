@@ -218,6 +218,23 @@ level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
 lodsb` silently drops the prefix and emits `AC`), and a direct far jump
 (`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
 
+### Session 2026-09-11 (eleventh pass) — the CPU-level route is closed too
+
+The 17 units that need 286/386 opcodes (`insw`, `enter`, `push imm`) are the
+last class with an untried lever: a processor directive inside the block. It
+does not exist here — `_asm { .286 }`, `_asm { .386 }` and a nested
+`_asm .286` are all `C2400 inline syntax error in 'opcode'; found 'bad
+token'` — and `/G2`/`/G3` do not raise the assembler's CPU level either, so
+those units are blocked on the same missing assembler.
+
+With this, every remaining class is characterised and every available
+alternative has been measured and rejected. The queue stands at 528 units:
+355 needing the SI/DI save pair in the reverse of CL's fixed order, ~82
+needing disp16 where MASM shrinks to disp8, 62 whose bytes are not a
+decodable instruction stream, 26 needing `es`-prefixed string ops or a direct
+far jump, 17 needing the CPU level above, 8 with a misaligned short jump and
+~37 further DIFF residues of the same two encoding families.
+
 ### Session 2026-09-11 (tenth pass) — the pass-1 staleness class resists both
 spellings
 
