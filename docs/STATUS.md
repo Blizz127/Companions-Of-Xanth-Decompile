@@ -2257,6 +2257,46 @@ the decode, compare. It produced 442 units' worth of understanding here in a
 single round after six rounds spent chasing one-to-three-byte gaps on units
 chosen for being small rather than for being understood.
 
+### exe_111158: two findings from tracing the frame, one fixed
+
+Dumping the compiled prologue against retail's gave two concrete answers
+rather than a guess:
+
+**1. `g680c` is signed. Fixed and verified.** The first attempt emitted
+`F7 26` (`mul word [mem]`), retail has `F7 2E` (`imul word [mem]`), so the
+stride global is an `int`, not `unsigned`. Declaring it `int __near g680c`
+produces `imul word [0x0]` — verified in the listing. This is a defect in my
+decode, not in the source: I had assumed the stride was unsigned because the
+multiply looked like an address calculation.
+
+**2. The frame is 24 bytes where retail's is 26**, and that is the whole of
+the two-byte gap:
+
+```
+retail  83 EC 1A      sub sp,1Ah
+mine    83 EC 18      sub sp,18h
+```
+
+MSC allocates locals in declaration order from `bp` downward, and retail's
+slots are pinned by the code: `s` at `bp-14h` (20 bytes), `bit` at `bp-16h`,
+**something 2 bytes at `bp-18h`**, and `p` at `bp-1Ah`. Three locals account
+for 24 bytes; retail has four.
+
+**Not fitted.** Adding a dummy 2-byte local would close the gap and produce a
+byte-identical unit, and I am not doing it: the bar is that the source
+explains the bytes, not that the bytes are reproduced. The missing local is
+an unidentified 2-byte slot in the original declaration list, and the next
+attempt should find what it is from how the code uses `bp-18h` — the decode
+so far references `bp-1Ah` (the pointer), `bp-16h` (the bit mask), and
+`bp-14h` (the struct), but not `bp-18h`, so it is either written and not
+re-read or touched by a path not yet traced.
+
+This is the one place in the session where fitting the bytes was available
+and declined, so it is worth stating plainly: a near match that reproduces
+retail by adding a placeholder is not the same artefact as one that
+reproduces it because the types and layout are right, and the first would
+have to be thrown away later.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
