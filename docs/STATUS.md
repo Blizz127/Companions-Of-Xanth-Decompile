@@ -1329,6 +1329,39 @@ alternative rather than asserted, and each adds to the same conclusion:
 these are not six independent near-misses but one compiler behaviour. If it
 is ever cracked, six units fall at once.
 
+### Exit layout: the two properties never combine
+
+`exe_117397` was used as the test bed, since it already matches retail's
+size and every instruction except the exit placement. Three forms:
+
+| source | size | stack local `p` | shared exit |
+|---|---|---|---|
+| two `if (...) return 0;` statements, plain local | **54 (retail's size)** | yes | no — inline, jumps back |
+| `return p != 0 && ... == 1;`, plain local | 44 | **no** — kept in registers | **yes** |
+| the same with `char far * volatile p` | 58 | yes | no |
+
+The middle row is the informative one. The short-circuit *does* produce the
+shared forward-jumping exit retail has — but only by keeping `p` in
+registers, which drops the `sub sp,4` and the store/reload pair, so the unit
+comes out ten bytes short. Forcing the local back onto the stack with
+`volatile` restores the spill and loses the shared exit, and adds four bytes
+of its own.
+
+So **CL 8.00c shares an exit only for a value it can keep in registers, and
+spills the local only when the exits are duplicated**; retail does both at
+once. That is a sharper statement of the limitation than "CL does not emit a
+shared epilogue", and it explains why every form tested across the now-seven
+affected units has failed on one side or the other rather than purely on
+placement.
+
+**The classification stands and is not weakened by this.** Seven units —
+`exe_98653`, the four overlay members, `exe_117397`, and the earlier
+`exe_53332` guard placement — have recovered sources and a single shared
+exit CL will not produce alongside the local allocation the code requires.
+Each was confirmed by compiling the alternative. The caveat recorded
+earlier still applies: this is a finite search and not a proof that no
+spelling exists.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
