@@ -2469,6 +2469,73 @@ the bytes available. Recording it as `STRUCTURE_UNCERTAIN` with the six ruled
 out is more useful to the next session than a seventh guess, and it keeps the
 honest reading of the corpus rather than flattering it.
 
+### exe_112853 decoded; difference localised to the table load form
+
+`exe-code:0x1B8D5`, 52 bytes — the smallest fresh member of the `67C2h`
+family, and it decodes cleanly:
+
+```
+sub sp,4
+ax = 14h * [bp+8]           ; imul, signed - the 20-byte stride
+bx = [bp+6] ; bx *= 4
+es:bx = [bx+67C2h]          ; the far-pointer table
+bx += ax                    ; bx now points at record n
+al = [es:bx] ; cbw          ; a signed char field at offset 0
+sub ax,3 ; jz HIT
+sub ax,4 ; jz HIT
+xor ax,ax ; jmp DONE
+HIT:  ax = [es:bx+0Ah]      ; an int field at offset 10
+DONE: pop bp ; retf
+```
+
+so the source is
+
+```c
+struct S { char f0; char pad[9]; int f10; char tail[8]; };
+
+extern struct S far * __near g_tbl[];
+
+int far exe_112853(int i, int n)
+{
+    struct S far *t;
+
+    t = g_tbl[i] + n;
+    if (t->f0 == 3 || t->f0 == 7)
+        return t->f10;
+    return 0;
+}
+```
+
+**One decode detail worth recording, because it is easy to get wrong.**
+MSC compiles `x == 3 || x == 7` as `sub ax,3 ; jz ; sub ax,4 ; jz` — the
+second subtraction is by the **difference** between the constants (4 = 7−3),
+not by the second constant. Reading the displacements as literals gives
+`== 3 || == 4`, which is wrong. The cases are 3 and 7.
+
+**Three forms compiled, none matching yet:**
+
+| form | size | first difference |
+|---|---|---|
+| named `struct S far *t` local | **58** | `+19` |
+| `t[n]` using a `struct S far *` local | 72 | `+6` |
+| no local, `g_tbl[i][n]` inline | 68 | `+3` |
+
+Retail is 52. The best form reproduces the *order* exactly — the `imul`
+first, then the table load, then the stride added to the loaded offset — and
+diverges at the load itself:
+
+```
+retail  C4 9F C2 67     les bx,word [bx+67C2h]   ; offset and segment in one go
+mine    8B 8F 00 00     mov cx,[bx+0]            ; offset alone
+```
+
+CL materialises the offset in `cx` where retail puts the pair in `es:bx`
+with a single `les`, which needs the loaded value only as a cursor and never
+as a value. That is a register-allocation decision on the table element, and
+it is the same *shape* of residue as the `si`-versus-`cx` counter in
+`exe_790` and the `add sp,6` in `exe_87918`: retail keeps something in one
+register where CL uses two.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
