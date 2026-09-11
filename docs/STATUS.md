@@ -746,6 +746,38 @@ Final state of the six splits, each verified by
 | `exe_34698` | 77 | 42 | `exe_34740` (35) |
 | `exe_34775` | 278 | 42 | `exe_34817` (236) |
 
+### All fourteen glue units separated
+
+The eight confirmed glues whose successor did not yet exist were split, so
+every glue found in this corpus is now two independent units. Each new unit
+was created by taking the tail's tokens, dropping the three prologue bytes
+CL generates for it, and writing a normal dump source plus a
+`config/c-units.json` entry. No extent was guessed: `resolve_extent` derived
+each tail from its own dump, and the resulting number was compared against
+`old_extent - cut` *after* the fact:
+
+| new unit | extent (derived) | predicted (`old - cut`) |
+|---|---|---|
+| `exe_18274` | 704 | 704 |
+| `exe_25234` | 1230 | 1230 |
+| `exe_26628` | 3906 | 3906 |
+| `exe_30576` | 171 | 171 |
+| `exe_30807` | 538 | 538 |
+| `exe_31405` | 3216 | 3216 |
+| `exe_35139` | 1113 | 1113 |
+| `exe_100448` | 548 | 548 |
+
+All sixteen pieces classify as `function`. Covered byte totals are unchanged
+(187,636 / 314,821), total units 2,836 -> 2,844, function units
+1,137 -> 1,145.
+
+**The function-count ratchet moved from 1,135 to 1,145 and that is recorded
+explicitly in `CONSTRAINTS.md` with its reason.** Glued units were counted
+once though they held two functions, so the old number undercounted real
+function bodies. Nothing was recovered and nothing was lost; the denominator
+was wrong. This is flagged rather than slipped through, and it is the first
+movement of any ratchet in this project.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
