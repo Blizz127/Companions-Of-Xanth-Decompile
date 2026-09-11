@@ -218,6 +218,35 @@ level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
 lodsb` silently drops the prefix and emits `AC`), and a direct far jump
 (`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
 
+### Session 2026-09-11 (twelfth pass) — the assembler was in the tree all along
+
+The missing piece was not missing. `tools/toolchain/watcom` (the Open Watcom
+install already vendored for the earlier negative control) ships the
+standalone assembler `binnt/wasm.exe`, and it has exactly the encoding profile
+the retail bytes need. Measured directly, unit by unit:
+
+| retail bytes | Watcom spelling | result |
+|---|---|---|
+| `55 8B EC` | `mov bp,sp` | `8B EC` — MASM-style, not NASM's `89 E5` |
+| `81 EC 02 00` | `sub sp, offset sym` | imm16 with a fixup |
+| `26 8B 87 68 00` | `mov ax, es:[bx+msym]` | **disp16** — the form CL turned into `26 A2 iw` |
+| `56 57 … 5F 5E` | `push si` / `push di` | literal, source order, no wrapper |
+| `A0 F4 41`, `A1 4C 08`, `A3 FA 53`, `83 3E …`, `FF 06 …`, `FF 1E …` | `mov al, ds:[41F4h]`, … | exact, and no redundant prefix |
+| `6D`, `C8 04 00 00`, `6A xx` | `insw`, `enter 4,0`, `push 1234h` with `-1`/`-2`/`-3` | the CPU level is a command-line option |
+
+The earlier negative control was of Watcom's *compiler* (`wcc -ml` emits
+pushes before `mov bp,sp`), not its assembler — the assembler is the profile
+match. This is consistent with the retail code being assembled, not compiled:
+the frame, the source-order pushes and the unoptimised imm16/disp16 forms are
+all assembler choices.
+
+`tools/gen_wasm.py` is the converter: retail slice → Watcom/MASM listing with
+`offset`/symbol operands where the longer encoding is needed, labels with
+per-direction names for jumps, and byte-exact verification through wasm
+(including the fixup substitution the splice performs). It is not yet wired
+into `c_units`; that needs `.asm`-unit splice support, which is the next step
+and the one that retires the remaining 528 units.
+
 ### Session 2026-09-11 (eleventh pass) — the CPU-level route is closed too
 
 The 17 units that need 286/386 opcodes (`insw`, `enter`, `push imm`) are the
