@@ -2836,6 +2836,41 @@ far record) is the obvious difference and the thing to vary next.
 divergence confined to four instructions in the prologue. Both facts above are
 new this round, and the stride one is a generalisable check.
 
+### exe_110357: declaration form does not trigger the materialisation
+
+The declaration-initialiser variant (`struct S far *p = g_tbl[i] + n;` rather
+than a separate assignment) compiles to the **same 130 bytes with the same
+first difference at `+21`**, so the `mov ax,bx ; mov dx,es` pair is not caused
+by how `p` is assigned.
+
+**State: 130 against 128, residue localised to four instructions.** The call
+sequence, the record layout, the far-pointer field at `+10`, the nested
+dereference and the five-argument call with its field adjustments all
+reproduce. The unresolved two bytes are CL copying the loaded far pointer into
+`AX:DX` before storing it, where retail stores `BX`/`ES` in place —
+and `exe_109184`, with the same table, the same local and the same first-level
+access, stores in place. So the trigger is something in the second-level use,
+not the first, and `p->f10->g0` is the only second-level use this unit has
+that `exe_109184` does not.
+
+**Ruled out for this round, one compile each:** the declaration initialiser,
+and (earlier) the assumption that the trigger lay in the assignment at all.
+Named for the next attempt: give the inner dereference its own step, e.g.
+`struct T far *q; q = p->f10; if (q->g0 != 0)`, which is one compile and does
+not change the frame because `q` would be register-resident.
+
+**Two generalisable results came out of this unit even though it did not
+close**, and they are worth more than the two bytes:
+
+1. **The stride is readable from the `imul` operand** — `mov ax,14h` against
+   `mov ax,0Eh` was the whole of the first difference, and `sizeof` appears
+   there and nowhere else. This is now the first check to run on any family
+   unit.
+2. **The family does not share one record type.** This record has a far
+   pointer at offset 10 where `exe_109184` stored an `int`, over the same table
+   and the same stride. Each unit's struct has to be read from its own
+   accesses.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
