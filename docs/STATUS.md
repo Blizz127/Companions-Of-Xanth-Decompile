@@ -1553,6 +1553,74 @@ near match located to a single missing instruction (`exe_115231`), and one
 retraction of my own wrong explanation. Four units were recovered across the
 session: `exe_2096`, `exe_99679`, `exe_112795`, `exe_112711`.
 
+### exe_115231: the volatile test, with the prediction on record
+
+`int __near * volatile p` compiles to **82 bytes** and diverges at `+6`, i.e.
+it overshoots. The prediction recorded before running it — that volatile
+would force the dead store but also force reloads retail does not have — was
+correct, so the experiment is informative rather than just negative.
+
+Four forms have now been tried for that one missing store:
+
+| form | size | store present |
+|---|---|---|
+| plain pointer local | 76 | no |
+| initialised at declaration | 76 | no |
+| `p[0]` for the test and the clear | 76 | no |
+| `volatile` pointer | 82 | no, and reloads instead |
+
+So `exe_115231` is a near match whose single difference is a dead store
+(`mov [bp-2],bx`) that CL eliminates and retail keeps. Everything else in
+the unit — the near table index, the 16-byte record array, the cdecl far
+call with a DS-relative far pointer, the two `mov cl,4` around the call —
+is reproduced. That is a precise characterisation, and it belongs to the
+same family as `exe_112795` and `exe_117397`: retail keeps work involving
+a local that CL removes.
+
+### Near match: exe_91501 (exe-code:0x1656D, 84 B)
+
+A signed-direction ring walk over a table of negative-marked entries:
+
+```c
+extern int __near g_i;
+extern int __near g_arr[];
+void far helper(int n);
+
+void far exe_91501(int dir)
+{
+    if (g_i < 0)
+        return;
+    helper(0);
+    do {
+        if (dir > 0) {
+            if (++g_i == 8)
+                g_i = 0;
+        } else {
+            if (--g_i < 0)
+                g_i = 7;
+        }
+    } while (g_arr[g_i] < 0);
+    helper(1);
+}
+```
+
+It compiles to **exactly 84 bytes**, retail's size, and reproduces the guard
+(`cmp word [g_i],0 ; jl`), both `xor ax,ax`/`mov ax,1` argument setups with
+`__near` globals, the `jng` split between the increment and decrement
+paths, the `++g_i == 8 → 0` and `--g_i < 0 → 7` wraparounds, the
+`cmp word [bx+6354h],0 ; jl` loop back edge, and the trailing `helper(1)`.
+
+**The one difference is how the first call's argument is cleaned up.** After
+`helper(0)` CL emits `pop bx` (one byte); retail emits `mov sp,bp` (two
+bytes). Retail uses the longer form at that site and the shorter one — or
+its equivalent — at the end, and the totals still come to 84 both ways.
+
+That is a source-independent choice unless a construct forces the frame
+restore; the same `mov sp,bp` appears in several earlier units
+(`exe_5398`, `exe_24910`) right after argument pushes. Recorded as a near
+match with the difference localised to that one instruction, not as a
+compiler limitation, because only one spelling has been tried here.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
