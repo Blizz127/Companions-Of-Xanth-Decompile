@@ -1883,6 +1883,49 @@ independent units with the same difference make this a better-defined
 question than either alone: it is a property of CL's cleanup choice, not of
 one function's source.
 
+### The `EB xx 90` pattern explained: CL shares a call site across branches
+
+The discriminating experiment for the shared cleanup question produced a
+mechanism instead. For a minimal
+
+```c
+void far a(int x, int y, int z);
+void far b(void);
+
+void far f(int v)
+{
+    if (v)
+        a(1, 2, 3);
+    else
+        a(4, 5, 6);
+    b();
+}
+```
+
+CL emits each branch's arguments **into registers only**, then jumps to a
+**single shared push sequence**:
+
+```
+cmp [bp+6],0 ; jz ELSE
+mov ax,3 ; push ax ; mov ax,2 ; push ax ; mov ax,1 ; jmp SHARED
+ELSE: mov ax,6 ; push ax ; mov ax,5 ; push ax ; ...
+SHARED: push ax ; call a
+```
+
+That is the mechanism behind the `EB xx 90` padding that has appeared in the
+overlay family, `exe_98653`, `exe_86814` and `exe_87918`: a forward jump to
+a **shared target** with a one-byte `nop` filling the alignment hole. It is
+CL merging a call site across two branches, not a stray pad — and it means
+those units' "extra nop" and "forward jmp" are one construct seen from two
+sides.
+
+It also gives a concrete prediction for the units still open on this
+question (the overlay family, `exe_98653`, `exe_86814`): if their two
+returns can be restructured so the differing work happens *before* a shared
+continuation, CL may generate the shared site and the padding that retail
+has. That is testable, unlike the previous framing of the difference as an
+unexplained placement.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
