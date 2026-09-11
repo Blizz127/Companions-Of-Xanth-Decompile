@@ -1105,6 +1105,44 @@ limitation — the expected fix, if any, is in how CL places branch-target
 padding for this function, and switching flags to chase it would break the
 pinned `/Os` contract that the rest of the corpus depends on.
 
+### Near match: exe_53332 (exe-code:0xD054, 58 B) — the guard spelling is open
+
+Retail decodes cleanly as a guarded dispatch on an odd-valued argument:
+
+```
+mov ax,[5CE2h] ; sub ax,0CDh ; jnz FIN      ; guard
+mov ax,[bp+6]
+dec ax ; jz CASE1
+dec ax ; dec ax ; jz CASE3
+dec ax ; dec ax ; jz CASE5
+dec ax ; dec ax ; jz CASE7
+jmp FIN ; nop                                ; default
+CASE1: inc word [5CDEh] ; jmp FIN
+CASE3: inc word [5CE0h] ; jmp FIN
+CASE5: dec word [5CDEh] ; jmp FIN
+CASE7: dec word [5CE0h]
+FIN: mov sp,bp ; pop bp ; retf
+```
+
+so the four case actions are exactly `g5cde++`, `g5ce0++`, `g5cde--`, `g5ce0--`
+for `a` = 1, 3, 5, 7 — a subtracted-by-two chain, which is CL's encoding for a
+case set in arithmetic progression.
+
+Two spellings were compiled and the case bodies and actions reproduce in
+both; neither matches yet, and **the difference is entirely in the guard**:
+
+| spelling | guard encoded as | size |
+|---|---|---|
+| `if (g5ce2 != 0xCD) return;` then `switch (a)` | `cmp word [5CE2h],0CDh` (7 bytes), chain placed after the bodies | 60 |
+| `switch (g5ce2) { case 0xCD: switch (a) {…} }` | `mov ax,[5CE2h]` + `sub ax,0CDh` — retail's form — but the test lands at the *end* with `jz` back | 62 |
+
+Retail is in between: it has the single-case-switch `mov ax / sub ax` guard
+(so the source is switch-shaped, not `if`-shaped) placed at the **top**,
+falling *through* into the inner dispatch with `jnz` forward. That is the
+same exit/placement question already characterised elsewhere, and it is the
+one thing left: the case set, the actions, the subtraction chain and the
+epilogue all match.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
