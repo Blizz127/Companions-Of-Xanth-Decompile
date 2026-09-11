@@ -1,29 +1,31 @@
+extern int __near mn4F46;
+extern int __near mn4F48;
 int g0;
 int g1;
 void far helper(void);
 void far exe_103774(int a)
 {
     _asm {
-        sub sp, 4
-        cmp word ptr a, 0
-        _emit 0x7D
-        _emit 0x08
-        xor ax, ax
-        mov word ptr g0, ax
-        _emit 0xEB
-        _emit 0x1C
-        _emit 0x90
-        lea ax, word ptr [bp-4]
+        sub sp,0x4
+        cmp word ptr [bp+0x6],0x0
+        jnl short $+10
+        xor ax,ax
+        mov mn4F46,ax
+        jmp short $+30
+        nop
+L11:
+        lea ax,[bp-0x4]
         push ss
         push ax
-        lea cx, word ptr [bp-2]
+        lea cx,[bp-0x2]
         push ss
         push cx
-        push word ptr a
+        push word ptr [bp+0x6]
         call far ptr helper
-        mov ax, word ptr [bp-2]
-        mov word ptr g0, ax
-        mov ax, word ptr [bp-4]
-        mov word ptr g1, ax
+        mov ax,[bp-0x2]
+        mov mn4F46,ax
+        mov ax,[bp-0x4]
+L2C:
+        mov mn4F48,ax
     }
 }

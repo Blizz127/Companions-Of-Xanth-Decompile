@@ -1,4 +1,9 @@
-
+void far helper_1(void);
+void far helper_2(void);
+void far helper_3(void);
+void far helper_4(void);
+void far helper_5(void);
+void far helper_6(void);
 int far exe_25234(int a)
 {
     _asm {

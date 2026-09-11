@@ -1,23 +1,24 @@
+extern int __near mn4DB4;
 int g;
 void far helper(void);
 int far exe_94542(int a, int b)
 {
     _asm {
-        sub sp, 2
-        cmp word ptr g, 10h
-        _emit 0x7C
-        _emit 0x05
-        xor ax, ax
-        _emit 0xEB
-        _emit 0x1A
-        _emit 0x90
-        mov ax, word ptr g
-        mov word ptr [bp-2], ax
-        inc word ptr g
-        push word ptr b
-        push word ptr a
+        sub sp,0x2
+        cmp word ptr mn4DB4,0x10
+        jl short $+7
+        xor ax,ax
+        jmp short $+28
+        nop
+L0F:
+        mov ax,mn4DB4
+        mov [bp-0x2],ax
+        inc word ptr mn4DB4
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         push ax
         call far ptr helper
-        mov ax, word ptr [bp-2]
+        mov ax,[bp-0x2]
+L28:
     }
 }

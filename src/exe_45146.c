@@ -2,27 +2,27 @@ void far helper(void);
 int far exe_45146(int a, int b)
 {
     _asm {
-        sub sp, 6
-        lea ax, word ptr [bp-2]
+        sub sp,0x6
+        lea ax,[bp-0x2]
         push ss
         push ax
-        push word ptr b
-        push word ptr a
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper
-        add sp, 8
-        mov word ptr [bp-6], ax
-        mov word ptr [bp-4], dx
-        or dx, ax
-        _emit 0x74
-        _emit 0x11
-        les bx, dword ptr [bp-6]
-        mov cl, byte ptr [bp-2]
-        mov al, byte ptr es:[bx]
-        shr al, cl
-        and ax, 1
-        _emit 0xEB
-        _emit 0x03
-        _emit 0x90
-        xor ax, ax
+        add sp,0x8
+        mov [bp-0x6],ax
+        mov [bp-0x4],dx
+        or dx,ax
+        jz short $+19
+        les bx,word ptr [bp-0x6]
+        mov cl,[bp-0x2]
+        mov al,es:[bx]
+        shr al,cl
+        and ax,0x1
+        jmp short $+5
+        nop
+L31:
+        xor ax,ax
+L33:
     }
 }

@@ -1,67 +1,65 @@
+extern char __near mb030D;
 char g;
 void far helper(void);
 void far helper2(void);
 int far if15_149383(int a)
 {
     _asm {
-        cmp word ptr a, 15
-        _emit 0x74
-        _emit 0x1F
-        mov ax, 1
+        cmp word ptr [bp+0x6],0xf
+        jz short $+33
+        mov ax,0x1
         push ax
-        mov ax, 8Bh
-        push ax
-        call far ptr helper
-        mov sp, bp
-        or ax, ax
-        _emit 0x74
-        _emit 0x5B
-        cmp byte ptr g, 0
-        _emit 0x74
-        _emit 0x54
-        mov ax, 0BEh
-        _emit 0xEB
-        _emit 0x57
-        cmp byte ptr g, 0
-        _emit 0x74
-        _emit 0x4D
-        mov ax, 1
-        push ax
-        mov ax, 8Bh
+        mov ax,0x8b
         push ax
         call far ptr helper
-        mov sp, bp
-        or ax, ax
-        _emit 0x74
-        _emit 0x3A
-        mov ax, 1
+        mov sp,bp
+        or ax,ax
+        jz short $+93
+        cmp byte ptr mb030D,0x0
+        jz short $+86
+L20:
+        mov ax,0xbe
+        jmp short $+89
+L25:
+        cmp byte ptr mb030D,0x0
+        jz short $+79
+        mov ax,0x1
         push ax
-        mov ax, 0A5h
-        push ax
-        call far ptr helper
-        mov sp, bp
-        or ax, ax
-        _emit 0x75
-        _emit 0x13
-        mov ax, 1
-        push ax
-        mov ax, 0A4h
+        mov ax,0x8b
         push ax
         call far ptr helper
-        mov sp, bp
-        or ax, ax
-        _emit 0x74
-        _emit 0xBB
-        mov ax, 64Eh
+        mov sp,bp
+        or ax,ax
+        jz short $+60
+        mov ax,0x1
         push ax
-        mov ax, 35Dh
+        mov ax,0xa5
+        push ax
+        call far ptr helper
+        mov sp,bp
+        or ax,ax
+        jnz short $+21
+        mov ax,0x1
+        push ax
+        mov ax,0xa4
+        push ax
+        call far ptr helper
+        mov sp,bp
+        or ax,ax
+        jz short $+-67
+L65:
+        mov ax,0x64e
+        push ax
+        mov ax,0x35d
         push ax
         call far ptr helper2
-        mov sp, bp
-        xor ax, ax
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        mov ax, 0FFFFh
+        mov sp,bp
+L74:
+        xor ax,ax
+        jmp short $+6
+        nop
+L79:
+        mov ax,0xffff
+L7C:
     }
 }

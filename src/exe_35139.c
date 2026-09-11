@@ -1,4 +1,46 @@
-
+void far helper_1(void);
+void far helper_10(void);
+void far helper_11(void);
+void far helper_12(void);
+void far helper_13(void);
+void far helper_14(void);
+void far helper_15(void);
+void far helper_16(void);
+void far helper_17(void);
+void far helper_18(void);
+void far helper_19(void);
+void far helper_2(void);
+void far helper_20(void);
+void far helper_21(void);
+void far helper_22(void);
+void far helper_23(void);
+void far helper_24(void);
+void far helper_25(void);
+void far helper_26(void);
+void far helper_27(void);
+void far helper_28(void);
+void far helper_29(void);
+void far helper_3(void);
+void far helper_30(void);
+void far helper_31(void);
+void far helper_32(void);
+void far helper_33(void);
+void far helper_34(void);
+void far helper_35(void);
+void far helper_36(void);
+void far helper_37(void);
+void far helper_38(void);
+void far helper_39(void);
+void far helper_4(void);
+void far helper_40(void);
+void far helper_41(void);
+void far helper_42(void);
+void far helper_43(void);
+void far helper_5(void);
+void far helper_6(void);
+void far helper_7(void);
+void far helper_8(void);
+void far helper_9(void);
 int far exe_35139(int a)
 {
     _asm {

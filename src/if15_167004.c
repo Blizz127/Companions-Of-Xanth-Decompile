@@ -1,53 +1,53 @@
+extern int __near mn02BA;
 int g;
 void far helper1(void);
 void far helper2(void);
 int far if15_167004(int a)
 {
     _asm {
-        cmp word ptr a, 15
-        _emit 0x75
-        _emit 0x55
-        mov ax, 13h
+        cmp word ptr [bp+0x6],0xf
+        jnz short $+87
+        mov ax,0x13
         push ax
         call far ptr helper1
-        mov sp, bp
-        or ax, ax
-        _emit 0x74
-        _emit 0x14
-        mov ax, 5A04h
+        mov sp,bp
+        or ax,ax
+        jz short $+22
+        mov ax,0x5a04
         push ax
-        mov ax, 2FDh
+        mov ax,0x2fd
+L1C:
         push ax
         call far ptr helper2
-        mov sp, bp
-        xor ax, ax
-        _emit 0xEB
-        _emit 0x36
-        _emit 0x90
-        mov ax, 14h
+        mov sp,bp
+L24:
+        xor ax,ax
+        jmp short $+56
+        nop
+L29:
+        mov ax,0x14
         push ax
         call far ptr helper1
-        mov sp, bp
-        or ax, ax
-        _emit 0x74
-        _emit 0x23
-        cmp word ptr g, 8
-        _emit 0x7D
-        _emit 0x0A
-        mov ax, 5A03h
+        mov sp,bp
+        or ax,ax
+        jz short $+37
+        cmp word ptr mn02BA,0x8
+        jnl short $+12
+        mov ax,0x5a03
         push ax
-        mov ax, 145h
-        _emit 0xEB
-        _emit 0xD4
-        _emit 0x90
-        mov ax, 5A04h
+        mov ax,0x145
+        jmp short $+-42
+        nop
+L49:
+        mov ax,0x5a04
         push ax
-        mov ax, 2FDh
+        mov ax,0x2fd
         push ax
         call far ptr helper2
-        add sp, 4
-        _emit 0xEB
-        _emit 0xC9
-        mov ax, 0C5h
+        add sp,0x4
+        jmp short $+-53
+L5B:
+        mov ax,0xc5
+L5E:
     }
 }

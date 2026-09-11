@@ -3,24 +3,24 @@ void far helper6(void);
 unsigned long far exe_6524(int a, int b, int c, int d, int e)
 {
     _asm {
-        sub sp, 8
+        sub sp,0x8
         call far ptr helper0
-        mov word ptr [bp-2], dx
-        or dx, ax
-        _emit 0x75
-        _emit 0x06
-        xor ax, ax
+        mov [bp-0x2],dx
+        or dx,ax
+        jnz short $+8
+        xor ax,ax
         cwd
-        _emit 0xEB
-        _emit 0x19
-        _emit 0x90
-        push word ptr [bp-2]
+        jmp short $+27
+        nop
+L15:
+        push word ptr [bp-0x2]
         push ax
-        push word ptr e
-        push word ptr d
-        push word ptr c
-        push word ptr b
-        push word ptr a
+        push word ptr [bp+0xe]
+        push word ptr [bp+0xc]
+        push word ptr [bp+0xa]
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper6
+L2D:
     }
 }

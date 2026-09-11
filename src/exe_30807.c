@@ -1,4 +1,5 @@
-
+void far helper_0(void);
+void far helper_1(void);
 int far exe_30807(int a)
 {
     _asm {

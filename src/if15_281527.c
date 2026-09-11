@@ -1,31 +1,32 @@
+extern char __near mb0359;
 char g;
 void far helper_mkfp(void);
 int far if15_281527(int a)
 {
     _asm {
-        cmp word ptr a, 15
-        _emit 0x74
-        _emit 0x05
-        mov ax, 170h
-        _emit 0xEB
-        _emit 0x24
-        cmp byte ptr g, 0
-        _emit 0x75
-        _emit 0x09
-        mov ax, 47h
-        mov dx, 0F03Eh
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        xor ax, ax
+        cmp word ptr [bp+0x6],0xf
+        jz short $+7
+        mov ax,0x170
+        jmp short $+38
+L0B:
+        cmp byte ptr mb0359,0x0
+        jnz short $+11
+        mov ax,0x47
+        mov dx,0xf03e
+        jmp short $+6
+        nop
+L1B:
+        xor ax,ax
         cwd
+L1E:
         push dx
         push ax
-        mov ax, 46h
-        mov dx, 0F03Eh
+        mov ax,0x46
+        mov dx,0xf03e
         push dx
         push ax
         call far ptr helper_mkfp
-        xor ax, ax
+        xor ax,ax
+L2F:
     }
 }

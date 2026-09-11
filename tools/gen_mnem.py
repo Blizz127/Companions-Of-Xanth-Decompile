@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+"""Re-emit a dump unit as mnemonic `_asm`, preserving the exact instruction bytes.
+
+The recovered-source bar (`CONSTRAINTS.md`) forbids `_emit` byte dumps in
+`src/**` but accepts `_asm` written in mnemonics. This tool turns one unit's
+instruction stream into mnemonics:
+
+* relative jumps become labelled mnemonics (`jmp short L..`, `jz L..`);
+* far calls (`9A`, an OMF fixup) stay `call far ptr helperN`;
+* a direct DS-relative operand (`mod=00 rm=110`, no register) becomes a
+  declared `__near` symbol, so MASM emits the same 2-byte displacement that
+  `_relocate` then overwrites with the retail address;
+* everything else is the plain mnemonic.
+
+The output is not accepted on faith: the caller compiles it with CL 8.00c and
+byte-diffs it against the retail slice (`tools/lift.py`). A spelling MASM
+cannot reproduce byte-for-byte (for example the compiler's own `81 EC imm16`
+frame, which the assembler renders `83 EC imm8`) is reported, not forced.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+_TOOLS = Path(__file__).resolve().parent
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
+
+import units as unit_index
+from compile_msc import compile_omf
+from listing import ndisasm
+from retail_common import ROOT, RetailError
+
+FRAME = b"\x55\x8b\xec"
+TRAILERS = (b"\x8b\xe5\x5d\xcb", b"\x8b\xe5\x5d\xc3")
+
+_JMP = re.compile(r"^(j[a-z]+|loop[a-z]*)\s+0x([0-9a-f]+)$")
+_BARE_ABS = re.compile(r"\[(0x[0-9a-f]+)\]")
+_SEG_OPEN = re.compile(r"\[(cs|es|ss|ds):")
+_SIZE = re.compile(r"\b(word|byte|dword)\s+((?:cs|es|ss|ds):)?\[")
+_SEG_LOAD = re.compile(r"\b(mov)\s+(es|ds|ss|cs)\s*,\s*(?:word|byte|dword)\s+ptr\s+")
+_INT = re.compile(r"\bint\s+byte\s+")
+_ASM_OPEN = re.compile(r"_asm\s*\{")
+_BYTE_REG = re.compile(r"\b(a[lh]|b[lh]|c[lh]|d[lh])\b")
+
+SYMBOL_DECL = {1: "char", 2: "int", 4: "long"}
+SYMBOL_PREFIX = {1: "mb", 2: "mn", 4: "md"}
+
+
+class ConvertError(RetailError):
+    pass
+
+
+def _strip_nop(blob: bytes) -> bytes:
+    while blob.endswith(b"\x90"):
+        blob = blob[:-1]
+    return blob
+
+
+def _trailer(compiled: bytes) -> bytes:
+    for trailer in TRAILERS:
+        if compiled.endswith(trailer):
+            return trailer
+    return b""
+
+
+def _frame_bounds(compiled: bytes) -> tuple[int, int]:
+    compiled = _strip_nop(compiled)
+    trailer = _trailer(compiled)
+    end = len(compiled) - len(trailer)
+    start = 3 if compiled[:3] == FRAME else 0
+    # CL also saves SI/DI around an `_asm` block that writes them:
+    #   push bp; mov bp,sp; push si; <body>; pop si; mov sp,bp; pop bp; retf
+    # Those pushes/pops are the compiler's, not the block's.
+    saves = 0
+    while compiled[start + saves : start + saves + 1] in (b"\x56", b"\x57"):
+        saves += 1
+    if saves:
+        tail = compiled[end - saves : end]
+        if len(tail) != saves or any(byte not in (0x5E, 0x5F) for byte in tail):
+            saves = 0
+    return start + saves, end - saves
+
+
+def body_for(unit: dict, text: str, root: Path) -> tuple[bytes, list[int]]:
+    """Instruction bytes plus the addresses of any 5-byte far calls."""
+    pattern = unit_index.dump_pattern(text)
+    if pattern is not None:
+        image = unit_index.image_bytes(root)[unit["image"]]
+        offset = int(unit["offset"])
+        body = bytearray()
+        calls: list[int] = []
+        for item in pattern:
+            if item is None:
+                calls.append(len(body))
+                body += b"\x9a\x00\x00\x00\x00"
+            else:
+                body += item
+        return bytes(body), calls
+    # A mixed/C unit: compile it, then write the retail bytes back into every
+    # OMF fixup slot so the disassembly shows real addresses, not placeholders.
+    compiled, fixups = compile_omf(root / unit["source"])
+    image = unit_index.image_bytes(root)[unit["image"]]
+    offset = int(unit["offset"])
+    relocated = bytearray(compiled)
+    for fix_offset, size in fixups:
+        if fix_offset + size <= len(relocated):
+            relocated[fix_offset : fix_offset + size] = image[
+                offset + fix_offset : offset + fix_offset + size
+            ]
+    start, end = _frame_bounds(bytes(relocated))
+    body = bytes(relocated)[start:end]
+    calls = []
+    for fix_offset, size in fixups:
+        local = fix_offset - start
+        if (
+            size == 4
+            and 0 < local <= len(body) + 1
+            and start <= fix_offset - 1 < end
+            and bytes(relocated)[fix_offset - 1 : fix_offset] == b"\x9a"
+        ):
+            calls.append(local - 1)
+    return body, sorted(set(calls))
+
+
+def _operand_size(mnemonic: str) -> int:
+    if re.search(r"\bdword\b", mnemonic):
+        return 4
+    if re.search(r"\bbyte\b|\bnear\b", mnemonic):
+        return 1
+    if re.search(r"\bword\b", mnemonic):
+        return 2
+    if _BYTE_REG.search(mnemonic):
+        return 1
+    return 2
+
+
+def _masm(mnemonic: str, symgen) -> str:
+    text = _INT.sub("int ", mnemonic)
+    # A direct DS-relative absolute operand has no base register, so MASM
+    # rejects `[0x1234]` and `ds:[0x1234]` would add a `3E` prefix. A named
+    # near symbol keeps the same encoding and the fixup is overwritten with
+    # the retail address by `_relocate`.
+    # MASM wants the segment override outside the brackets, not inside.
+    text = _SEG_OPEN.sub(r"\1:[", text)
+    text = _SIZE.sub(r"\1 ptr \2[", text)
+    # A segment register cannot take a size specifier: ndisasm writes
+    # `mov es,word [..]`, MASM wants `mov es,..`.
+    text = _SEG_LOAD.sub(r"\1 \2, ", text)
+    size = _operand_size(mnemonic)
+
+    def repl(match: re.Match[str]) -> str:
+        address = int(match.group(1), 16)
+        return symgen(address, size)
+
+    text = _BARE_ABS.sub(repl, text)
+    return text
+
+
+def convert(unit: dict, root: Path | None = None) -> dict:
+    """Return the new file-scope declarations, `_asm` body, and a note."""
+    root = root or ROOT
+    source = root / unit["source"]
+    text = source.read_text(encoding="utf-8", errors="replace")
+    body, calls = body_for(unit, text, root)
+    if not body:
+        raise ConvertError("empty instruction stream")
+    insns = ndisasm(body)
+    helper_names = re.findall(r"call\s+far\s+ptr\s+([A-Za-z_]\w*)", text)
+    if len(helper_names) < len(calls):
+        helper_names = helper_names + [
+            f"mfar{index}" for index in range(len(helper_names), len(calls))
+        ]
+
+    targets: set[int] = set()
+    for insn in insns:
+        match = _JMP.match(insn["mnemonic"])
+        if match and insn["raw"][:1] != b"\xea":
+            targets.add(int(match.group(2), 16))
+    outside = sorted(target for target in targets if target > len(body))
+    if outside:
+        raise ConvertError(
+            f"jump target {outside[0]:#x} leaves the unit (extent {len(body)})"
+        )
+
+    symbols: dict[tuple[int, int], str] = {}
+    decls: list[str] = []
+
+    def symgen(address: int, size: int) -> str:
+        key = (address, size)
+        if key not in symbols:
+            name = f"{SYMBOL_PREFIX[size]}{address:04X}"
+            symbols[key] = name
+            # `extern` so CL emits an OMF fixup; a symbol defined in this TU
+            # has a known offset and would be encoded literally, which
+            # `_relocate` cannot rewrite with the retail address.
+            decls.append(f"extern {SYMBOL_DECL[size]} __near {name};")
+        return symbols[key]
+
+    lines: list[str] = []
+    helper_index = 0
+    for insn in insns:
+        addr = insn["addr"]
+        if addr in targets:
+            lines.append(f"L{addr:02X}:")
+        if addr in calls:
+            lines.append(f"        call far ptr {helper_names[helper_index]}")
+            helper_index += 1
+            continue
+        mnemonic = insn["mnemonic"]
+        match = _JMP.match(mnemonic)
+        if match:
+            name = match.group(1)
+            target = int(match.group(2), 16)
+            if name == "jmp":
+                # MASM shortens a `jmp` whose distance is already known, so a
+                # rel16 jump has to name a label it cannot resolve in pass 1.
+                if insn["raw"][:1] == b"\xeb":
+                    lines.append(f"        jmp short $+{target - addr}")
+                else:
+                    lines.append(f"        jmp L{target:02X}")
+                continue
+            # MASM expands a backward conditional jump to `inverse; jmp`, and
+            # mis-resolves some forward ones; `$` pins the rel8 the retail
+            # image actually uses.
+            if name == "jcxz" or name.startswith("loop"):
+                lines.append(f"        {name} $+{target - addr}")
+            else:
+                lines.append(f"        {name} short $+{target - addr}")
+            continue
+        lines.append(f"        {_masm(mnemonic, symgen)}")
+
+    for target in sorted(targets):
+        if target >= len(body):
+            lines.append(f"L{target:02X}:")
+
+    note = ""
+    if helper_index != len(calls):
+        note = f"only {helper_index}/{len(calls)} far calls placed"
+    return {"decls": decls, "body": "\n".join(lines) + "\n", "note": note, "text": text}
+
+
+def render(source_text: str, result: dict) -> str:
+    """Replace the first `_asm { ... }` block and splice in the declarations."""
+    match = _ASM_OPEN.search(source_text)
+    if match is None:
+        raise ConvertError("source has no `_asm {` block")
+    depth = 1
+    index = match.end()
+    while index < len(source_text) and depth:
+        if source_text[index] == "{":
+            depth += 1
+        elif source_text[index] == "}":
+            depth -= 1
+        index += 1
+    head = source_text[: match.start()]
+    tail = source_text[index:]
+    decls = result["decls"]
+    decl_text = "\n".join(decls) + ("\n" if decls else "")
+    return f"{decl_text}{head}_asm {{\n{result['body']}    }}{tail}"
+
+
+def _main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("units", nargs="+")
+    parser.add_argument("--write", action="store_true", help="replace the unit body in place")
+    parser.add_argument(
+        "--verify",
+        action="store_true",
+        help="compile each candidate with CL 8.00c and byte-diff it against retail",
+    )
+    parser.add_argument(
+        "--write-verified",
+        action="store_true",
+        help="with --verify, write every candidate that byte-diffs clean",
+    )
+    args = parser.parse_args(argv)
+    root = ROOT
+    try:
+        rows = unit_index.index(root)
+    except RetailError as exc:
+        print(f"gen_mnem: ERROR: {exc}", file=sys.stderr)
+        return 2
+    selected: list[tuple[dict, dict]] = []
+    for selector in args.units:
+        matches = [
+            row
+            for row in rows
+            if selector in (row["source"], Path(row["source"]).stem, Path(row["source"]).name)
+        ]
+        if not matches:
+            print(f"gen_mnem: no unit {selector!r}", file=sys.stderr)
+            return 2
+        for unit in matches:
+            try:
+                result = convert(unit, root)
+            except (ConvertError, RetailError) as exc:
+                print(f"===== {unit['source']}: ERROR {exc}")
+                continue
+            selected.append((unit, result))
+            if args.verify:
+                continue
+            print(f"===== {unit['source']} {result['note']}")
+            if args.write:
+                new_text = render(result["text"], result)
+                (root / unit["source"]).write_text(new_text, encoding="utf-8")
+                print("wrote")
+            else:
+                print(render(result["text"], result))
+    if args.verify:
+        return _verify(selected, root, write=args.write_verified)
+    return 0
+
+
+def _verify(selected: list[tuple[dict, dict]], root: Path, *, write: bool = False) -> int:
+    import tempfile
+
+    from compile_msc import compile_omf
+    from lift import check_compiled, summary_line
+
+    images = unit_index.image_bytes(root)
+    with tempfile.TemporaryDirectory(prefix="mnem_") as tmp:
+        work = Path(tmp)
+        good = 0
+        for index, (unit, result) in enumerate(selected):
+            stem = f"cand{index:03d}"
+            path = work / f"{stem}.c"
+            path.write_text(render(result["text"], result), encoding="utf-8")
+            try:
+                compiled, fixups = compile_omf(path)
+            except RetailError as exc:
+                lines = [line for line in str(exc).strip().splitlines() if line.strip()]
+                print(f"{unit['source']:<28} COMPILE-FAIL {' | '.join(lines[:3])}")
+                continue
+            outcome = check_compiled(unit, compiled, fixups, images)
+            print(summary_line(outcome))
+            if outcome["result"] == "MATCH":
+                good += 1
+                if write:
+                    (root / unit["source"]).write_text(
+                        render(result["text"], result), encoding="utf-8"
+                    )
+        print(f"{good}/{len(selected)} MATCH")
+        return 0 if good == len(selected) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())

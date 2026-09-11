@@ -1,3 +1,4 @@
+extern int __near mn02D8;
 int g;
 void far helper_mkfp(void);
 void far helper2(void);
@@ -5,32 +6,31 @@ void far helper3(void);
 int far if15_283339(int a)
 {
     _asm {
-        cmp word ptr a, 15
-        _emit 0x75
-        _emit 0x35
-        cmp word ptr g, 0Ah
-        _emit 0x7D
-        _emit 0x2E
-        mov ax, 13h
-        mov dx, 0F03Fh
+        cmp word ptr [bp+0x6],0xf
+        jnz short $+55
+        cmp word ptr mn02D8,0xa
+        jnl short $+48
+        mov ax,0x13
+        mov dx,0xf03f
         push dx
         push ax
         call far ptr helper_mkfp
-        mov sp, bp
-        mov ax, 1388h
+        mov sp,bp
+        mov ax,0x1388
         push ax
         call far ptr helper2
-        mov sp, bp
-        mov ax, 5A18h
+        mov sp,bp
+        mov ax,0x5a18
         push ax
-        mov ax, 3E9h
+        mov ax,0x3e9
         push ax
         call far ptr helper3
-        mov sp, bp
-        xor ax, ax
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        mov ax, 174h
+        mov sp,bp
+        xor ax,ax
+        jmp short $+6
+        nop
+L3B:
+        mov ax,0x174
+L3E:
     }
 }

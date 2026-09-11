@@ -3,33 +3,32 @@ void far helper_mkfp(void);
 int far if15_299476(int a)
 {
     _asm {
-        mov ax, 0Ah
+        mov ax,0xa
         push ax
-        mov ax, 195h
+        mov ax,0x195
         push ax
         call far ptr helper
-        mov sp, bp
-        or ax, ax
-        _emit 0x74
-        _emit 0x1A
-        cmp word ptr a, 15
-        _emit 0x75
-        _emit 0x0F
-        mov ax, 20h
-        mov dx, 0F046h
+        mov sp,bp
+        or ax,ax
+        jz short $+28
+        cmp word ptr [bp+0x6],0xf
+        jnz short $+17
+        mov ax,0x20
+        mov dx,0xf046
         push dx
         push ax
         call far ptr helper_mkfp
-        mov sp, bp
-        mov ax, 19Ah
-        _emit 0xEB
-        _emit 0x0D
-        cmp word ptr a, 15
-        _emit 0x74
-        _emit 0x04
-        xor ax, ax
-        _emit 0xEB
-        _emit 0x03
-        mov ax, 0FFFFh
+        mov sp,bp
+L28:
+        mov ax,0x19a
+        jmp short $+15
+L2D:
+        cmp word ptr [bp+0x6],0xf
+        jz short $+6
+        xor ax,ax
+        jmp short $+5
+L37:
+        mov ax,0xffff
+L3A:
     }
 }
