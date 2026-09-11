@@ -218,6 +218,26 @@ level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
 lodsb` silently drops the prefix and emits `AC`), and a direct far jump
 (`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
 
+### Session 2026-09-11 (eighth pass) — labelled short jumps, and target-aware decode
+
+Two changes, neither of which needs the missing assembler:
+
+- **Labelled short jumps.** `$`-relative displacements made the compiler ICE
+  (`C1001`) on some listings; `jcc short lblXX`, `jmp short lblXX` and a
+  labelled `jmp` for rel16 assemble to the same bytes, work in both
+  directions, and are what the retail bytes say. That converted 7 overlay
+  units and removed the 15-unit C1001 class.
+- **Target-aware decode.** A linear sweep can decode an instruction that
+  straddles a branch target, which surfaced as `C2094` (undefined label) or
+  `C2427` (short jump out of range). `convert()` now splits the stream at
+  forced boundaries and re-decodes each piece. It converts no further units on
+  its own — the bytes at the split turn out not to be a decodable instruction
+  stream, and those units now say `undecodable byte` instead of showing a
+  compiler error — but it removes two compiler-error classes and makes the
+  failure reasons accurate (`C2400` 48 → 26, `C2094` eliminated).
+
+Dump population 536 → 529.
+
 ### Session 2026-09-11 (seventh pass) — the 81-group immediate, and a name bug
 
 A fifth encoding difference: for an `81 /r iw` instruction the retail bytes
