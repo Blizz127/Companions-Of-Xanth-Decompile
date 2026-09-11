@@ -2365,6 +2365,36 @@ the alternative of declaring an unused variable to pad the frame — that would
 produce the right bytes for the wrong reason and would have to be thrown away
 the moment the real declaration was found.
 
+### exe_111158: the fourth local participates in the early address setup
+
+Two more variants, both with the declaration order the slots imply
+(`s`, then `bit`, then the unknown, then `p`):
+
+| variant | frame | size | first difference |
+|---|---|---|---|
+| `s, p, bit` (no fourth local) | `83 EC 18` | 140 | `+5` — the frame |
+| fourth pointer used in the loop | `83 EC 1A` | 144 | `+13` |
+| fourth pointer assigned then copied to `p` | `83 EC 1A` | 144 | `+13` |
+
+Both new variants reproduce retail's **frame exactly**, which confirms the
+fourth local is 2 bytes — and both overshoot by the same two bytes, with the
+divergence now at compiled offset `13` (`0x0D`) rather than `+5`.
+
+**That offset is informative.** `0x0D` is inside the `imul word [g680c]`
+operand, in the sequence that computes `g_tbl[g680a] + g680c * 20`. So adding
+the fourth local changes how CL addresses that expression, which means the
+original's fourth local is **involved in the early address computation** —
+not a saved loop bound and not an unrelated temporary. That is a narrowing
+rather than a solution: the next attempt should put the fourth declaration in
+the expression itself, not beside it.
+
+**State:** 140 of 142 bytes, everything in the function reproduced, the frame
+explained (26 = 20 + 2 + 2 + 2), and the last declaration narrowed to one
+involved in `g_tbl[g680a] + g680c * 20`. The unit is left here deliberately
+rather than padded to 142 with an unused variable — the frame proves a
+declaration existed, but an unnamed placeholder would be an artefact, and the
+narrowing above is worth more than two bytes of apparent coverage.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
