@@ -2871,6 +2871,41 @@ close**, and they are worth more than the two bytes:
    and the same stride. Each unit's struct has to be read from its own
    accesses.
 
+### exe_110357 classified NEAR_MATCH at 130/128
+
+The `q = p->f10` variant was compiled as named and **fails for the predicted
+reason in the opposite direction**: `q` takes a frame slot, so the unit grows
+to 140 bytes and the first difference moves to `+5`, the frame. My prediction
+that `q` would be register-resident was wrong, and it is recorded as wrong
+rather than dropped.
+
+Three forms for this prologue now:
+
+| form | size | first difference |
+|---|---|---|
+| separate assignment to `p` | 130 | `+21` |
+| declaration initialiser for `p` | 130 | `+21` |
+| `q = p->f10` with its own local | 140 | `+5` (frame) |
+
+**Classification: NEAR_MATCH at 130 of 128 bytes.** Reproduced: the 20-byte
+record with fields at 0, 1, ints at 2/4/6/8 and a far pointer at 10; the
+`les` table load with the stride added; the far-pointer local with its
+reloads; the two-level guard (`f0 == 5` then `f10->g0 != 0`); `p->f1 |= 80h`;
+`sub1()` / `sub2(0Ah)`; and `sub3(82h, p->f2+3, p->f4+2, p->f6-3, p->f8-2)`
+with `sub4()` — including the cdecl argument order.
+
+The two unresolved bytes are CL's `mov ax,bx ; mov dx,es` before storing the
+pointer, where retail stores `BX`/`ES` in place. It is trigger-dependent:
+`exe_109184`, with the same table, local and first-level access, stores in
+place. Neither the assignment form nor an explicit inner local reproduces
+retail here.
+
+**Stopping, per the plan recorded before this compile.** Three prologue forms
+have been tried for two bytes, and the two generalisable results from this
+unit — the stride readable from the `imul` operand, and the family not
+sharing one record type — are already recorded and are worth more than the
+two bytes would be.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
