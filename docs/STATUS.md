@@ -1235,6 +1235,49 @@ mov al,[4F28h] / and ax,1 / cmp ax,[bp+6] / jnz` — so the flag read as a byte
 and the cast reading are confirmed right. It is 58 bytes against retail's 48,
 so the divergence is in the two update blocks and needs another pass.
 
+### Recovered: exe_99679, as unaided C with no trims
+
+`exe-code:0x1855F`, 48 bytes, previously an `_emit` dump:
+
+```c
+extern unsigned g;
+extern char __near t[];
+
+void far exe_99679(int a)
+{
+    if (a == ((char)g & 1))
+        t[g]++;
+    else if (g < 0xF) {
+        g++;
+        t[g] = 1;
+    }
+}
+```
+
+`tools/lift.py`: **MATCH, 48 bytes, trimmed 0** — no `mov sp,bp` removal and
+no prologue or epilogue trimming. This is the first unit recovered with zero
+trims.
+
+Two details were forced by the code rather than guessed:
+
+- `g` is read as a **byte** (`mov al,[g]`) but updated as a **word**
+  (`inc word [g]`, `cmp word [g],0Fh`), so the low bit comes through a cast
+  rather than a `char` declaration.
+- The table access is `[bx+4F2Ah]` — a **near** access with the base folded
+  into the displacement. Declaring `t` as a plain array in the large model
+  makes CL emit `mov es,[g]` plus `es:[bx]`, growing the unit from 48 to 58
+  bytes. `__near` is what removes it.
+
+Because the guard compared equal across readings, the whole difference was
+in the two update blocks; the earlier 58-byte attempt was the far-array
+form, not a control-flow error.
+
+**Note on the corpus totals quoted in earlier handoffs.** The `_emit` dump
+count is **2,382**, not 2,375: the figure I had been repeating predates the
+eight glue splits, which added eight units. Current totals: 2,844 units,
+unaided C 440, mnemonic `_asm` 22, `_emit` dump 2,382; exe dump byte
+coverage 97.90% -> **97.88%**, ovl unchanged at 96.69%.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
