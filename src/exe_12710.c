@@ -1,110 +1,51 @@
+extern void __near ncEDA9(void);
 
 int far exe_12710(int a)
 {
     _asm {
-        _emit 0x57
-        _emit 0x56
-        _emit 0x8B
-        _emit 0x76
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x8B
-        _emit 0xF8
-        _emit 0x83
-        _emit 0xFE
-        _emit 0xFF
-        _emit 0x74
-        _emit 0x14
-        _emit 0x8B
-        _emit 0xD8
-        _emit 0xF6
-        _emit 0x47
-        _emit 0x0A
-        _emit 0x01
-        _emit 0x75
-        _emit 0x12
-        _emit 0xF6
-        _emit 0x47
-        _emit 0x0A
-        _emit 0x80
-        _emit 0x74
-        _emit 0x06
-        _emit 0xF6
-        _emit 0x47
-        _emit 0x0A
-        _emit 0x02
-        _emit 0x74
-        _emit 0x06
-        _emit 0xB8
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0xEB
-        _emit 0x3E
-        _emit 0x90
-        _emit 0x8B
-        _emit 0x45
-        _emit 0x08
-        _emit 0x0B
-        _emit 0x45
-        _emit 0x06
-        _emit 0x75
-        _emit 0x08
-        _emit 0x1E
-        _emit 0x57
-        _emit 0xE8
-        _emit 0x73
-        _emit 0xED
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x8B
-        _emit 0x05
-        _emit 0x8B
-        _emit 0x55
-        _emit 0x02
-        _emit 0x39
-        _emit 0x45
-        _emit 0x06
-        _emit 0x75
-        _emit 0x0D
-        _emit 0x39
-        _emit 0x55
-        _emit 0x08
-        _emit 0x75
-        _emit 0x08
-        _emit 0x83
-        _emit 0x7D
-        _emit 0x04
-        _emit 0x00
-        _emit 0x75
-        _emit 0xD5
-        _emit 0xFF
-        _emit 0x05
-        _emit 0xFF
-        _emit 0x45
-        _emit 0x04
-        _emit 0x8B
-        _emit 0xC6
-        _emit 0xFF
-        _emit 0x0D
-        _emit 0xC4
-        _emit 0x1D
-        _emit 0x80
-        _emit 0x65
-        _emit 0x0A
-        _emit 0xEF
-        _emit 0x26
-        _emit 0x88
-        _emit 0x07
-        _emit 0x80
-        _emit 0x4D
-        _emit 0x0A
-        _emit 0x01
-        _emit 0x2A
-        _emit 0xE4
-        _emit 0x5E
-        _emit 0x5F
+        mov si,[bp+0x6]
+        mov ax,[bp+0x8]
+        mov di,ax
+        cmp si,-1
+        jz short $+22
+        mov bx,ax
+        test byte ptr [bx+0xa],0x1
+        jnz short $+20
+        test byte ptr [bx+0xa],0x80
+        jz short $+8
+        test byte ptr [bx+0xa],0x2
+        jz short $+8
+lbl23:
+        mov ax,0xffff
+        jmp short $+64
+        nop
+lbl29:
+        mov ax,[di+0x8]
+        or ax,[di+0x6]
+        jnz short $+10
+        push ds
+        push di
+        call ncEDA9
+        add sp,0x4
+lbl39:
+        mov ax,[di]
+        mov dx,[di+0x2]
+        cmp [di+0x6],ax
+        jnz short $+15
+        cmp [di+0x8],dx
+        jnz short $+10
+        cmp word ptr [di+0x4],0x0
+        jnz short $-41
+        inc word ptr [di]
+lbl50:
+        inc word ptr [di+0x4]
+        mov ax,si
+        dec word ptr [di]
+        les bx, [di]
+        and byte ptr [di+0xa],0xef
+        mov es:[bx],al
+        or byte ptr [di+0xa],0x1
+        sub ah,ah
+lbl66:
     }
 }

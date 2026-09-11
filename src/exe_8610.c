@@ -1,82 +1,41 @@
+extern void __near nc00DD(void);
+extern void __near nc0055(void);
 void far helper_0(void);
 int far exe_8610(int a)
 {
     _asm {
-        _emit 0x56
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x0B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x75
-        _emit 0x08
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xE8
-        _emit 0xCE
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x3E
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
-        _emit 0xE8
-        _emit 0x3B
-        _emit 0x00
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x06
-        _emit 0xB8
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0xEB
-        _emit 0x29
-        _emit 0x90
-        _emit 0x8B
-        _emit 0x76
-        _emit 0x06
-        _emit 0x81
-        _emit 0xEE
-        _emit 0x20
-        _emit 0x54
-        _emit 0x81
-        _emit 0xC6
-        _emit 0x10
-        _emit 0x55
-        _emit 0xF6
-        _emit 0x04
-        _emit 0x40
-        _emit 0x74
-        _emit 0x18
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x2A
-        _emit 0xE4
-        _emit 0x26
-        _emit 0x8A
-        _emit 0x47
-        _emit 0x0B
-        _emit 0x50
+        mov ax,[bp+0x8]
+        or ax,[bp+0x6]
+        jnz short $+10
+        xor ax,ax
+        push ax
+        call nc00DD
+        jmp short $+64
+lbl11:
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
+        call nc0055
+        add sp,0x4
+        or ax,ax
+        jz short $+8
+        mov ax,0xffff
+        jmp short $+43
+        nop
+lbl27:
+        mov si,[bp+0x6]
+        sub si,0x5420
+        add si,0x5510
+        test byte ptr [si],0x40
+        jz short $+26
+        les bx, [bp+0x6]
+        sub ah,ah
+        mov al,es:[bx+0xb]
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x3D
-        _emit 0x01
-        _emit 0x00
-        _emit 0xF5
-        _emit 0x1B
-        _emit 0xC0
-        _emit 0x5E
+        add sp,0x2
+        cmp ax,0x1
+        cmc
+        sbb ax,ax
+lbl4F:
     }
 }
