@@ -1854,6 +1854,35 @@ call's push sequence, so the shape is right and the argument order or one
 push is not. Recorded in progress; the unit is a clean wrapper and worth
 finishing.
 
+### exe_87918: size-exact, and the same cleanup question as exe_91501
+
+**The size arithmetic was misleading me and is worth recording.** An
+`_emit` dump stores the retail bytes **without** the CL prologue, so
+retail's 65-byte dump corresponds to **68 bytes of compiled code**. The
+cdecl reconstruction compiles to exactly **68**, so it is already
+size-exact; earlier notes that called it "68 against retail's 65" were
+comparing a compiled size to a dump size and were wrong to call that three
+bytes over.
+
+**The real difference is the first call's cleanup**, and it is the same
+question as `exe_91501`:
+
+| | after the first `sub1` call |
+|---|---|
+| retail | **nothing** — a `nop` sits where the cleanup would be, and the arguments are left on the stack until the final `mov sp,bp` |
+| cdecl reconstruction | `add sp,6` (three bytes) |
+
+So retail does not clean the three words at the call site; the epilogue's
+`mov sp,bp` does it. Compiling `sub1` as `__pascal` (callee pops) removes
+the cleanup entirely and gives **64** — too short, and it also reverses the
+source argument order, so it is not the answer either.
+
+That is the second unit where the residue is "retail restores `sp` from
+`bp` where CL cleans at the call site", alongside `exe_91501`. Two
+independent units with the same difference make this a better-defined
+question than either alone: it is a property of CL's cleanup choice, not of
+one function's source.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
