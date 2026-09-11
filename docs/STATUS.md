@@ -1640,6 +1640,37 @@ reason — worth one probe to close the question, but not before the corpus
 work, since `mov sp,bp` after argument pushes appears in `exe_5398` and
 `exe_24910` too and one answer would cover all three.
 
+### exe_91501 cleanup closed; exe_94984 decoded
+
+**The calling-convention probe was run and the prediction held.** Declaring
+`helper` `__pascal` compiles to **82 bytes** and diverges at `+9`, i.e. it
+fails for a different reason rather than producing retail's `mov sp,bp`.
+That was the expectation recorded before running it. Four forms have now
+been tried at that site (plain, block, local argument, `__pascal`), so the
+difference is localised but unexplained: retail emits the two-byte frame
+restore where CL emits a one-byte `pop`, at a site otherwise identical.
+
+**`exe_94984` (exe-code:0x17308, 85 B) decoded** — a "pop one record"
+routine, and more complex than the units that have matched so far:
+
+```
+sub sp,4 ; push di ; push si
+ax = [4DAEh] * 24 - [bp+6]          ; 3 add-based multiplies, no imul
+push ax ; push dx:ax+0Ch ; push dx:ax ; push [bp+6] ; call far
+add sp,0Ah                          ; five words of arguments
+bx = [4DAEh] * 24 ; les si,[63DCh]  ; a far pointer table
+xor ax,ax ; cx = 6 ; lea di,[bx+si] ; rep stosw   ; 24 bytes cleared
+dec word [4DAEh]
+```
+
+The multiply is built from `add ax,ax / add ax,cx / add ax,ax / add ax,ax`
+(×24), the table is reached through a far pointer load into `es:si`, and
+the clear is `rep stosw` with `cx = 6`. Four of those elements —
+`les si,[table]`, `rep stosw`, the `lea di,[bx+si]` addressing and a
+five-word call — make this a poor next target; it is recorded as decoded so
+the next attempt starts from the structure rather than the bytes, and the
+simpler remaining global-index units are the better continuation.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
