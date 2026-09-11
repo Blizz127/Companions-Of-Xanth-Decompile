@@ -796,6 +796,53 @@ does not endanger the rebuild. The trims are the documented `_relocate`
 behaviour for `_asm` units and stay visible in the report rather than being
 hidden.
 
+### Near match: exe_18240 — a long-returning callback store
+
+`exe-code:0x4740`, 34 bytes. Retail:
+
+```
+push bp ; mov bp,sp
+push ds ; push bx
+lds bx,[bp+6]              ; p, held in DS:BX across the call
+push word [bp+0Ch] ; push word [bp+0Ah]    ; the long argument `a`
+push word [bx+2] ; push word [bx]          ; the current *p
+push cs ; call +0A5h                       ; same-segment far call
+mov [bx],ax ; mov [bx+2],dx                ; *p = the returned long
+pop bx ; pop ds ; pop bp ; retf 8
+```
+
+so it is `*p = helper(*p, a)` with a `long` return, a `long` argument and a
+`long far *p`, and the outer function pops 8 bytes of arguments
+(`retf 8`) — a `__pascal`/`__stdcall` far function.
+
+```c
+long far helper(long x, long y);
+
+void far f(long far *p, long a)
+{
+    *p = helper(*p, a);
+}
+```
+
+compiles to the same instruction sequence, the same push order and the same
+`mov [bx],ax; mov [bx+2],dx` store-back, but differs in exactly three ways:
+
+| retail | this compiler |
+|---|---|
+| `push ds; push bx; lds bx,[bp+6]` — pointer in **DS**:BX, saved across the call | `les bx,[bp+6]` — pointer in **ES**:BX, not saved |
+| `push cs; call rel16` (callee in this segment) | `call far ptr helper` (5-byte `9A` + fixup) |
+| `retf 8` (pops its own arguments) | `retf` (cdecl) |
+
+The third is a declaration (`__pascal`/`__stdcall` on `f`), the second is a
+consequence of the helper being in the same segment as the caller, and the
+first is the open question: what makes CL hold the far pointer in DS:BX
+rather than ES:BX. Nothing else in the function is unexplained, and the
+argument order and long-store are confirmed correct by the identical push
+sequence.
+
+`f`'s own argument count is consistent: `p` (4 bytes) plus `a` (4 bytes) is
+the 8 bytes `retf 8` pops.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
