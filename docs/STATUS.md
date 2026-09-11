@@ -615,6 +615,52 @@ It is not. Sampling the smallest shows `stc; retf`, `push es; retf`,
 figure is heavily polluted by thunks and is **not** evidence of missed
 functions; no count of missed functions is claimed from it.
 
+### Boundary correction attempted, half-applied state reverted
+
+**Dump format, now written down** (needed by anyone editing a unit):
+a dump is the retail bytes *minus* the CL-generated `55 8B EC` prologue
+(3 bytes) and *minus* the CL-generated trailing epilogue, with each far call
+written as `call far ptr NAME` — a **5-byte wildcard**, not five `_emit`
+lines. Token accounting must count 1 byte for `_emit` and 5 for a far call;
+counting only `_emit` lines miscounts by 5 per far call and was the first
+bug in the correction script.
+
+**Six of the fourteen confirmed glues have a successor unit already
+sitting at the cut point** — so those pairs *overlap* and double-cover
+bytes:
+
+| leading unit | cut | successor already present |
+|---|---|---|
+| `exe_6094` | +43 | `exe_6137` |
+| `exe_13444` | +510 | `exe_13954` |
+| `exe_14566` | +82 | `exe_14648` |
+| `exe_34621` | +42 | `exe_34663` |
+| `exe_34698` | +42 | `exe_34740` |
+| `exe_34775` | +42 | `exe_34817` |
+
+Measuring all function-shaped units: **20 overlapping pairs in
+`exe-code`, 0 in `ovl-payload`**.
+
+**The correction is two-part, and part (a) alone is a regression.**
+Truncating each leading dump's token stream to `cut - 3` bytes was
+implemented and verified byte-exact (the dump reproduces
+`retail[offset+3 : offset+3+n]`), and the six extents did drop to 43, 510,
+82, 42, 42 and 42. But every one of them then classified as
+`framed-fragment` instead of `function`, because their first function ends
+in `retf imm16` — and `tools/units.py`'s `EPILOGUES` /
+`_RET` tuples only contain `CB`/`C3` forms. So the fix must be:
+
+1. extend the epilogue matching to `retf imm16` (`CA iw`) and
+   `ret imm16` (`C2 iw`), and
+2. then truncate the leading dumps.
+
+Doing (2) without (1) turns six functions into fragments, which is why the
+half-applied state was reverted rather than committed. The reverted tree
+still has 1,134 function units. Widening `EPILOGUES` also changes
+`resolve_extent` for every unit, so the dump-coverage ratchet in
+`tests/test_units.py` must be re-measured as part of the same change, not
+after it.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
