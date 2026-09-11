@@ -1,89 +1,39 @@
+extern int __near mn07EC;
+extern int __near mn07EE;
+extern int __near mn07F0;
+extern int __near mn07F2;
 void far helper_0(void);
 int far exe_61795(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
+        sub sp,0x4
         call far ptr helper_0
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x89
-        _emit 0x56
-        _emit 0xFE
-        _emit 0x2B
-        _emit 0x06
-        _emit 0xEC
-        _emit 0x07
-        _emit 0x1B
-        _emit 0x16
-        _emit 0xEE
-        _emit 0x07
-        _emit 0x0B
-        _emit 0xD2
-        _emit 0x7C
-        _emit 0x13
-        _emit 0x7F
-        _emit 0x05
-        _emit 0x3D
-        _emit 0xFA
-        _emit 0x00
-        _emit 0x76
-        _emit 0x0C
-        _emit 0x83
-        _emit 0x06
-        _emit 0xF0
-        _emit 0x07
-        _emit 0x32
-        _emit 0x83
-        _emit 0x16
-        _emit 0xF2
-        _emit 0x07
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x16
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x8B
-        _emit 0x56
-        _emit 0xFE
-        _emit 0x2B
-        _emit 0x06
-        _emit 0xEC
-        _emit 0x07
-        _emit 0x1B
-        _emit 0x16
-        _emit 0xEE
-        _emit 0x07
-        _emit 0x01
-        _emit 0x06
-        _emit 0xF0
-        _emit 0x07
-        _emit 0x11
-        _emit 0x16
-        _emit 0xF2
-        _emit 0x07
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x8B
-        _emit 0x56
-        _emit 0xFE
-        _emit 0xA3
-        _emit 0xEC
-        _emit 0x07
-        _emit 0x89
-        _emit 0x16
-        _emit 0xEE
-        _emit 0x07
-        _emit 0xA1
-        _emit 0xF0
-        _emit 0x07
-        _emit 0x8B
-        _emit 0x16
-        _emit 0xF2
-        _emit 0x07
+        mov [bp-0x4],ax
+        mov [bp-0x2],dx
+        sub ax,mn07EC
+        sbb dx,mn07EE
+        or dx,dx
+        jl short $+21
+        jg short $+7
+        cmp ax,0xfa
+        jna short $+14
+L21:
+        add word ptr mn07F0,0x32
+        adc word ptr mn07F2,0x0
+        jmp short $+24
+L2D:
+        mov ax,[bp-0x4]
+        mov dx,[bp-0x2]
+        sub ax,mn07EC
+        sbb dx,mn07EE
+        add mn07F0,ax
+        adc mn07F2,dx
+L43:
+        mov ax,[bp-0x4]
+        mov dx,[bp-0x2]
+        mov mn07EC,ax
+        mov mn07EE,dx
+        mov ax,mn07F0
+        mov dx,mn07F2
     }
 }

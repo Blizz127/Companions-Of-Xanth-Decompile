@@ -1,67 +1,32 @@
+extern int __near mn4F20;
+extern int __near mn4F22;
+extern int __near mn4F24;
+extern int __near mn4F26;
 void far helper_0(void);
 void far helper_1(void);
 int far exe_98578(int a)
 {
     _asm {
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x0B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x74
-        _emit 0x1C
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x56
-        _emit 0x08
-        _emit 0xA3
-        _emit 0x20
-        _emit 0x4F
-        _emit 0x89
-        _emit 0x16
-        _emit 0x22
-        _emit 0x4F
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0A
-        _emit 0xA3
-        _emit 0x24
-        _emit 0x4F
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0C
-        _emit 0xA3
-        _emit 0x26
-        _emit 0x4F
-        _emit 0xEB
-        _emit 0x17
-        _emit 0x90
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x20
-        _emit 0x4F
-        _emit 0xE0
-        _emit 0x4E
-        _emit 0x8C
-        _emit 0x1E
-        _emit 0x22
-        _emit 0x4F
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x24
-        _emit 0x4F
-        _emit 0x01
-        _emit 0x00
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x26
-        _emit 0x4F
-        _emit 0x00
-        _emit 0x00
+        mov ax,[bp+0x8]
+        or ax,[bp+0x6]
+        jz short $+30
+        mov ax,[bp+0x6]
+        mov dx,[bp+0x8]
+        mov mn4F20,ax
+        mov mn4F22,dx
+        mov ax,[bp+0xa]
+        mov mn4F24,ax
+        mov ax,[bp+0xc]
+        mov mn4F26,ax
+        jmp short $+25
+        nop
+L29:
+        mov word ptr mn4F20,0x4ee0
+        mov word ptr mn4F22,ds
+        mov word ptr mn4F24,0x1
+        mov word ptr mn4F26,0x0
+L3F:
         call far ptr helper_1
     }
 }

@@ -1,91 +1,44 @@
+extern int __near mn5AFC;
+extern int __near mn5AF8;
+extern int __near mn5AFE;
+extern int __near mn5AFA;
 void far helper_0(void);
 int far ovl_223532(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0x8A
-        _emit 0x46
-        _emit 0x08
-        _emit 0x98
-        _emit 0xF7
-        _emit 0x2E
-        _emit 0xFC
-        _emit 0x5A
-        _emit 0x03
-        _emit 0x06
-        _emit 0xF8
-        _emit 0x5A
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x8A
-        _emit 0x46
-        _emit 0x09
-        _emit 0xB1
-        _emit 0x02
-        _emit 0x98
-        _emit 0xF6
-        _emit 0xF9
-        _emit 0x98
-        _emit 0xF7
-        _emit 0x2E
-        _emit 0xFE
-        _emit 0x5A
-        _emit 0x03
-        _emit 0x06
-        _emit 0xFA
-        _emit 0x5A
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xF6
-        _emit 0x46
-        _emit 0x09
-        _emit 0x01
-        _emit 0x74
-        _emit 0x13
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x04
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x05
-        _emit 0x19
-        _emit 0x00
-        _emit 0x50
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x05
-        _emit 0x04
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x0E
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x04
-        _emit 0x05
-        _emit 0x04
-        _emit 0x00
-        _emit 0x50
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x05
-        _emit 0x1E
-        _emit 0x00
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0xFC
-        _emit 0xFF
-        _emit 0x76
-        _emit 0xFE
+        sub sp,0x4
+        mov al,[bp+0x8]
+        cbw
+        imul word ptr mn5AFC
+        add ax,mn5AF8
+        mov [bp-0x2],ax
+        mov al,[bp+0x9]
+        mov cl,0x2
+        cbw
+        idiv cl
+        cbw
+        imul word ptr mn5AFE
+        add ax,mn5AFA
+        mov [bp-0x4],ax
+        test byte ptr [bp+0x9],0x1
+        jz short $+21
+        add word ptr [bp-0x4],0x4
+        mov ax,[bp-0x4]
+        add ax,0x19
+        push ax
+        mov ax,[bp-0x2]
+        add ax,0x4
+        jmp short $+16
+L3F:
+        add word ptr [bp-0x2],0x4
+        add ax,0x4
+        push ax
+        mov ax,[bp-0x2]
+        add ax,0x1e
+L4D:
+        push ax
+        push word ptr [bp-0x4]
+        push word ptr [bp-0x2]
         call far ptr helper_0
     }
 }

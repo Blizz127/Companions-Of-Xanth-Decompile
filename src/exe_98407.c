@@ -1,56 +1,27 @@
+extern int __near mn4EDE;
+extern int __near mn6444;
+extern int __near mn6448;
+extern int __near mn6446;
 
 int far exe_98407(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x06
-        _emit 0x83
-        _emit 0x3E
-        _emit 0xDE
-        _emit 0x4E
-        _emit 0x00
-        _emit 0x74
-        _emit 0x22
-        _emit 0xA1
-        _emit 0x44
-        _emit 0x64
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFE
-        _emit 0xA1
-        _emit 0x48
-        _emit 0x64
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFC
-        _emit 0xA1
-        _emit 0x46
-        _emit 0x64
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFA
-        _emit 0xB8
-        _emit 0x14
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFE
-        _emit 0x8E
-        _emit 0xC3
-        _emit 0x8B
-        _emit 0x4E
-        _emit 0xFC
-        _emit 0x8B
-        _emit 0x56
-        _emit 0xFA
-        _emit 0xCD
-        _emit 0x33
-        _emit 0xC7
-        _emit 0x06
-        _emit 0xDE
-        _emit 0x4E
-        _emit 0x00
-        _emit 0x00
+        sub sp,0x6
+        cmp word ptr mn4EDE,0x0
+        jz short $+36
+        mov ax,mn6444
+        mov [bp-0x2],ax
+        mov ax,mn6448
+        mov [bp-0x4],ax
+        mov ax,mn6446
+        mov [bp-0x6],ax
+        mov ax,0x14
+        mov bx,[bp-0x2]
+        mov es,bx
+        mov cx,[bp-0x4]
+        mov dx,[bp-0x6]
+        int 0x33
+L2C:
+        mov word ptr mn4EDE,0x0
     }
 }

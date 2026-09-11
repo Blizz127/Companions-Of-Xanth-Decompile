@@ -1,69 +1,35 @@
+extern char __near mb6D21;
+extern char __near mb6D22;
+extern char __near mb6D23;
 void far helper_0(void);
 int far exe_87129(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x02
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0xB9
-        _emit 0x3F
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFE
-        _emit 0xBA
-        _emit 0x03
-        _emit 0x00
-        _emit 0x8B
-        _emit 0xDA
-        _emit 0x99
-        _emit 0xF7
-        _emit 0xFB
-        _emit 0xF7
-        _emit 0xE9
-        _emit 0xB9
-        _emit 0x0F
-        _emit 0x00
-        _emit 0x99
-        _emit 0xF7
-        _emit 0xF9
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFE
-        _emit 0x88
-        _emit 0x87
-        _emit 0x24
-        _emit 0x6A
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x83
-        _emit 0x7E
-        _emit 0xFE
-        _emit 0x30
-        _emit 0x7C
-        _emit 0xDA
-        _emit 0xB0
-        _emit 0x3F
-        _emit 0xA2
-        _emit 0x21
-        _emit 0x6D
-        _emit 0xA2
-        _emit 0x22
-        _emit 0x6D
-        _emit 0xA2
-        _emit 0x23
-        _emit 0x6D
-        _emit 0xB8
-        _emit 0x24
-        _emit 0x6A
-        _emit 0x1E
-        _emit 0x50
+        sub sp,0x2
+        mov word ptr [bp-0x2],0x0
+L08:
+        mov cx,0x3f
+        mov ax,[bp-0x2]
+        mov dx,0x3
+        mov bx,dx
+        cwd
+        idiv bx
+        imul cx
+        mov cx,0xf
+        cwd
+        idiv cx
+        mov bx,[bp-0x2]
+        mov [bx+0x6a24],al
+        inc word ptr [bp-0x2]
+        cmp word ptr [bp-0x2],0x30
+        jl short $-36
+        mov al,0x3f
+        mov mb6D21,al
+        mov mb6D22,al
+        mov mb6D23,al
+        mov ax,0x6a24
+        push ds
+        push ax
         call far ptr helper_0
     }
 }

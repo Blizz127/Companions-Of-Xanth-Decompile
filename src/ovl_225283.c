@@ -1,147 +1,67 @@
+extern int __near mn5AFA;
+extern int __near mn5AF8;
+extern int __near mn5AFC;
+extern int __near mn5AFE;
 
 int far ovl_225283(int a)
 {
     _asm {
-        _emit 0xA1
-        _emit 0xFA
-        _emit 0x5A
-        _emit 0x29
-        _emit 0x46
-        _emit 0x08
-        _emit 0xA1
-        _emit 0xF8
-        _emit 0x5A
-        _emit 0x29
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x99
-        _emit 0xF7
-        _emit 0x3E
-        _emit 0xFC
-        _emit 0x5A
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0A
-        _emit 0x26
-        _emit 0x89
-        _emit 0x07
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x99
-        _emit 0xF7
-        _emit 0x3E
-        _emit 0xFE
-        _emit 0x5A
-        _emit 0x03
-        _emit 0xC0
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0E
-        _emit 0x26
-        _emit 0x89
-        _emit 0x07
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x99
-        _emit 0xF7
-        _emit 0x3E
-        _emit 0xFC
-        _emit 0x5A
-        _emit 0x89
-        _emit 0x56
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x99
-        _emit 0xF7
-        _emit 0x3E
-        _emit 0xFE
-        _emit 0x5A
-        _emit 0x89
-        _emit 0x56
-        _emit 0x08
-        _emit 0x39
-        _emit 0x56
-        _emit 0x06
-        _emit 0x7F
-        _emit 0x12
-        _emit 0xA1
-        _emit 0xFE
-        _emit 0x5A
-        _emit 0x2B
-        _emit 0xC2
-        _emit 0x3B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x7C
-        _emit 0x08
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0E
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x07
-        _emit 0xEB
-        _emit 0x36
-        _emit 0xA1
-        _emit 0xFC
-        _emit 0x5A
-        _emit 0x2B
-        _emit 0xC2
-        _emit 0x3B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x7D
-        _emit 0x18
-        _emit 0x8B
-        _emit 0xC2
-        _emit 0x2B
-        _emit 0x06
-        _emit 0xFE
-        _emit 0x5A
-        _emit 0x03
-        _emit 0x06
-        _emit 0xFC
-        _emit 0x5A
-        _emit 0x3B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x7D
-        _emit 0x09
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0A
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x07
-        _emit 0xEB
-        _emit 0xD7
-        _emit 0x90
-        _emit 0xA1
-        _emit 0xFE
-        _emit 0x5A
-        _emit 0x99
-        _emit 0x2B
-        _emit 0xC2
-        _emit 0xD1
-        _emit 0xF8
-        _emit 0x3B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x7D
-        _emit 0x07
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x0E
-        _emit 0x26
-        _emit 0x83
-        _emit 0x07
-        _emit 0x02
+        mov ax,mn5AFA
+        sub [bp+0x8],ax
+        mov ax,mn5AF8
+        sub [bp+0x6],ax
+        mov ax,[bp+0x6]
+        cwd
+        idiv word ptr mn5AFC
+        les bx, [bp+0xa]
+        mov es:[bx],ax
+        mov ax,[bp+0x8]
+        cwd
+        idiv word ptr mn5AFE
+        add ax,ax
+        les bx, [bp+0xe]
+        mov es:[bx],ax
+        mov ax,[bp+0x6]
+        cwd
+        idiv word ptr mn5AFC
+        mov [bp+0x6],dx
+        mov ax,[bp+0x8]
+        cwd
+        idiv word ptr mn5AFE
+        mov [bp+0x8],dx
+        cmp [bp+0x6],dx
+        jg short $+20
+        mov ax,mn5AFE
+        sub ax,dx
+        cmp ax,[bp+0x6]
+        jl short $+10
+L4F:
+        les bx, [bp+0xe]
+        inc word ptr es:[bx]
+        jmp short $+56
+L57:
+        mov ax,mn5AFC
+        sub ax,dx
+        cmp ax,[bp+0x6]
+        jnl short $+26
+        mov ax,dx
+        sub ax,mn5AFE
+        add ax,mn5AFC
+        cmp ax,[bp+0x6]
+        jnl short $+11
+        les bx, [bp+0xa]
+        inc word ptr es:[bx]
+        jmp short $-39
+        nop
+L79:
+        mov ax,mn5AFE
+        cwd
+        sub ax,dx
+        sar ax,1
+        cmp ax,[bp+0x8]
+        jnl short $+9
+        les bx, [bp+0xe]
+        add word ptr es:[bx],0x2
+L8D:
     }
 }

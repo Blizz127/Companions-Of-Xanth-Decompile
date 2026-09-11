@@ -1,124 +1,45 @@
+extern int __near mn4F68;
 void far helper_0(void);
 void far helper_1(void);
 int far exe_107956(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x06
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x00
-        _emit 0x00
-        _emit 0x83
-        _emit 0x3E
-        _emit 0x68
-        _emit 0x4F
-        _emit 0x00
-        _emit 0x7E
-        _emit 0x68
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x00
-        _emit 0x00
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x5A
-        _emit 0x67
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFA
-        _emit 0xFF
-        _emit 0x37
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0xC4
-        _emit 0x9F
-        _emit 0x8A
-        _emit 0x67
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x77
-        _emit 0x02
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x37
+        sub sp,0x6
+        mov word ptr [bp-0x2],0x0
+        cmp word ptr mn4F68,0x0
+        jng short $+106
+        mov word ptr [bp-0x4],0x0
+        mov word ptr [bp-0x6],0x675a
+L19:
+        mov bx,[bp-0x6]
+        push word ptr [bx]
+        mov bx,[bp-0x4]
+        les bx, [bx+0x678a]
+        push word ptr es:[bx+0x2]
+        push word ptr es:[bx]
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0xFF
-        _emit 0xB7
-        _emit 0x8C
-        _emit 0x67
-        _emit 0xFF
-        _emit 0xB7
-        _emit 0x8A
-        _emit 0x67
+        add sp,0x6
+        mov bx,[bp-0x4]
+        push word ptr [bx+0x678c]
+        push word ptr [bx+0x678a]
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x2B
-        _emit 0xC0
-        _emit 0x89
-        _emit 0x87
-        _emit 0x8C
-        _emit 0x67
-        _emit 0x89
-        _emit 0x87
-        _emit 0x8A
-        _emit 0x67
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFA
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x02
-        _emit 0x89
-        _emit 0x07
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFC
-        _emit 0x89
-        _emit 0x87
-        _emit 0xA0
-        _emit 0x67
-        _emit 0x89
-        _emit 0x87
-        _emit 0x9E
-        _emit 0x67
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x04
-        _emit 0xA1
-        _emit 0x68
-        _emit 0x4F
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x39
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x7C
-        _emit 0xA2
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x68
-        _emit 0x4F
-        _emit 0x00
-        _emit 0x00
+        add sp,0x4
+        mov bx,[bp-0x4]
+        sub ax,ax
+        mov [bx+0x678c],ax
+        mov [bx+0x678a],ax
+        mov bx,[bp-0x6]
+        add word ptr [bp-0x6],0x2
+        mov [bx],ax
+        mov bx,[bp-0x4]
+        mov [bx+0x67a0],ax
+        mov [bx+0x679e],ax
+        add word ptr [bp-0x4],0x4
+        mov ax,mn4F68
+        inc word ptr [bp-0x2]
+        cmp [bp-0x2],ax
+        jl short $-92
+L77:
+        mov word ptr mn4F68,0x0
     }
 }

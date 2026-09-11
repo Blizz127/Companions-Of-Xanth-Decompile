@@ -4,87 +4,40 @@ void far helper_2(void);
 int far exe_106530(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x08
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x0A
-        _emit 0x00
-        _emit 0x7E
-        _emit 0x55
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x56
-        _emit 0x08
-        _emit 0x89
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x89
-        _emit 0x56
-        _emit 0xFC
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x0A
-        _emit 0x89
-        _emit 0x46
-        _emit 0xF8
-        _emit 0xFF
-        _emit 0x76
-        _emit 0xFC
-        _emit 0xFF
-        _emit 0x76
-        _emit 0xFA
+        sub sp,0x8
+        cmp word ptr [bp+0xa],0x0
+        jng short $+87
+        mov ax,[bp+0x6]
+        mov dx,[bp+0x8]
+        mov [bp-0x6],ax
+        mov [bp-0x4],dx
+        mov ax,[bp+0xa]
+        mov [bp-0x8],ax
+L1B:
+        push word ptr [bp-0x4]
+        push word ptr [bp-0x6]
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
+        add sp,0x4
         call far ptr helper_1
-        _emit 0x8B
-        _emit 0xC8
-        _emit 0xB0
-        _emit 0x32
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0xFA
-        _emit 0x26
-        _emit 0xF6
-        _emit 0x67
-        _emit 0x0B
-        _emit 0x8B
-        _emit 0xD8
-        _emit 0x43
-        _emit 0x8B
-        _emit 0xC1
-        _emit 0x99
-        _emit 0xF7
-        _emit 0xFB
-        _emit 0xB0
-        _emit 0x32
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0xFA
-        _emit 0x26
-        _emit 0xF6
-        _emit 0x67
-        _emit 0x0A
-        _emit 0x03
-        _emit 0xD0
-        _emit 0x52
+        mov cx,ax
+        mov al,0x32
+        les bx, [bp-0x6]
+        mul byte ptr es:[bx+0xb]
+        mov bx,ax
+        inc bx
+        mov ax,cx
+        cwd
+        idiv bx
+        mov al,0x32
+        mov bx,[bp-0x6]
+        mul byte ptr es:[bx+0xa]
+        add dx,ax
+        push dx
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x83
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x14
-        _emit 0xFF
-        _emit 0x4E
-        _emit 0xF8
-        _emit 0x75
-        _emit 0xBD
+        add sp,0x2
+        add word ptr [bp-0x6],0x14
+        dec word ptr [bp-0x8]
+        jnz short $-65
+L5E:
     }
 }

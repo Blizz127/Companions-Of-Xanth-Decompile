@@ -1,57 +1,38 @@
+extern int __near mn5CE2;
+extern int __near mn5CDE;
+extern int __near mn5CE0;
 
 int far exe_53332(int a)
 {
     _asm {
-        _emit 0xA1
-        _emit 0xE2
-        _emit 0x5C
-        _emit 0x2D
-        _emit 0xCD
-        _emit 0x00
-        _emit 0x75
-        _emit 0x2B
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x48
-        _emit 0x74
-        _emit 0x0F
-        _emit 0x48
-        _emit 0x48
-        _emit 0x74
-        _emit 0x11
-        _emit 0x48
-        _emit 0x48
-        _emit 0x74
-        _emit 0x13
-        _emit 0x48
-        _emit 0x48
-        _emit 0x74
-        _emit 0x15
-        _emit 0xEB
-        _emit 0x17
-        _emit 0x90
-        _emit 0xFF
-        _emit 0x06
-        _emit 0xDE
-        _emit 0x5C
-        _emit 0xEB
-        _emit 0x10
-        _emit 0xFF
-        _emit 0x06
-        _emit 0xE0
-        _emit 0x5C
-        _emit 0xEB
-        _emit 0x0A
-        _emit 0xFF
-        _emit 0x0E
-        _emit 0xDE
-        _emit 0x5C
-        _emit 0xEB
-        _emit 0x04
-        _emit 0xFF
-        _emit 0x0E
-        _emit 0xE0
-        _emit 0x5C
+        mov ax,mn5CE2
+        sub ax,0xcd
+        jnz short $+45
+        mov ax,[bp+0x6]
+        dec ax
+        jz short $+17
+        dec ax
+        dec ax
+        jz short $+19
+        dec ax
+        dec ax
+        jz short $+21
+        dec ax
+        dec ax
+        jz short $+23
+        jmp short $+25
+        nop
+L1D:
+        inc word ptr mn5CDE
+        jmp short $+18
+L23:
+        inc word ptr mn5CE0
+        jmp short $+12
+L29:
+        dec word ptr mn5CDE
+        jmp short $+6
+L2F:
+        dec word ptr mn5CE0
+L33:
     }
 }

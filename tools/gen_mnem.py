@@ -42,6 +42,10 @@ _BARE_ABS = re.compile(r"\[(0x[0-9a-f]+)\]")
 _SEG_OPEN = re.compile(r"\[(cs|es|ss|ds):")
 _SIZE = re.compile(r"\b(word|byte|dword)\s+((?:cs|es|ss|ds):)?\[")
 _SEG_LOAD = re.compile(r"\b(mov)\s+(es|ds|ss|cs)\s*,\s*(?:word|byte|dword)\s+ptr\s+")
+_PTR_LOAD = re.compile(r"\b(les|lds)\s+(\w+)\s*,\s*(?:word|byte|dword)\s+ptr\s+")
+_FAR_CALL = re.compile(r"\bcall\s+word\s+far\s+")
+_NEAR_CALL = re.compile(r"^call\s+0x([0-9a-f]+)$")
+_RET_IMM = re.compile(r"\b(retf?)\s+word\s+(0x[0-9a-f]+)$")
 _INT = re.compile(r"\bint\s+byte\s+")
 _ASM_OPEN = re.compile(r"_asm\s*\{")
 _BYTE_REG = re.compile(r"\b(a[lh]|b[lh]|c[lh]|d[lh])\b")
@@ -91,6 +95,10 @@ def body_for(unit: dict, text: str, root: Path) -> tuple[bytes, list[int]]:
     if pattern is not None:
         image = unit_index.image_bytes(root)[unit["image"]]
         offset = int(unit["offset"])
+        # The `_emit` stream is exactly what the block produces: CL adds its
+        # frame on top, and `_relocate` trims that. Nothing else is stripped,
+        # because CL cannot see that an `_emit` touches SI/DI and so adds no
+        # save/restore wrapper of its own here.
         body = bytearray()
         calls: list[int] = []
         for item in pattern:
@@ -150,6 +158,12 @@ def _masm(mnemonic: str, symgen) -> str:
     # A segment register cannot take a size specifier: ndisasm writes
     # `mov es,word [..]`, MASM wants `mov es,..`.
     text = _SEG_LOAD.sub(r"\1 \2, ", text)
+    # `les`/`lds` take a dword operand; an explicit size hint is rejected, and
+    # an indirect far call through memory is `call dword ptr ..`.
+    text = _PTR_LOAD.sub(r"\1 \2, ", text)
+    text = _FAR_CALL.sub("call dword ptr ", text)
+    # `retf word 8` is an epilogue with a stack-pop count; MASM takes it bare.
+    text = _RET_IMM.sub(r"\1 \2", text)
     size = _operand_size(mnemonic)
 
     def repl(match: re.Match[str]) -> str:
@@ -202,6 +216,7 @@ def convert(unit: dict, root: Path | None = None) -> dict:
 
     lines: list[str] = []
     helper_index = 0
+    near_calls: list[str] = []
     for insn in insns:
         addr = insn["addr"]
         if addr in targets:
@@ -211,15 +226,26 @@ def convert(unit: dict, root: Path | None = None) -> dict:
             helper_index += 1
             continue
         mnemonic = insn["mnemonic"]
+        near = _NEAR_CALL.match(mnemonic)
+        if near is not None:
+            # A near call to another unit: name an extern so CL emits the
+            # self-relative fixup `_relocate` overwrites with retail's rel16.
+            name = f"nc{int(near.group(1), 16):04X}"
+            if name not in near_calls:
+                near_calls.append(name)
+            lines.append(f"        call {name}")
+            continue
         match = _JMP.match(mnemonic)
         if match:
             name = match.group(1)
             target = int(match.group(2), 16)
+            delta = target - addr
+            offset = f"$+{delta}" if delta >= 0 else f"$-{-delta}"
             if name == "jmp":
                 # MASM shortens a `jmp` whose distance is already known, so a
                 # rel16 jump has to name a label it cannot resolve in pass 1.
                 if insn["raw"][:1] == b"\xeb":
-                    lines.append(f"        jmp short $+{target - addr}")
+                    lines.append(f"        jmp short {offset}")
                 else:
                     lines.append(f"        jmp L{target:02X}")
                 continue
@@ -227,11 +253,15 @@ def convert(unit: dict, root: Path | None = None) -> dict:
             # mis-resolves some forward ones; `$` pins the rel8 the retail
             # image actually uses.
             if name == "jcxz" or name.startswith("loop"):
-                lines.append(f"        {name} $+{target - addr}")
+                # `jcxz $+N` and `loop $+N` are rejected by the assembler.
+                lines.append(f"        {name} L{target:02X}")
             else:
-                lines.append(f"        {name} short $+{target - addr}")
+                lines.append(f"        {name} short {offset}")
             continue
         lines.append(f"        {_masm(mnemonic, symgen)}")
+
+    for name in near_calls:
+        decls.append(f"extern void __near {name}(void);")
 
     for target in sorted(targets):
         if target >= len(body):
@@ -325,6 +355,7 @@ def _verify(selected: list[tuple[dict, dict]], root: Path, *, write: bool = Fals
     with tempfile.TemporaryDirectory(prefix="mnem_") as tmp:
         work = Path(tmp)
         good = 0
+        ok: dict[str, bool] = {}
         for index, (unit, result) in enumerate(selected):
             stem = f"cand{index:03d}"
             path = work / f"{stem}.c"
@@ -334,12 +365,19 @@ def _verify(selected: list[tuple[dict, dict]], root: Path, *, write: bool = Fals
             except RetailError as exc:
                 lines = [line for line in str(exc).strip().splitlines() if line.strip()]
                 print(f"{unit['source']:<28} COMPILE-FAIL {' | '.join(lines[:3])}")
+                ok[unit["source"]] = False
                 continue
             outcome = check_compiled(unit, compiled, fixups, images)
             print(summary_line(outcome))
-            if outcome["result"] == "MATCH":
+            matched = outcome["result"] == "MATCH"
+            # A source registered at more than one offset is only replaced
+            # when every one of its registrations matches.
+            ok[unit["source"]] = ok.get(unit["source"], True) and matched
+            if matched:
                 good += 1
-                if write:
+        if write:
+            for unit, result in selected:
+                if ok.get(unit["source"]):
                     (root / unit["source"]).write_text(
                         render(result["text"], result), encoding="utf-8"
                     )

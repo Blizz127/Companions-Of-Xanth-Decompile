@@ -2,85 +2,42 @@ void far helper_0(void);
 int far ovl_21712(int a)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x41
-        _emit 0x00
-        _emit 0x2B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x8B
-        _emit 0xC8
-        _emit 0x03
-        _emit 0xC0
-        _emit 0x03
-        _emit 0xC1
-        _emit 0x03
-        _emit 0xC0
-        _emit 0xB9
-        _emit 0x05
-        _emit 0x00
-        _emit 0x99
-        _emit 0xF7
-        _emit 0xF9
-        _emit 0x89
-        _emit 0x46
-        _emit 0x08
-        _emit 0x81
-        _emit 0x6E
-        _emit 0x06
-        _emit 0xB7
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x99
-        _emit 0x33
-        _emit 0xC2
-        _emit 0x2B
-        _emit 0xC2
-        _emit 0x3D
-        _emit 0x10
-        _emit 0x00
-        _emit 0x7F
-        _emit 0x20
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x99
-        _emit 0x33
-        _emit 0xC2
-        _emit 0x2B
-        _emit 0xC2
-        _emit 0x3D
-        _emit 0x0A
-        _emit 0x00
-        _emit 0x7F
-        _emit 0x13
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x39
-        _emit 0x46
-        _emit 0x08
-        _emit 0x7F
-        _emit 0x05
-        _emit 0xB8
-        _emit 0x08
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x11
-        _emit 0xB8
-        _emit 0x09
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x0C
-        _emit 0x90
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        mov ax,0x41
+        sub ax,[bp+0x8]
+        mov cx,ax
+        add ax,ax
+        add ax,cx
+        add ax,ax
+        mov cx,0x5
+        cwd
+        idiv cx
+        mov [bp+0x8],ax
+        sub word ptr [bp+0x6],0xb7
+        mov ax,[bp+0x6]
+        cwd
+        xor ax,dx
+        sub ax,dx
+        cmp ax,0x10
+        jg short $+34
+        mov ax,[bp+0x8]
+        cwd
+        xor ax,dx
+        sub ax,dx
+        cmp ax,0xa
+        jg short $+21
+        mov ax,[bp+0x6]
+        cmp [bp+0x8],ax
+        jg short $+7
+        mov ax,0x8
+        jmp short $+19
+L43:
+        mov ax,0x9
+        jmp short $+14
+        nop
+L49:
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_0
+L54:
     }
 }

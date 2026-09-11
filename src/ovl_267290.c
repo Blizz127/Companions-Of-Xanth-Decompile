@@ -1,3 +1,6 @@
+extern int __near mn6A06;
+extern int __near mn6A02;
+extern int __near mn6A04;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -7,276 +10,161 @@ void far helper_5(void);
 int far ovl_267290(int a)
 {
     _asm {
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x2D
-        _emit 0x04
-        _emit 0x00
-        _emit 0x74
-        _emit 0x07
-        _emit 0x48
-        _emit 0x48
-        _emit 0x74
-        _emit 0x35
-        _emit 0xE9
-        _emit 0x26
-        _emit 0x01
-        _emit 0xA1
-        _emit 0x06
-        _emit 0x6A
-        _emit 0x2D
-        _emit 0x38
-        _emit 0x00
-        _emit 0x74
-        _emit 0x03
-        _emit 0xE9
-        _emit 0x1B
-        _emit 0x01
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x02
-        _emit 0x6A
-        _emit 0xB8
-        _emit 0x02
-        _emit 0x00
-        _emit 0x50
+        mov ax,[bp+0x6]
+        sub ax,0x4
+        jz short $+9
+        dec ax
+        dec ax
+        jz short $+55
+        jmp L135
+L0F:
+        mov ax,mn6A06
+        sub ax,0x38
+        jz short $+5
+        jmp L135
+L1A:
+        push word ptr mn6A02
+        mov ax,0x2
+        push ax
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x52
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x18
-        _emit 0x00
-        _emit 0xBA
-        _emit 0x39
-        _emit 0xF0
-        _emit 0x52
-        _emit 0x50
+        mov sp,bp
+        push dx
+        push ax
+        mov ax,0x18
+L2E:
+        mov dx,0xf039
+        push dx
+L32:
+        push ax
         call far ptr helper_1
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xE9
-        _emit 0xF7
-        _emit 0x00
-        _emit 0x90
-        _emit 0xA1
-        _emit 0x06
-        _emit 0x6A
-        _emit 0x3D
-        _emit 0x45
-        _emit 0x00
-        _emit 0x75
-        _emit 0x03
-        _emit 0xE9
-        _emit 0xD1
-        _emit 0x00
-        _emit 0x76
-        _emit 0x03
-        _emit 0xE9
-        _emit 0xE4
-        _emit 0x00
-        _emit 0x3C
-        _emit 0x13
-        _emit 0x74
-        _emit 0x36
-        _emit 0x77
-        _emit 0x0C
-        _emit 0x2C
-        _emit 0x08
-        _emit 0x74
-        _emit 0x1E
-        _emit 0x2C
-        _emit 0x0A
-        _emit 0x74
-        _emit 0x20
-        _emit 0xE9
-        _emit 0xD3
-        _emit 0x00
-        _emit 0x90
-        _emit 0x2C
-        _emit 0x21
-        _emit 0x74
-        _emit 0x2A
-        _emit 0x2C
-        _emit 0x0B
-        _emit 0x75
-        _emit 0x03
-        _emit 0xE9
-        _emit 0x83
-        _emit 0x00
-        _emit 0x2C
-        _emit 0x18
-        _emit 0x75
-        _emit 0x03
-        _emit 0xE9
-        _emit 0x82
-        _emit 0x00
-        _emit 0xE9
-        _emit 0xBD
-        _emit 0x00
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x8F
-        _emit 0x35
-        _emit 0x1E
-        _emit 0xEB
-        _emit 0xB3
-        _emit 0xB8
-        _emit 0x03
-        _emit 0x00
-        _emit 0x50
+L38:
+        mov sp,bp
+        mov ax,0x1
+        jmp L137
+        nop
+L41:
+        mov ax,mn6A06
+        cmp ax,0x45
+        jnz short $+5
+        jmp L11D
+L4C:
+        jna short $+5
+        jmp L135
+L51:
+        cmp al,0x13
+        jz short $+56
+        ja short $+14
+        sub al,0x8
+        jz short $+32
+        sub al,0xa
+        jz short $+34
+        jmp L135
+        nop
+L63:
+        sub al,0x21
+        jz short $+44
+        sub al,0xb
+        jnz short $+5
+        jmp LF1
+L6E:
+        sub al,0x18
+        jnz short $+5
+        jmp LF7
+L75:
+        jmp L135
+        nop
+L79:
+        mov ax,0x358f
+        push ds
+        jmp short $-75
+L7F:
+        mov ax,0x3
+        push ax
         call far ptr helper_2
-        _emit 0xEB
-        _emit 0xAE
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x11
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x9E
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x15
-        _emit 0x00
-        _emit 0xBA
-        _emit 0x39
-        _emit 0xF0
-        _emit 0x52
-        _emit 0x50
+        jmp short $-80
+        nop
+L8B:
+        mov ax,0x11
+        jmp short $-96
+        nop
+L91:
+        mov ax,0x15
+        mov dx,0xf039
+        push dx
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x05
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x58
-        _emit 0x01
-        _emit 0x50
+        add sp,0x4
+        mov ax,0x5
+        push ax
+        mov ax,0x158
+        push ax
         call far ptr helper_3
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x20
-        _emit 0xB8
-        _emit 0x58
-        _emit 0x01
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x12
-        _emit 0x00
-        _emit 0x50
+        add sp,0x4
+        or ax,ax
+        jz short $+34
+        mov ax,0x158
+        push ax
+        mov ax,0x12
+        push ax
         call far ptr helper_4
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x75
-        _emit 0x06
-        _emit 0xB8
-        _emit 0x93
-        _emit 0x35
-        _emit 0x1E
-        _emit 0xEB
-        _emit 0x0D
-        _emit 0xB8
-        _emit 0x16
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x17
-        _emit 0x00
-        _emit 0xBA
-        _emit 0x39
-        _emit 0xF0
-        _emit 0x52
-        _emit 0x50
+        add sp,0x4
+        or ax,ax
+        jnz short $+8
+        mov ax,0x3593
+        push ds
+        jmp short $+15
+LCF:
+        mov ax,0x16
+        jmp short $+6
+        nop
+LD5:
+        mov ax,0x17
+LD8:
+        mov dx,0xf039
+        push dx
+LDC:
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x2E
-        _emit 0x00
-        _emit 0x50
+        add sp,0x4
+        mov ax,0x2e
+        push ax
         call far ptr helper_5
-        _emit 0xE9
-        _emit 0x47
-        _emit 0xFF
-        _emit 0xB8
-        _emit 0x13
-        _emit 0x00
-        _emit 0xE9
-        _emit 0x37
-        _emit 0xFF
-        _emit 0xB8
-        _emit 0x05
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x58
-        _emit 0x01
-        _emit 0x50
+        jmp L38
+LF1:
+        mov ax,0x13
+        jmp L2E
+LF7:
+        mov ax,0x5
+        push ax
+        mov ax,0x158
+        push ax
         call far ptr helper_3
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x06
-        _emit 0xB8
-        _emit 0x85
-        _emit 0x35
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x8A
-        _emit 0x35
-        _emit 0x1E
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x12
-        _emit 0x00
-        _emit 0xE9
-        _emit 0x12
-        _emit 0xFF
-        _emit 0x90
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x04
-        _emit 0x6A
-        _emit 0xB8
-        _emit 0x22
-        _emit 0x00
-        _emit 0x50
+        add sp,0x4
+        or ax,ax
+        jz short $+8
+        mov ax,0x3585
+        jmp short $+6
+        nop
+L111:
+        mov ax,0x358a
+L114:
+        push ds
+        push ax
+        mov ax,0x12
+        jmp L2E
+        nop
+L11D:
+        push word ptr mn6A04
+        mov ax,0x22
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x52
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x14
-        _emit 0x00
-        _emit 0xE9
-        _emit 0xF9
-        _emit 0xFE
-        _emit 0x33
-        _emit 0xC0
+        add sp,0x4
+        push dx
+        push ax
+        mov ax,0x14
+        jmp L2E
+L135:
+        xor ax,ax
+L137:
     }
 }

@@ -1,70 +1,38 @@
+extern int __near mn5806;
+extern int __near mn5808;
+extern int __near mn580A;
+extern int __near mn580C;
 void far helper_0(void);
 void far helper_1(void);
 int far exe_17018(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x0E
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x06
-        _emit 0x58
-        _emit 0x00
-        _emit 0x00
-        _emit 0x8D
-        _emit 0x46
-        _emit 0xF6
-        _emit 0x16
-        _emit 0x50
+        sub sp,0xe
+        mov word ptr mn5806,0x0
+        lea ax,[bp-0xa]
+        push ss
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0xE8
-        _emit 0x03
-        _emit 0x99
-        _emit 0x52
-        _emit 0x50
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xF6
-        _emit 0x8B
-        _emit 0x56
-        _emit 0xF8
-        _emit 0x2B
-        _emit 0x06
-        _emit 0x08
-        _emit 0x58
-        _emit 0x1B
-        _emit 0x16
-        _emit 0x0A
-        _emit 0x58
-        _emit 0x52
-        _emit 0x50
+        add sp,0x4
+        mov ax,0x3e8
+        cwd
+        push dx
+        push ax
+        mov ax,[bp-0xa]
+        mov dx,[bp-0x8]
+        sub ax,mn5808
+        sbb dx,mn580A
+        push dx
+        push ax
         call far ptr helper_1
-        _emit 0x8B
-        _emit 0xC8
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x2B
-        _emit 0x06
-        _emit 0x0C
-        _emit 0x58
-        _emit 0x8B
-        _emit 0xDA
-        _emit 0x99
-        _emit 0x03
-        _emit 0xC1
-        _emit 0x13
-        _emit 0xD3
-        _emit 0x89
-        _emit 0x46
-        _emit 0xF2
-        _emit 0x89
-        _emit 0x56
-        _emit 0xF4
+        mov cx,ax
+        mov ax,[bp-0x6]
+        sub ax,mn580C
+        mov bx,dx
+        cwd
+        add ax,cx
+        adc dx,bx
+        mov [bp-0xe],ax
+        mov [bp-0xc],dx
     }
 }

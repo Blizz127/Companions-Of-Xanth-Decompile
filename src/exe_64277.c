@@ -1,37 +1,20 @@
+extern int __near mn5A5E;
 
 int far exe_64277(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x38
-        _emit 0x73
-        _emit 0x17
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0x8E
-        _emit 0x06
-        _emit 0x5E
-        _emit 0x5A
-        _emit 0x8B
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x26
-        _emit 0xFF
-        _emit 0x9F
-        _emit 0x5A
-        _emit 0x13
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0xEB
-        _emit 0x02
-        _emit 0x33
-        _emit 0xC0
+        cmp word ptr [bp+0x6],0x38
+        jnc short $+25
+        push word ptr [bp+0x8]
+        mov es, mn5A5E
+        mov bx,[bp+0x6]
+        add bx,bx
+        add bx,bx
+        call dword ptr es:[bx+0x135a]
+        mov sp,bp
+        jmp short $+4
+L1D:
+        xor ax,ax
+L1F:
     }
 }

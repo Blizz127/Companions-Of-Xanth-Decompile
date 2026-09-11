@@ -1,100 +1,54 @@
+extern int __near mn6808;
+extern int __near mn6806;
+extern int __near mn680A;
+extern int __near mn680C;
+extern int __near mn680E;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
 int far exe_111047(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x06
-        _emit 0x8D
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x16
-        _emit 0x50
-        _emit 0x8D
-        _emit 0x46
-        _emit 0xFC
-        _emit 0x16
-        _emit 0x50
-        _emit 0x8D
-        _emit 0x46
-        _emit 0xFE
-        _emit 0x16
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        sub sp,0x6
+        lea ax,[bp-0x6]
+        push ss
+        push ax
+        lea ax,[bp-0x4]
+        push ss
+        push ax
+        lea ax,[bp-0x2]
+        push ss
+        push ax
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x10
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xB9
-        _emit 0x06
-        _emit 0x00
-        _emit 0x51
-        _emit 0x8B
-        _emit 0x4E
-        _emit 0x08
-        _emit 0x03
-        _emit 0x0E
-        _emit 0x08
-        _emit 0x68
-        _emit 0x49
-        _emit 0x51
-        _emit 0x8B
-        _emit 0x4E
-        _emit 0x06
-        _emit 0x03
-        _emit 0x0E
-        _emit 0x06
-        _emit 0x68
-        _emit 0x49
-        _emit 0x51
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x4E
-        _emit 0xFE
-        _emit 0x89
-        _emit 0x0E
-        _emit 0x0A
-        _emit 0x68
-        _emit 0x51
+        add sp,0x10
+        xor ax,ax
+        push ax
+        mov cx,0x6
+        push cx
+        mov cx,[bp+0x8]
+        add cx,mn6808
+        dec cx
+        push cx
+        mov cx,[bp+0x6]
+        add cx,mn6806
+        dec cx
+        push cx
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
+        mov cx,[bp-0x2]
+        mov mn680A,cx
+        push cx
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x0E
-        _emit 0xA3
-        _emit 0x0C
-        _emit 0x68
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
-        _emit 0xB8
-        _emit 0xBA
-        _emit 0x4F
-        _emit 0x1E
-        _emit 0x50
+        add sp,0xe
+        mov mn680C,ax
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
+        mov ax,0x4fba
+        push ds
+        push ax
         call far ptr helper_2
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x0E
-        _emit 0x68
-        _emit 0x00
-        _emit 0x00
+        mov word ptr mn680E,0x0
     }
 }

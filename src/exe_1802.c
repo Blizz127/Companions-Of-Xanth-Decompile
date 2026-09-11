@@ -1,17 +1,11 @@
+extern int __near mn4039;
+extern int __near mn403B;
 
 int far exe_1802(int a)
 {
     _asm {
-        _emit 0xC4
-        _emit 0x5E
-        _emit 0x06
-        _emit 0x89
-        _emit 0x1E
-        _emit 0x39
-        _emit 0x40
-        _emit 0x8C
-        _emit 0x06
-        _emit 0x3B
-        _emit 0x40
+        les bx, [bp+0x6]
+        mov mn4039,bx
+        mov word ptr mn403B,es
     }
 }

@@ -1,56 +1,35 @@
+extern char __near mb0329;
 void far helper_0(void);
 int far ovl_198029(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x10
-        _emit 0x75
-        _emit 0x2D
-        _emit 0x80
-        _emit 0x3E
-        _emit 0x29
-        _emit 0x03
-        _emit 0x00
-        _emit 0x75
-        _emit 0x1E
-        _emit 0xB8
-        _emit 0x0A
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x03
-        _emit 0x01
-        _emit 0x50
+        cmp word ptr [bp+0x6],0x10
+        jnz short $+47
+        cmp byte ptr mb0329,0x0
+        jnz short $+32
+        mov ax,0xa
+        push ax
+        mov ax,0x103
+        push ax
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x05
-        _emit 0xB8
-        _emit 0x1A
-        _emit 0x31
-        _emit 0xEB
-        _emit 0x09
-        _emit 0xB8
-        _emit 0x23
-        _emit 0x31
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        _emit 0xB8
-        _emit 0x30
-        _emit 0x31
-        _emit 0x8C
-        _emit 0xDA
-        _emit 0xEB
-        _emit 0x04
-        _emit 0x90
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x99
+        mov sp,bp
+        or ax,ax
+        jz short $+7
+        mov ax,0x311a
+        jmp short $+11
+L25:
+        mov ax,0x3123
+        jmp short $+6
+        nop
+L2B:
+        mov ax,0x3130
+L2E:
+        mov dx,ds
+        jmp short $+6
+        nop
+L33:
+        xor ax,ax
+        cwd
+L36:
     }
 }

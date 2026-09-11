@@ -1,76 +1,45 @@
+extern char __near mb0302;
+extern char __near mb0303;
 void far helper_0(void);
 int far ovl_36316(int a)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x03
-        _emit 0x00
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        mov ax,0x1
+        push ax
+        mov ax,0x3
+        push ax
+        push word ptr [bp+0x6]
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x08
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x08
-        _emit 0x48
-        _emit 0x74
-        _emit 0x17
-        _emit 0x48
-        _emit 0x74
-        _emit 0x2E
-        _emit 0xEB
-        _emit 0x31
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x08
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        mov sp,bp
+        mov ax,[bp+0x8]
+        or ax,ax
+        jz short $+10
+        dec ax
+        jz short $+25
+        dec ax
+        jz short $+48
+        jmp short $+51
+L21:
+        xor ax,ax
+        push ax
+        push word ptr [bp+0x8]
+        push word ptr [bp+0x6]
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0xEB
-        _emit 0x1F
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x02
-        _emit 0x00
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        mov sp,bp
+        jmp short $+33
+L33:
+        mov ax,0x1
+        push ax
+        mov ax,0x2
+        push ax
+        push word ptr [bp+0x6]
         call far ptr helper_0
-        _emit 0x8B
-        _emit 0xE5
-        _emit 0xC6
-        _emit 0x06
-        _emit 0x02
-        _emit 0x03
-        _emit 0x01
-        _emit 0xEB
-        _emit 0x06
-        _emit 0x90
-        _emit 0xC6
-        _emit 0x06
-        _emit 0x03
-        _emit 0x03
-        _emit 0x01
+        mov sp,bp
+        mov byte ptr mb0302,0x1
+        jmp short $+8
+        nop
+L4D:
+        mov byte ptr mb0303,0x1
+L52:
     }
 }

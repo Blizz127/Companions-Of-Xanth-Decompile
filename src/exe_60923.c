@@ -10,85 +10,47 @@ void far helper_8(void);
 int far exe_60923(int a)
 {
     _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x02
+        sub sp,0x2
         call far ptr helper_0
         call far ptr helper_1
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
+        mov ax,0x1
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x20
-        _emit 0x00
-        _emit 0xB9
-        _emit 0x99
-        _emit 0x21
-        _emit 0x51
-        _emit 0x50
+        add sp,0x2
+        mov ax,0x20
+        mov cx,0x2199
+        push cx
+        push ax
         call far ptr helper_3
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0xC7
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x3F
-        _emit 0x01
-        _emit 0x50
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0x50
+        add sp,0x4
+        mov ax,0xc7
+        push ax
+        mov ax,0x13f
+        push ax
+        xor ax,ax
+        push ax
+        push ax
         call far ptr helper_4
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x08
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x00
-        _emit 0x7C
-        _emit 0x14
-        _emit 0x50
+        add sp,0x8
+        cmp word ptr [bp+0x6],0x0
+        jl short $+22
+        push ax
         call far ptr helper_5
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        add sp,0x2
+        push word ptr [bp+0x6]
         call far ptr helper_6
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0xFF
-        _emit 0xFF
-        _emit 0x50
+        add sp,0x2
+L57:
+        mov ax,0xffff
+        push ax
         call far ptr helper_7
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x83
-        _emit 0x7E
-        _emit 0x06
-        _emit 0x00
-        _emit 0x7C
-        _emit 0x0B
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0xFF
-        _emit 0x76
-        _emit 0x06
+        add sp,0x2
+        cmp word ptr [bp+0x6],0x0
+        jl short $+13
+        xor ax,ax
+        push ax
+        push word ptr [bp+0x6]
         call far ptr helper_8
+L74:
     }
 }
