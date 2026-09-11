@@ -3188,6 +3188,51 @@ carried as separate unexplained gaps, and the next unit in this family can be
 attempted with the knowledge that a 3-byte shortfall in a `rep movsw` prologue
 is expected rather than a new mystery.
 
+### exe_109269 decoded; first attempt 24 bytes over
+
+`exe-code:0x1AAD5`, 138 bytes, the smallest family member that does *not* have
+the `rep movsw` prologue — chosen deliberately, since that prologue now carries
+a known 3-byte `COMPILER_LIMITED` classification and would confuse a new
+result.
+
+```
+sub sp,4
+bx = arg1 * 4
+es:bx = g_tbl[bx+67C2h] ; bx += 28h      ; a CONSTANT offset, not the stride
+[bp-4] = bx ; [bp-2] = es
+if ([es:bx+1] & 80h) goto L1
+  sub_a(0Ah)
+  reload p ; sub_b(2, p->f2+1, p->f4, p->f6-1, p->f8)
+L1:
+  sub_c(v, 1)
+  p->f8 += v - p->f4 ; p->f4 = v
+  sub_d(g67FAh, g67FCh, p->f2, v)
+```
+
+Three things are worth noting from the decode itself:
+
+- The base is `g_tbl[i] + 28h` — a **fixed 40-byte offset** into the table
+  entry, not the 20-byte stride the other members use. So the table points at
+  a larger structure with records at a constant displacement.
+- `bx += 28h` leaves the scaled index unused after the table load, so the
+  table element is the whole base and the fields are at `+2`, `+4`, `+6`, `+8`
+  from that 40-byte point, with the flag byte at `+1`.
+- The last call takes four arguments pushed **right to left** from two globals
+  and two fields, and is cleaned by `mov sp,bp` rather than an explicit `add`.
+
+**First attempt: 162 bytes against 138**, first difference at `+6` in the
+index scaling. 24 bytes over is the signature of the source computing the base
+pointer more than once, which is exactly what my draft does — it recomputes
+`g_tbl[i] + 40` after `sub_a`. The decode shows a **reload from the local**
+(`les bx,[bp-4]`), not a recomputation, so the original almost certainly
+assigned the pointer to the local once and reused it, with the reload being
+CL's spilling rather than the source re-deriving. That is the first thing to
+change in the next attempt, and it is stated here rather than rediscovered.
+
+**Not attempted further this round** — the draft is in the working notes, the
+decode is recorded above, and the next step is a one-line change to the source
+rather than another decode.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
