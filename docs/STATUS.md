@@ -1511,17 +1511,13 @@ Two things had to be right and both were found by compiling:
 - All three globals `__near`, the lever from earlier rounds.
 
 **The remaining difference is two bytes**: the compiled unit is **76 against
-retail's 78**, and the missing pair is one `mov cl,4`. Retail sets `cl` to 4
-*before* the shift at `+33` and sets it **again** at `+49` after the far
-call, because the call may clobber `cx`. CL appears to hoist the second
-shift above the call and so only sets `cl` once. That is a scheduling
-difference of the same kind as the `cli` hoisting recorded earlier, not a
-source problem — the reasoning is that the only way to save those two bytes
-is to move the shift, which is exactly what CL did.
-
-Not yet confirmed as a compiler limitation; a source change that forces the
-recomputation would settle it, and this is the third unit where the
-difference is a scheduler decision rather than a missing spelling.
+retail's 78**. This is unexplained, and the first explanation I wrote for it
+was wrong: I claimed CL hoisted the second shift above the far call, but
+dumping the compiled listing shows the second `mov cl,4` present at `+2E`,
+immediately after the call, exactly where retail has its corresponding one.
+So the two bytes are missing somewhere else and no cause is asserted here.
+Recorded as an unexplained two-byte gap rather than with a guessed
+mechanism.
 
 ### Test status
 
