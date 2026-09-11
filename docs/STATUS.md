@@ -2147,6 +2147,53 @@ six rounds on near-matches of one to three bytes; two units were recovered
 in the first two rounds by direct comparison, which is the better ratio and
 the standard to return to.
 
+### exe_111158 decoded: a struct copy plus a bit-mask loop
+
+`exe-code:0x1B236`, 142 bytes, 26-byte frame. It reuses the structures
+already recovered in this session — the far-pointer table at `67C2h` with
+4-byte elements and an `imul` by 20 — so the types are known before the
+decode is read:
+
+```
+sub sp,1Ah ; push di ; push si
+ax = 20 * [680Ch]                       ; imul, not shl - the field stride
+bx = [680Ah] ; bx *= 4
+dx:si = [bx+67C2h]                      ; the far pointer table
+dx += ax                                ; + the field offset
+push ds ; push si ; lea di,[bp-14h]
+mov si,dx ; mov ax,ss ; mov es,ax ; pop ds
+rep movsw (cx=0Ah)                      ; 20 bytes copied to a stack local
+push [bp-10h] ; push [bp-12h] ; call far <A> ; add sp,4
+bit = 1                                 ; [bp-16h]
+ptr = 4FCEh                             ; [bp-1Ah]
+LOOP:
+  ax = bit & [680Eh]
+  cx = bit & arg
+  if (cx == ax) { push ds ; push ptr ; call far <B> ; add sp,4 }
+  ptr += 14h
+  bit <<= 1
+  while (bit <= 200h)
+call <A>(0, 0)
+[680Eh] = arg
+```
+
+Two things are already pinned by the code rather than guessed:
+
+- The 20-byte copy into a stack local is MSC's **structure assignment from a
+  far pointer**, so the source has a struct of exactly 20 bytes and does
+  `s = *(struct far *)ptr;` — that is why `rep movsw` with `cx = 0Ah`
+  appears, and it confirms the field stride of 20 seen in `exe_112795` and
+  `exe_112711` is a real record size.
+- The `if` inside the loop compares `bit & arg` against `bit & [680Eh]` and
+  calls only on equality, then doubles `bit` until it exceeds `200h` — a
+  bit-scan over a 16-bit flag with a matching-select call per set bit.
+
+Not attempted yet: it needs the three call signatures and the struct's
+internal layout, which is why it is recorded rather than started. The next
+attempt should begin by writing the struct from the `[bp-12h]`/`[bp-10h]`
+pushes — those two words are read from inside the copied record, so which
+fields they are fixes the layout.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
