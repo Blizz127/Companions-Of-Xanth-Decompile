@@ -985,6 +985,46 @@ its object has a single segment and one fixup, so segment selection was
 never its problem. Its `push ds` versus `push [bp+0Ch]` difference stands as
 previously characterised.
 
+### One compiler limitation now explains five units
+
+The OVL family's missing byte is not a source problem. Retail's layout is
+
+```
+cmp [bp+6],10h ; jnz ZERO
+cmp byte [G],0 ; jz OTHER
+mov ax,A ; jmp TAIL ; nop
+OTHER: mov ax,B
+TAIL: mov dx,ds ; jmp FIN ; nop
+ZERO: xor ax,ax ; cwd
+FIN: pop bp ; retf
+```
+
+— a **single shared epilogue** reached by a forward `jmp` over the zero
+path, with `nop` padding after each jump. CL emits a duplicated epilogue
+instead: one `pop bp; retf` per return path, and no padding. That accounts
+for the 34-vs-35 byte difference exactly: CL spends two bytes on the second
+epilogue where retail spends two on the nops.
+
+Three source shapes were compiled and all three produced the **identical**
+34-byte output — `if (a == 0x10) return g ? ... : ...; return 0;`, the same
+with an explicit `else`, and the single-expression
+`return a == 0x10 ? (g ? ... : ...) : 0;`. The conditional expression form
+was the specific hypothesis that CL might share an exit; it does not.
+
+This is the same limitation already recorded for `exe_98653`, where retail
+is `cmp / jz / and / jmp +5 / or / pop bp / retf` and CL duplicates the
+epilogue under three shapes and five optimisation settings. So **five units
+— `exe_98653` and the four overlay members — are blocked by one compiler
+behaviour: CL 8.00c does not emit a forward jump to a shared epilogue for
+these if/else shapes**, and both were confirmed by compiling the
+alternatives rather than assuming.
+
+That reframes the family: it is not four near-misses to grind, it is one
+open question about CL's exit merging, and any answer applies to all five
+at once. The two forms differ in one thing — whether the false branch
+returns a value or falls to a shared exit — so the next probe should vary
+what makes CL merge exits, not the branch structure, which now matches.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
