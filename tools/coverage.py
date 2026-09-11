@@ -31,8 +31,16 @@ from retail_common import ROOT, RetailError
 KIND_LABELS = {
     unit_index.KIND_C: "unaided-c",
     unit_index.KIND_ASM: "mnemonic-asm",
+    unit_index.KIND_DATA: "transcribed-data",
     unit_index.KIND_DUMP: "emit-dump",
 }
+
+_ALL_KINDS = (
+    unit_index.KIND_C,
+    unit_index.KIND_ASM,
+    unit_index.KIND_DATA,
+    unit_index.KIND_DUMP,
+)
 
 
 def _compiled_extents(rows: list[dict], root: Path) -> dict[tuple[str, int], int]:
@@ -72,7 +80,7 @@ def report(root: Path | None = None, *, compile_units: bool = False) -> dict:
     images_report = {}
     for name, size in sizes.items():
         selected = [row for row in rows if row["image"] == name]
-        kinds = {kind: 0 for kind in (unit_index.KIND_C, unit_index.KIND_ASM, unit_index.KIND_DUMP)}
+        kinds = {kind: 0 for kind in _ALL_KINDS}
         for row in selected:
             kinds[row["kind"]] += 1
         by_kind = {
@@ -105,10 +113,8 @@ def report(root: Path | None = None, *, compile_units: bool = False) -> dict:
         "totals": {
             "units": len(rows),
             "kinds": {
-                KIND_LABELS[kind]: sum(
-                    1 for row in rows if row["kind"] == kind
-                )
-                for kind in (unit_index.KIND_C, unit_index.KIND_ASM, unit_index.KIND_DUMP)
+                KIND_LABELS[kind]: sum(1 for row in rows if row["kind"] == kind)
+                for kind in _ALL_KINDS
             },
             "dump_functions": dump_functions,
         },

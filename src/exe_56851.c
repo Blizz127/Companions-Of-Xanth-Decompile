@@ -10,41 +10,26 @@ int far exe_56851(void)
 {
     _asm {
         call far ptr helper_0
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
+        xor ax,ax
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x1F
-        _emit 0x00
-        _emit 0x50
+        add sp,0x2
+        mov ax,0x1f
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xB8
-        _emit 0x00
-        _emit 0x01
-        _emit 0x50
+        add sp,0x2
+        mov ax,0x100
+        push ax
         call far ptr helper_3
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
+        add sp,0x2
         call far ptr helper_4
-        _emit 0xB8
-        _emit 0xBA
-        _emit 0x04
-        _emit 0x1E
-        _emit 0x50
+        mov ax,0x4ba
+        push ds
+        push ax
         call far ptr helper_5
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
+        add sp,0x4
         call far ptr helper_6
         call far ptr helper_7
-        _emit 0xCB
+        retf
     }
 }

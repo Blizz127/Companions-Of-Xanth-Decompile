@@ -3,46 +3,28 @@ void far helper_1(void);
 int far ovl_258830(void)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x0E
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x44
-        _emit 0x01
-        _emit 0x50
+        mov ax,0xe
+        push ax
+        mov ax,0x144
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x1A
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x45
-        _emit 0x01
-        _emit 0x50
+        add sp,0x4
+        or ax,ax
+        jz short $+28
+        mov ax,0x1
+        push ax
+        mov ax,0x145
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x0B
-        _emit 0xC0
-        _emit 0x74
-        _emit 0x06
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x03
-        _emit 0x90
-        _emit 0x33
-        _emit 0xC0
-        _emit 0xCB
+        add sp,0x4
+        or ax,ax
+        jz short $+8
+        mov ax,0x1
+        jmp short $+5
+        nop
+L2E:
+        xor ax,ax
+L30:
+        retf
     }
 }

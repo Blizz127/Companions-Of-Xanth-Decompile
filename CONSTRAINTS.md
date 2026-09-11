@@ -9,8 +9,9 @@ This project's bar lives here so a later session can diff it. Tightening it is
 quiet; loosening it is loud. **This file is not weakened to make a change
 pass.**
 
-Last movement: 2026-09-11 converted 60 mixed mnemonic/`_emit` units and 581
-complete dump functions to pure mnemonic `_asm` (see `docs/STATUS.md`), and
+Last movement: 2026-09-11 took the dump population from 2,380 to 1,082 units
+with `tools/gen_mnem.py` — mixed units and complete functions to mnemonic
+`_asm`, unidentified regions to transcribed data (see `docs/STATUS.md`) — and
 repaired six registered units that referenced undeclared far helpers and so
 could not compile at all. The whole-image rebuild under `tools/verify.py` is
 BINARY-MATCH.
@@ -35,6 +36,16 @@ BINARY-MATCH.
 
 Checked by `tests/test_c_units.py::test_recovered_sources_have_no_emit_byte_dumps`.
 
+**A data region may be transcribed as initialised data.** The fragment
+population is documented in `docs/STATUS.md` as predominantly data, strings
+and the Pocket Soft RTLink runtime, not a queue of uncompiled functions, and
+MSVC 8.00c has no `db` directive to spell a data block inside `_asm`. Such a
+unit is written as a `char` array whose header carries the sentence
+`Data region, not an instruction stream`; `tools/units.py` classifies it as
+`data`, so it is never counted as recovered C or as an instruction listing.
+This is a spelling for bytes that are already known not to be a function —
+it is not a way to retire a function that merely failed to compile.
+
 This was previously "no `_emit` *or* `_asm`", which was not reachable. Changed
 on 2026-09-10 with the user's decision, on this evidence (`docs/STATUS.md`):
 
@@ -49,7 +60,7 @@ on 2026-09-10 with the user's decision, on this evidence (`docs/STATUS.md`):
   (`int` 35, `in`/`out` 27, flag save/restore 18, …). The count is an upper
   bound because some string ops are compiler-producible.
 
-The bar is still strict in the direction that matters: 1,753 of 2,844 units
+The bar is still strict in the direction that matters: 1,082 of 2,844 units
 are byte dumps today, so the gate is red and stays red until they are real
 source. A notebook reconstruction that does not MATCH in `src/` is not a
 recovery.
@@ -77,8 +88,8 @@ improving direction.
 
 | Metric | Today | Direction | Checked by |
 |---|---|---|---|
-| `exe-code` `_emit` dump coverage | 88.73% | must not rise | `tests/test_units.py::test_emit_dump_coverage_does_not_increase` |
-| `ovl-payload` `_emit` dump coverage | 64.61% | must not rise | same |
+| `exe-code` `_emit` dump coverage | 81.27% | must not rise | `tests/test_units.py::test_emit_dump_coverage_does_not_increase` |
+| `ovl-payload` `_emit` dump coverage | 53.64% | must not rise | same |
 | unaided-C unit count | 442 | must not fall | `tests/test_units.py::test_unaided_c_unit_count_does_not_fall` |
 | complete far functions still in dump form | 560 | must not rise | `tests/test_units.py::test_dump_function_count_does_not_increase` |
 
@@ -116,6 +127,14 @@ denominator change:
   bodies whose frame is the compiler's own `81 EC imm16`, units that push or
   pop SI/DI (CL then adds a save/restore wrapper the `_emit` form never had),
   fragments, and data.
+- **1,753 → 1,082 dump units**, **649 → 909 mnemonic `_asm`**, **411
+  transcribed-data units**, **88.73% → 81.27% exe** and **64.61% → 53.64%
+  overlay** dump coverage are this session's second sweep: 256 code fragments
+  and 4 functions re-emitted as mnemonics, and 411 fragments with positive
+  data evidence (printable ASCII, ≤4 distinct byte values, or a constant
+  byte stride) transcribed as `char` arrays. `transcribed-data` is a *new*
+  kind, so the unaided-C count stayed at 442 rather than absorbing them.
+  `tools/verify.py` re-confirms BINARY-MATCH for both images.
 
 A ratchet moving the *wrong* way is a finding, not a merge. If a change
 genuinely needs to move one, say so in the commit with the new number and why.
@@ -126,14 +145,14 @@ These are the work queue, not decoration. They are the only red gates.
 
 | Gate | Today | Blocked by |
 |---|---|---|
-| `test_recovered_sources_have_no_emit_byte_dumps` | 1,753 dump units | function recovery |
+| `test_recovered_sources_have_no_emit_byte_dumps` | 1,082 dump units | function recovery |
 | `test_each_c_unit_...::image_source == "cl-link"` | `listing-splice` | an EXE symbol/data map, then deleting the listing fallback |
 
 ## Exceptions
 
 | ID | Rule | Path | Reason | Owner | Expires |
 |---|---|---|---|---|---|
-| E1 | `_emit` floor | `src/**` | 1,753 units still to convert; tracked by the ratchet above | 2026-09-11 session | on completion |
+| E1 | `_emit` floor | `src/**` | 1,082 units still to convert; tracked by the ratchet above | 2026-09-11 session | on completion |
 
 ## Not a constraint here
 

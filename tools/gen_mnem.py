@@ -46,6 +46,11 @@ _PTR_LOAD = re.compile(r"\b(les|lds)\s+(\w+)\s*,\s*(?:word|byte|dword)\s+ptr\s+"
 _FAR_CALL = re.compile(r"\bcall\s+word\s+far\s+")
 _NEAR_CALL = re.compile(r"^call\s+0x([0-9a-f]+)$")
 _RET_IMM = re.compile(r"\b(retf?)\s+word\s+(0x[0-9a-f]+)$")
+# `81 EC iw` / `81 C4 iw`: the compiler's own stack adjust. MASM picks the
+# imm8 form for a value it can fold, so the immediate is expressed as a
+# relocatable symbol instead — `offset sym` forces the imm16 encoding and the
+# fixup is overwritten with the retail frame size by `_relocate`.
+_SP_ADJUST = {b"\x81\xec": "sub", b"\x81\xc4": "add"}
 _INT = re.compile(r"\bint\s+byte\s+")
 _ASM_OPEN = re.compile(r"_asm\s*\{")
 _BYTE_REG = re.compile(r"\b(a[lh]|b[lh]|c[lh]|d[lh])\b")
@@ -217,6 +222,7 @@ def convert(unit: dict, root: Path | None = None) -> dict:
     lines: list[str] = []
     helper_index = 0
     near_calls: list[str] = []
+    frame_syms: list[str] = []
     for insn in insns:
         addr = insn["addr"]
         if addr in targets:
@@ -224,6 +230,13 @@ def convert(unit: dict, root: Path | None = None) -> dict:
         if addr in calls:
             lines.append(f"        call far ptr {helper_names[helper_index]}")
             helper_index += 1
+            continue
+        adjust = _SP_ADJUST.get(insn["raw"][:2])
+        if adjust is not None:
+            name = f"fr{addr:02X}"
+            if name not in frame_syms:
+                frame_syms.append(name)
+            lines.append(f"        {adjust} sp, offset {name}")
             continue
         mnemonic = insn["mnemonic"]
         near = _NEAR_CALL.match(mnemonic)
@@ -262,6 +275,8 @@ def convert(unit: dict, root: Path | None = None) -> dict:
 
     for name in near_calls:
         decls.append(f"extern void __near {name}(void);")
+    for name in frame_syms:
+        decls.append(f"extern int __near {name};")
 
     for target in sorted(targets):
         if target >= len(body):
@@ -275,6 +290,8 @@ def convert(unit: dict, root: Path | None = None) -> dict:
 
 def render(source_text: str, result: dict) -> str:
     """Replace the first `_asm { ... }` block and splice in the declarations."""
+    if result.get("source_text") is not None:
+        return result["source_text"]
     match = _ASM_OPEN.search(source_text)
     if match is None:
         raise ConvertError("source has no `_asm {` block")
@@ -293,6 +310,68 @@ def render(source_text: str, result: dict) -> str:
     return f"{decl_text}{head}_asm {{\n{result['body']}    }}{tail}"
 
 
+def data_like(blob: bytes) -> str | None:
+    """Evidence that a unit's bytes are data rather than an instruction stream.
+
+    The fragment population is documented in `docs/STATUS.md` as
+    predominantly data, strings and the Pocket Soft RTLink runtime, so this
+    decides only the cases with positive evidence and returns None (i.e.
+    "treat as code") otherwise.
+    """
+    if not blob:
+        return None
+    printable = sum(
+        1 for byte in blob if 0x20 <= byte < 0x7F or byte in (0, 9, 10, 13)
+    )
+    if printable / len(blob) > 0.85:
+        return f"{printable}/{len(blob)} bytes are printable ASCII"
+    if len(set(blob)) <= 4:
+        return f"only {len(set(blob))} distinct byte values"
+    for period in range(2, 9):
+        if len(blob) >= period * 3 and all(
+            blob[index] == blob[index % period] for index in range(len(blob))
+        ):
+            return f"{period}-byte repeating pattern"
+    # A record table: one byte value recurring at a constant stride (the
+    # overlay's `30 xx xx cb` relink records look like this). Vetoed when the
+    # unit ends in a return and carries a call or port instruction, which is
+    # how repetitive *code* (a port-write sequence) looks instead.
+    ends_in_return = blob[-1:] in (b"\xc3", b"\xcb", b"\xca", b"\xc2")
+    code_ish = any(marker in blob for marker in (b"\x9a", b"\xcd", b"\xe6", b"\xe7"))
+    if ends_in_return and code_ish:
+        return None
+    for marker in sorted(set(blob)):
+        positions = [index for index, byte in enumerate(blob) if byte == marker]
+        if len(positions) >= 4:
+            gaps = {positions[index + 1] - positions[index] for index in range(len(positions) - 1)}
+            if len(gaps) == 1:
+                stride = gaps.pop()
+                if positions[0] < stride and stride >= 2:
+                    return (
+                        f"{len(positions)} {marker:#04x} bytes at a constant "
+                        f"{stride}-byte stride"
+                    )
+    return None
+
+
+def render_data(unit: dict, blob: bytes, reason: str, note: str) -> str:
+    rows = []
+    for start in range(0, len(blob), 12):
+        chunk = blob[start : start + 12]
+        rows.append("    " + ", ".join(f"0x{byte:02X}" for byte in chunk) + ",")
+    return (
+        f"/*\n"
+        f" * Data region, not an instruction stream: {reason}.\n"
+        f" * {unit['image']}:{int(unit['offset']):#x}, {len(blob)} bytes.\n"
+        f" *\n"
+        f" * {note}\n"
+        f" */\n"
+        f"char mnem_data[] = {{\n"
+        + "\n".join(rows)
+        + "\n};\n"
+    )
+
+
 def _main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("units", nargs="+")
@@ -306,6 +385,19 @@ def _main(argv: list[str] | None = None) -> int:
         "--write-verified",
         action="store_true",
         help="with --verify, write every candidate that byte-diffs clean",
+    )
+    parser.add_argument(
+        "--jobs", type=int, default=1, help="parallel CL invocations during --verify"
+    )
+    parser.add_argument(
+        "--data",
+        action="store_true",
+        help="emit a data region as an initialised array instead of instructions",
+    )
+    parser.add_argument(
+        "--force-data",
+        action="store_true",
+        help="with --data, emit the array even without positive data evidence",
     )
     args = parser.parse_args(argv)
     root = ROOT
@@ -326,7 +418,32 @@ def _main(argv: list[str] | None = None) -> int:
             return 2
         for unit in matches:
             try:
-                result = convert(unit, root)
+                if args.data:
+                    task = root / unit["source"]
+                    text = task.read_text(encoding="utf-8", errors="replace")
+                    blob, _calls = body_for(unit, text, root)
+                    reason = data_like(blob)
+                    if reason is None:
+                        if not args.force_data:
+                            print(f"===== {unit['source']}: no data evidence; left alone")
+                            continue
+                        reason = "no positive evidence either way"
+                    result = {
+                        "decls": [],
+                        "body": "",
+                        "note": reason,
+                        "text": text,
+                        "source_text": render_data(
+                            unit,
+                            blob,
+                            reason,
+                            "Transcribed as data. This translation unit has no "
+                            "PUBDEF, so the splice takes its first LEDATA, which "
+                            "is this array.",
+                        ),
+                    }
+                else:
+                    result = convert(unit, root)
             except (ConvertError, RetailError) as exc:
                 print(f"===== {unit['source']}: ERROR {exc}")
                 continue
@@ -341,12 +458,16 @@ def _main(argv: list[str] | None = None) -> int:
             else:
                 print(render(result["text"], result))
     if args.verify:
-        return _verify(selected, root, write=args.write_verified)
+        return _verify(selected, root, write=args.write_verified, jobs=max(1, args.jobs))
     return 0
 
 
-def _verify(selected: list[tuple[dict, dict]], root: Path, *, write: bool = False) -> int:
+def _verify(
+    selected: list[tuple[dict, dict]], root: Path, *, write: bool = False, jobs: int = 1
+) -> int:
+    """Compile every candidate and byte-diff it against its retail slice."""
     import tempfile
+    from concurrent.futures import ThreadPoolExecutor
 
     from compile_msc import compile_omf
     from lift import check_compiled, summary_line
@@ -354,19 +475,33 @@ def _verify(selected: list[tuple[dict, dict]], root: Path, *, write: bool = Fals
     images = unit_index.image_bytes(root)
     with tempfile.TemporaryDirectory(prefix="mnem_") as tmp:
         work = Path(tmp)
+        paths: list[Path] = []
+        for index, (unit, result) in enumerate(selected):
+            path = work / f"cand{index:04d}.c"
+            path.write_text(render(result["text"], result), encoding="utf-8")
+            paths.append(path)
+
+        def build(path: Path):
+            try:
+                return compile_omf(path)
+            except RetailError as exc:
+                return exc
+
+        if jobs > 1:
+            with ThreadPoolExecutor(max_workers=jobs) as pool:
+                built = list(pool.map(build, paths))
+        else:
+            built = [build(path) for path in paths]
+
         good = 0
         ok: dict[str, bool] = {}
-        for index, (unit, result) in enumerate(selected):
-            stem = f"cand{index:03d}"
-            path = work / f"{stem}.c"
-            path.write_text(render(result["text"], result), encoding="utf-8")
-            try:
-                compiled, fixups = compile_omf(path)
-            except RetailError as exc:
-                lines = [line for line in str(exc).strip().splitlines() if line.strip()]
+        for (unit, _result), outcome_value in zip(selected, built):
+            if isinstance(outcome_value, RetailError):
+                lines = [line for line in str(outcome_value).strip().splitlines() if line.strip()]
                 print(f"{unit['source']:<28} COMPILE-FAIL {' | '.join(lines[:3])}")
                 ok[unit["source"]] = False
                 continue
+            compiled, fixups = outcome_value
             outcome = check_compiled(unit, compiled, fixups, images)
             print(summary_line(outcome))
             matched = outcome["result"] == "MATCH"

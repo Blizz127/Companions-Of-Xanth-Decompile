@@ -1,3 +1,7 @@
+extern char __near mb036E;
+extern int __near mn5D88;
+extern int __near mn5D86;
+extern int __near mn5D8A;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -8,74 +12,36 @@ void far helper_6(void);
 int far ovl_3744(void)
 {
     _asm {
-        _emit 0xB8
-        _emit 0x0D
-        _emit 0x00
-        _emit 0x50
+        mov ax,0xd
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
+        add sp,0x2
         call far ptr helper_1
-        _emit 0xB8
-        _emit 0x2A
-        _emit 0x63
-        _emit 0x50
+        mov ax,0x632a
+        push ax
         call far ptr helper_2
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
+        add sp,0x2
         call far ptr helper_3
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB9
-        _emit 0x7F
-        _emit 0x00
-        _emit 0x51
-        _emit 0x38
-        _emit 0x06
-        _emit 0x6E
-        _emit 0x03
-        _emit 0x1B
-        _emit 0xC9
-        _emit 0x81
-        _emit 0xE1
-        _emit 0x08
-        _emit 0xFE
-        _emit 0x81
-        _emit 0xC1
-        _emit 0x02
-        _emit 0x03
-        _emit 0x51
+        mov ax,0x1
+        push ax
+        mov cx,0x7f
+        push cx
+        cmp mb036E,al
+        sbb cx,cx
+        and cx,0xfe08
+        add cx,0x302
+        push cx
         call far ptr helper_4
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x06
+        add sp,0x6
         call far ptr helper_5
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
+        mov ax,0x1
+        push ax
         call far ptr helper_6
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0x2B
-        _emit 0xC0
-        _emit 0xA3
-        _emit 0x88
-        _emit 0x5D
-        _emit 0xA3
-        _emit 0x86
-        _emit 0x5D
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x8A
-        _emit 0x5D
-        _emit 0xA0
-        _emit 0x00
-        _emit 0xCB
+        add sp,0x2
+        sub ax,ax
+        mov mn5D88,ax
+        mov mn5D86,ax
+        mov word ptr mn5D8A,0xa0
+        retf
     }
 }

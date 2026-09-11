@@ -1,90 +1,45 @@
+extern int __near mn010B;
+extern int __near mn0056;
+extern int __near mn000A;
+extern int __near mn000C;
 
 int far exe_136248(void)
 {
     _asm {
-        _emit 0x53
-        _emit 0x50
-        _emit 0xBB
-        _emit 0x50
-        _emit 0x01
-        _emit 0x2E
-        _emit 0x8B
-        _emit 0x07
-        _emit 0x2E
-        _emit 0x0B
-        _emit 0x47
-        _emit 0x02
-        _emit 0x74
-        _emit 0x07
-        _emit 0x83
-        _emit 0xC3
-        _emit 0x06
-        _emit 0xEB
-        _emit 0xF2
-        _emit 0x00
-        _emit 0x00
-        _emit 0x2E
-        _emit 0xF7
-        _emit 0x06
-        _emit 0x0B
-        _emit 0x01
-        _emit 0xFF
-        _emit 0x00
-        _emit 0x75
-        _emit 0x22
-        _emit 0x58
-        _emit 0x50
-        _emit 0xA8
-        _emit 0x02
-        _emit 0x74
-        _emit 0x1C
-        _emit 0x2E
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x0B
-        _emit 0x01
-        _emit 0xFF
-        _emit 0x00
-        _emit 0x06
-        _emit 0x2E
-        _emit 0x8E
-        _emit 0x06
-        _emit 0x56
-        _emit 0x00
-        _emit 0xFA
-        _emit 0x26
-        _emit 0xC7
-        _emit 0x06
-        _emit 0x0A
-        _emit 0x00
-        _emit 0xDB
-        _emit 0x01
-        _emit 0x26
-        _emit 0x8C
-        _emit 0x0E
-        _emit 0x0C
-        _emit 0x00
-        _emit 0xFB
-        _emit 0x07
-        _emit 0x81
-        _emit 0xFB
-        _emit 0x98
-        _emit 0x01
-        _emit 0x74
-        _emit 0x0E
-        _emit 0x2E
-        _emit 0x89
-        _emit 0x17
-        _emit 0x2E
-        _emit 0x8C
-        _emit 0x5F
-        _emit 0x02
-        _emit 0x58
-        _emit 0x2E
-        _emit 0x88
-        _emit 0x47
-        _emit 0x04
-        _emit 0x5B
-        _emit 0xCB
+        push bx
+        push ax
+        mov bx,0x150
+L05:
+        mov ax,cs:[bx]
+        or ax,cs:[bx+0x2]
+        jz short $+9
+        add bx,0x6
+        jmp short $-12
+        add [bx+si],al
+L15:
+        test word ptr cs:mn010B,0xff
+        jnz short $+36
+        pop ax
+        push ax
+        test al,0x2
+        jz short $+30
+        mov word ptr cs:mn010B,0xff
+        push es
+        mov es, cs:mn0056
+        cli
+        mov word ptr es:mn000A,0x1db
+        mov word ptr es:mn000C,cs
+        sti
+        pop es
+L40:
+        cmp bx,0x198
+        jz short $+16
+        mov cs:[bx],dx
+        mov word ptr cs:[bx+0x2],ds
+        pop ax
+        mov cs:[bx+0x4],al
+        pop bx
+        retf
+L54:
     }
 }

@@ -1,31 +1,21 @@
+extern char __near mb4246;
 void far helper_0(void);
 int far exe_82721(void)
 {
     _asm {
-        _emit 0x80
-        _emit 0x3E
-        _emit 0x46
-        _emit 0x42
-        _emit 0x00
-        _emit 0x74
-        _emit 0x13
-        _emit 0xB8
-        _emit 0x46
-        _emit 0x42
-        _emit 0x1E
-        _emit 0x50
+        cmp byte ptr mb4246,0x0
+        jz short $+21
+        mov ax,0x4246
+        push ds
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0xEB
-        _emit 0x03
-        _emit 0x90
-        _emit 0x33
-        _emit 0xC0
-        _emit 0xCB
+        add sp,0x4
+        mov ax,0x1
+        jmp short $+5
+        nop
+L1A:
+        xor ax,ax
+L1C:
+        retf
     }
 }

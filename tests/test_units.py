@@ -49,8 +49,9 @@ class DumpExtentTests(unittest.TestCase):
                 position += 1 if want is not None else 5
             checked += 1
         # Floor tracks the live dump population; it shrank from 2,380 to
-        # 1,753 units as `tools/gen_mnem.py` re-emitted them as mnemonics.
-        self.assertGreater(checked, 1700)
+        # 1,082 units as `tools/gen_mnem.py` re-emitted them as mnemonics or
+        # transcribed them as data.
+        self.assertGreater(checked, 1000)
 
     def test_function_shaped_units_are_framed_and_end_with_a_return(self):
         seen = 0
@@ -76,7 +77,7 @@ class CoverageReportTests(unittest.TestCase):
     # Locked 2026-09-11 from `python3 tools/coverage.py` after the 60 mixed
     # units and 581 complete dump functions were re-emitted as mnemonics by
     # `tools/gen_mnem.py` (on top of the Sept-10 recoveries and splits).
-    DUMP_PERCENT_CEILING = {"exe-code": 88.73, "ovl-payload": 64.61}
+    DUMP_PERCENT_CEILING = {"exe-code": 81.27, "ovl-payload": 53.64}
     UNAIDED_C_UNIT_FLOOR = 442
     DUMP_FUNCTION_CEILING = 560
 

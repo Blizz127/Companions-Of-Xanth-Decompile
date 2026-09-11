@@ -1,50 +1,27 @@
+extern int __near mn189E;
+extern int __near mn189C;
+extern int __near mn18A0;
+extern char __near mb18A3;
+extern char __near mb18A2;
 void far helper_0(void);
 int far ovl_14681(void)
 {
     _asm {
-        _emit 0xA1
-        _emit 0x9E
-        _emit 0x18
-        _emit 0x0B
-        _emit 0x06
-        _emit 0x9C
-        _emit 0x18
-        _emit 0x74
-        _emit 0x18
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x9E
-        _emit 0x18
-        _emit 0xFF
-        _emit 0x36
-        _emit 0x9C
-        _emit 0x18
+        mov ax,mn189E
+        or ax,mn189C
+        jz short $+26
+        push word ptr mn189E
+        push word ptr mn189C
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x04
-        _emit 0x2B
-        _emit 0xC0
-        _emit 0xA3
-        _emit 0x9E
-        _emit 0x18
-        _emit 0xA3
-        _emit 0x9C
-        _emit 0x18
-        _emit 0x32
-        _emit 0xC0
-        _emit 0xC7
-        _emit 0x06
-        _emit 0xA0
-        _emit 0x18
-        _emit 0x00
-        _emit 0x00
-        _emit 0xA2
-        _emit 0xA3
-        _emit 0x18
-        _emit 0xA2
-        _emit 0xA2
-        _emit 0x18
-        _emit 0xCB
+        add sp,0x4
+        sub ax,ax
+        mov mn189E,ax
+        mov mn189C,ax
+L21:
+        xor al,al
+        mov word ptr mn18A0,0x0
+        mov mb18A3,al
+        mov mb18A2,al
+        retf
     }
 }

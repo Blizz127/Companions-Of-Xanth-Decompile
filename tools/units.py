@@ -31,6 +31,11 @@ from retail_common import ROOT, RetailError, load_target
 KIND_DUMP = "dump"  # `_asm { _emit ... }` byte dump
 KIND_ASM = "asm"  # `_asm` with real mnemonics, no `_emit`
 KIND_C = "c"  # no `_asm` at all
+KIND_DATA = "data"  # a transcribed data region, not an instruction stream
+
+# `tools/gen_mnem.py --data` writes this sentence into the unit's header so a
+# data region is never counted as recovered C or as an instruction listing.
+DATA_MARKER = "Data region, not an instruction stream"
 
 PROLOGUE = b"\x55\x8b\xec"
 EPILOGUES = (b"\x8b\xe5\x5d\xcb", b"\x8b\xe5\x5d\xc3", b"\x5d\xcb", b"\x5d\xc3")
@@ -108,6 +113,8 @@ def asm_body(text: str) -> str | None:
 def source_kind(text: str) -> str:
     if "_emit" in text:
         return KIND_DUMP
+    if DATA_MARKER in text:
+        return KIND_DATA
     if "_asm" in text:
         return KIND_ASM
     return KIND_C

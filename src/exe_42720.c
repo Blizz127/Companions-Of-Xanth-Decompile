@@ -1,3 +1,5 @@
+extern int __near mn69E8;
+extern int __near mn0056;
 void far helper_0(void);
 void far helper_1(void);
 void far helper_2(void);
@@ -8,78 +10,53 @@ void far helper_6(void);
 int far exe_42720(void)
 {
     _asm {
-        _emit 0xA1
-        _emit 0xE8
-        _emit 0x69
-        _emit 0x48
-        _emit 0x48
-        _emit 0x74
-        _emit 0x0B
-        _emit 0x48
-        _emit 0x74
-        _emit 0x2E
-        _emit 0x48
-        _emit 0x74
-        _emit 0x33
-        _emit 0x48
-        _emit 0x74
-        _emit 0x4A
-        _emit 0xEB
-        _emit 0x4D
-        _emit 0x33
-        _emit 0xC0
-        _emit 0x50
-        _emit 0x33
-        _emit 0xC9
-        _emit 0x51
-        _emit 0x50
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x50
-        _emit 0x00
-        _emit 0x50
-        _emit 0xB8
-        _emit 0x01
-        _emit 0x00
-        _emit 0x50
+        mov ax,mn69E8
+        dec ax
+        dec ax
+        jz short $+13
+        dec ax
+        jz short $+48
+        dec ax
+        jz short $+53
+        dec ax
+        jz short $+76
+        jmp short $+79
+L12:
+        xor ax,ax
+        push ax
+        xor cx,cx
+        push cx
+        push ax
+        push ax
+        mov ax,0x50
+        push ax
+        mov ax,0x1
+        push ax
         call far ptr helper_0
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x0C
-        _emit 0xB8
-        _emit 0xF4
-        _emit 0x01
-        _emit 0x50
+        add sp,0xc
+        mov ax,0x1f4
+        push ax
         call far ptr helper_1
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
-        _emit 0xEB
-        _emit 0x27
+        add sp,0x2
+        jmp short $+41
+L38:
         call far ptr helper_2
-        _emit 0xEB
-        _emit 0x20
-        _emit 0x90
-        _emit 0x83
-        _emit 0x3E
-        _emit 0x56
-        _emit 0x00
-        _emit 0x01
-        _emit 0x1B
-        _emit 0xC0
-        _emit 0xF7
-        _emit 0xD8
-        _emit 0x50
+        jmp short $+34
+        nop
+L40:
+        cmp word ptr mn0056,0x1
+        sbb ax,ax
+        neg ax
+        push ax
         call far ptr helper_3
-        _emit 0x83
-        _emit 0xC4
-        _emit 0x02
+        add sp,0x2
         call far ptr helper_4
-        _emit 0xEB
-        _emit 0x06
-        _emit 0x90
+        jmp short $+8
+        nop
+L5A:
         call far ptr helper_5
+L5F:
         call far ptr helper_6
-        _emit 0xCB
+        retf
     }
 }
