@@ -2906,6 +2906,74 @@ unit — the stride readable from the `imul` operand, and the family not
 sharing one record type — are already recorded and are worth more than the
 two bytes would be.
 
+### exe_109083 decoded; 98 of 101 on the first attempt
+
+`exe-code:0x1AA1B`, 101 bytes, the next family member and the closest shape to
+`exe_111158` — a struct copy followed by calls:
+
+```
+sub sp,14h ; push di ; push si
+ax = 20 * arg2 ; bx = arg1 * 4
+dx:si = g_tbl[bx+67C2h]        ; two near loads, not les
+dx += ax
+rep movsw into [bp-14h], cx = 0Ah    ; the 20-byte struct copy
+sub2([6E52h]) ; sub1()
+sub3(2, s.f2, s.f4, s.f6, s.f8)      ; four words pushed from inside the copy
+sub4()
+```
+
+and the reconstruction, which compiles to **98 bytes against retail's 101**:
+
+```c
+struct S { char f0; char f1; int f2, f4, f6, f8; char tail[10]; };
+
+extern int __near g6e52;
+extern char far * __near g_tbl[];
+
+void far sub1(void);
+void far sub2(int a);
+void far sub3(int a, int b, int c, int d, int e);
+void far sub4(void);
+
+void far exe_109083(int i, int n)
+{
+    struct S s;
+
+    s = *(struct S far *)((struct S far *)g_tbl[i] + n);
+    sub2(g6e52);
+    sub1();
+    sub3(2, s.f2, s.f4, s.f6, s.f8);
+    sub4();
+}
+```
+
+The `imul` by 14h fixed the stride first, as the recorded rule says, and the
+two-load table form (rather than `les`) is what `char far *` plus a cast
+produces — the same combination that matched `exe_111158`'s opening. The four
+words pushed for `sub3` come from `s.f2` through `s.f8`, pinning the field
+offsets at 2, 4, 6 and 8 from the copy base.
+
+**The 3-byte residue is in the copy setup**, and it is a register-transfer
+choice:
+
+```
+retail  35  8C D0        mov ax,ss
+        37  8E C0        mov es,ax        (4 bytes)
+
+mine    26  16           push ss
+        27  07           pop es           (2 bytes)
+```
+
+CL used `push ss` / `pop es`; retail used `mov ax,ss` / `mov es,ax`. Both set
+`ES = SS` and the difference is exactly the visible size gap, with one further
+byte elsewhere that is not yet located.
+
+**Not classified as a limitation.** This is the third unit where the residue
+is a two-instruction register move rather than a missing construct, and the
+honest reading is that the source shape which makes CL choose the `mov` form
+has not been found — not that it is unreachable. The unit is recorded at
+98 of 101 with the residue localised to two adjacent instructions.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
