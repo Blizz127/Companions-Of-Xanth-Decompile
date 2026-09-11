@@ -1059,6 +1059,52 @@ merging, so further spelling variants for these units are not worth the
 rounds. If the limitation is ever disproved, one experiment reverses it for
 all five.
 
+### Near match at one nop: exe_86814 (exe-code:0x1531E, 50 B)
+
+This is a video-mode switch, and it is fully C-expressible — no `int`, no
+`in`/`out`, no segment access, no call:
+
+```c
+extern unsigned g42e0, g42e2, g42e4, g42e6;
+
+void far f(int a)
+{
+    if (a == (int)g42e0)
+        return;
+    if ((g42e2 | g42e4) == 0)
+        return;
+    g42e6 = a ? g42e4 : 0xA000;
+    g42e0 = (a != 0);
+}
+```
+
+It compiles to **exactly 50 bytes**, the same as retail, with an identical
+instruction sequence: the same `mov ax,[g42e0] / cmp [bp+6],ax / jz`, the
+same `mov ax,[g42e4] / or ax,[g42e2] / jz`, the same `?:` with
+`0A000h` (the VGA segment), and the same `cmp word [bp+6],1 / sbb ax,ax /
+inc ax` for the boolean store.
+
+Two notes on getting there. The final store must be `(a != 0)` or the
+equivalent `a ? 1 : 0` — writing `(a >= 1)` made CL emit a branchy
+`jl / mov / jmp / xor` instead of the `sbb ax,ax; inc ax` idiom, which cost
+six bytes. And every one of the three `jz` displacements is one less than
+retail's for a single reason.
+
+**The remaining difference is the placement of one `nop`.** Retail has it
+inline, immediately after the `jmp` that skips the `0A000h` store:
+
+```
+mov ax,[g42e4] ; jmp +4 ; nop ; mov ax,0A000h ; mov [g42e6],ax
+```
+
+while CL puts the same `90` as trailing padding after the final `retf`.
+Both are 50 bytes and the instruction sequence is otherwise identical; only
+the padding site differs. That is an alignment decision, not a source
+question, so it is recorded as a near match rather than a compiler
+limitation — the expected fix, if any, is in how CL places branch-target
+padding for this function, and switching flags to chase it would break the
+pinned `/Os` contract that the rest of the corpus depends on.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
