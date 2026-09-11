@@ -2570,6 +2570,63 @@ unreachable, and the earlier note that grouped this with `exe_790` and
 `exe_87918` as one behaviour is weakened by the observation above — retail
 uses both load forms, so this is not a single missing capability.
 
+### exe_109184: 84 of 85 bytes, and a retraction
+
+The decode-to-source pass on `exe-code:0x1AA80` (85 bytes) got to **84 bytes**
+in three compiles. The reconstruction:
+
+```c
+struct S { char f0; char f1; char pad[8]; int f10; char tail[8]; };
+
+extern struct S far * __near g_tbl[];
+void far helper(int i, int n);
+
+void far exe_109184(int i, int n, int a, char b, int c)
+{
+    struct S far *p;
+
+    p = g_tbl[i] + n;
+    p->f0 = a;
+    p->f1 = b;
+    if (a == 3 || a == 7)
+        p->f10 = c;
+    helper(i, n);
+}
+```
+
+Confirmed against the code rather than guessed: the far pointer is stored to
+a 4-byte stack local (`mov [bp-4],bx` / `mov word [bp-2],es`) and reloaded
+with `les` at each use; `a` is an **`int`**, not a `char` — the first attempt
+made it a `char` and produced byte compares (`3C 03` / `3C 07`) where retail
+has `mov ax,[bp+0xa]`; declaring it `int` replaced them with word compares and
+grew the unit from 80 to 84.
+
+**The remaining byte** is the comparison form. Mine emits
+`cmp word [bp+0xA],3` and `cmp word [bp+0xA],7` (4 bytes each); retail emits
+`mov ax,[bp+0xA]` then `sub ax,3` / `sub ax,4` (9 bytes for both), i.e. it
+loads once and subtracts. A `switch (a) { case 3: case 7: }` was tried and
+overshoots to 90, so the switch is not the source of that idiom here.
+
+### Retraction: the `les` form IS producible
+
+Last round concluded that CL had not produced `les bx,word [bx+67C2h]` in four
+shapes and left the impression it might be unreachable. **That is now
+disproved by this unit**, which emits exactly it:
+
+```
+mine    C4 9F 00 00   les bx,word [bx+0x0]
+retail  C4 9F C2 67   les bx,word [bx+67C2h]
+```
+
+The difference between the two units is what happens to the loaded pointer:
+here it is **stored into a local** before use, and CL then loads it with
+`les`; in `exe_112853` it is consumed immediately and CL materialises the
+offset in `cx`. So this was never a missing capability — it is a
+register-allocation decision that depends on whether the pointer is spilled.
+The narrower statement stands and is the useful one: `exe_112853`'s load shape
+has not been reached, and the earlier "one behaviour shared by three units"
+grouping remains withdrawn.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
