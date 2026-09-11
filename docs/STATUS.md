@@ -14,25 +14,25 @@ the numbers that are locked.
 
 | Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
 |---|---|---|---|---|---|---|
-| `exe-code` | 191,656 | 1,253 | 108 | 292 | 322 | 44.93% (86,107 B) |
-| `ovl-payload` | 325,595 | 1,591 | 334 | 656 | 217 | 33.51% (109,110 B) |
+| `exe-code` | 191,656 | 1,253 | 108 | 294 | 320 | 44.75% (85,760 B) |
+| `ovl-payload` | 325,595 | 1,591 | 334 | 657 | 216 | 33.43% (108,846 B) |
 
 | Source kind | units |
 |---|---|
 | unaided C (no `_asm`) | 442 |
-| mnemonic `_asm` | 948 |
+| mnemonic `_asm` | 951 |
 | transcribed data (`char` array) | 915 |
-| `_emit` dump | 539 |
+| `_emit` dump | 536 |
 
 Dump-unit shapes (C/asm units are `unknown` because they have no extent
 without `--compile`):
 
 | Shape | count | meaning |
 |---|---|---|
-| `function` | 522 | framed dump that starts `55 8B EC` and ends in a return |
+| `function` | 519 | framed dump that starts `55 8B EC` and ends in a return |
 | `unframed-function` | 3 | no frame, ends in a return |
 | `fragment` | 0 | no fragment dump remains |
-| `unknown` | 2,319 | 442 C + 948 mnemonic `_asm` + 915 data + 14 mixed dumps |
+| `unknown` | 2,322 | 442 C + 951 mnemonic `_asm` + 915 data + 14 mixed dumps |
 
 Rebuild is still `listing-splice` BINARY-MATCH for both images, not
 CL+LINK, and is verified end to end: `python3 tools/verify.py` reports
@@ -218,6 +218,28 @@ level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
 lodsb` silently drops the prefix and emits `AC`), and a direct far jump
 (`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
 
+### Session 2026-09-11 (seventh pass) — the 81-group immediate, and a name bug
+
+A fifth encoding difference: for an `81 /r iw` instruction the retail bytes
+carry the imm16 form, while MASM shrinks a small immediate to the
+sign-extended imm8 form. The immediate is made relocatable instead —
+`add word ptr [bp-4], offset mnXXI` assembles to `81 46 FC <fixup16>`, and
+`_relocate` writes the retail bytes over the fixup. The AX destination is
+exempt: MASM insists on the one-byte-opcode AX form (`05`, `3D`, `2D`, `25`,
+`0D`, `1D`) there, which is a different instruction.
+
+Only 3 of the 215 units carrying an `81` instruction converted with it, and
+measurement says why: the rest are blocked by the wrapper or by the disp16
+class first, so the immediate was never their binding constraint.
+
+Also fixed here: a patch had reused the local name `text` for the instruction
+text inside the loop, clobbering the unit's source text in the returned
+record. Every candidate then rendered as a bare instruction and the sweep
+died on `render`. The checker now reads the source back from the file it
+wrote, so a self-inflicted regression like that cannot hide.
+
+Dump population 539 → 536.
+
 ### Session 2026-09-11 (sixth pass) — the SI/DI pair left to CL's wrapper
 
 The 362-unit `DIFF +3` class splits in two. Where the retail save pair is
@@ -331,7 +353,7 @@ once, write once, compile. Do not grind 1–3 byte residues.
 
 ### Next
 
-Everything left is code: 539 dump units, all complete functions or framed
+Everything left is code: 536 dump units, all complete functions or framed
 bodies.
 
 1. The 563 dump *functions* need the C behind their `81 EC imm16` frame and
@@ -347,7 +369,7 @@ bodies.
 
 - Fast suite `tests/test_units.py` carries the ratchets.
 - Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
-  (539 dump units) and `image_source == "cl-link"`.
+  (536 dump units) and `image_source == "cl-link"`.
 - `python3 tools/verify.py` is green: `BINARY-MATCH` for both images.
 
 ---

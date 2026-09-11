@@ -53,6 +53,7 @@ _BIG_CONST = re.compile(r"\b0x([0-9a-f]{5,})\b")
 # relocatable symbol instead — `offset sym` forces the imm16 encoding and the
 # fixup is overwritten with the retail frame size by `_relocate`.
 _SP_ADJUST = {b"\x81\xec": "sub", b"\x81\xc4": "add"}
+_IMM16_GROUP = re.compile(r"^(\S+)\s+(.+),\s*(0x[0-9a-f]+)$")
 _INT = re.compile(r"\bint\s+byte\s+")
 _ASM_OPEN = re.compile(r"_asm\s*\{")
 _BYTE_REG = re.compile(r"\b(a[lh]|b[lh]|c[lh]|d[lh])\b")
@@ -289,7 +290,19 @@ def convert(unit: dict, root: Path | None = None) -> dict:
             else:
                 lines.append(f"        {name} short {offset}")
             continue
-        lines.append(f"        {_masm(mnemonic, symgen)}")
+        asm_text = _masm(mnemonic, symgen)
+        if insn["raw"][:1] == b"\x81":
+            # `81 /r iw`: the retail bytes carry the imm16 form. MASM shrinks
+            # a small immediate to the sign-extended imm8 form, so the
+            # immediate is made relocatable — `offset sym` forces imm16 and
+            # `_relocate` writes the retail bytes over the fixup. The AX
+            # destination is exempt because MASM emits the one-byte-opcode AX
+            # form (`05`/`3D`/…) instead, which is a different instruction.
+            rewritten = _imm16_group(asm_text, addr, decls)
+            if rewritten is not None:
+                lines.append(f"        {rewritten}")
+                continue
+        lines.append(f"        {asm_text}")
 
     for name in near_calls:
         decls.append(f"extern void __near {name}(void);")
@@ -323,6 +336,25 @@ def convert(unit: dict, root: Path | None = None) -> dict:
         "text": text,
     }
 
+
+
+def _imm16_group(text: str, addr: int, decls: list[str]) -> str | None:
+    """Make the immediate of an `81 /r` instruction relocatable.
+
+    Returns None for an AX destination, where MASM insists on the
+    one-byte-opcode AX form rather than the ModRM form the retail bytes use.
+    """
+    match = _IMM16_GROUP.match(text.strip())
+    if match is None:
+        return None
+    opcode, dest, _immediate = match.groups()
+    if dest.strip().lower() == "ax":
+        return None
+    name = f"mn{addr:02X}I"
+    decl = f"extern int __near {name};"
+    if decl not in decls:
+        decls.append(decl)
+    return f"{opcode} {dest}, offset {name}"
 
 
 def _drop_wrapper_pair(lines: list[str]) -> list[str] | None:
