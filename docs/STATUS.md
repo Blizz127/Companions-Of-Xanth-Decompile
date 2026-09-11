@@ -2627,6 +2627,33 @@ The narrower statement stands and is the useful one: `exe_112853`'s load shape
 has not been reached, and the earlier "one behaviour shared by three units"
 grouping remains withdrawn.
 
+### exe_109184: the switch idiom in the if layout
+
+The remaining byte is now precisely characterised, and the two facts are
+in tension in an informative way.
+
+| form | comparison code | layout | size |
+|---|---|---|---|
+| `if (a == 3 \|\| a == 7)` | `cmp word [bp+0Ah],3` / `cmp word [bp+0Ah],7` | inline | 84 |
+| `switch (a) { case 3: case 7: ... }` | **`mov ax,[bp+0Ah]` / `sub ax,3` / `jz` / `sub ax,4` / `jnz`** | body first, test at the **bottom**, reached by a `jmp` over the body | 90 |
+| retail | **the switch's comparison code** | the if's inline layout | 85 |
+
+So retail has the comparison sequence that CL only produces for a `switch`,
+placed where CL only puts it for an `if`. Neither form gives both.
+
+This is worth stating plainly because it constrains the search rather than
+just recording a failure: the source cannot be a plain `if` (wrong compare
+form) and cannot be a plain `switch` (wrong layout). What remains is a source
+where the value is already in a register at the test — the `sub ax,N` idiom
+is what CL emits when the compared value is live in `AX`, and a `switch` gets
+it only because CL loads it into `AX` for its own dispatch. A construct that
+loads `a` into a register earlier and compares it twice would satisfy both,
+and that is what the next attempt should aim at.
+
+**Not attempted this round:** the `int t = a;` form, which is the obvious
+candidate for exactly that. It is one compile and it is named here so the
+next round starts from the distinction above rather than rediscovering it.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
