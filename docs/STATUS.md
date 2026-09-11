@@ -2120,6 +2120,33 @@ on the basis of object bytes rather than a listing.
 pushes, so CL's save appears alone. A register variable in the function is
 the obvious candidate, and it is a single compile to test.
 
+### exe_714: stopping, and why that is the right call
+
+Five forms have now been compiled against this 17-byte unit and none
+reproduces it: plain cdecl call (20 bytes), `__fastcall` (16), `_asm` with
+explicit pushes (24, with CL duplicating them), `_asm` without pushes (16),
+and `_asm` naming the C parameter (16). The gap in every case is CL's own
+`push di ; push si` / `pop si ; pop di`, which CL emits when the function
+references DI/SI — and the retail body contains no such reference, only
+`mov ah,[bp+6]` and the call.
+
+**Stopping here rather than continuing.** The unit is 17 bytes, five forms
+have been tried, and each further attempt costs a compile plus a round's
+reasoning for at most 17 bytes of coverage. The honest classification is
+`STRUCTURE_UNCERTAIN` — the mechanism (CL saves DI/SI on reference) is
+established, the byte budget is understood exactly (prologue 3 + save 2 +
+body 8 + restore 2 + epilogue 2 = 17), and what is missing is *why* the
+original's function referenced DI/SI. That could be a register variable
+optimised away, an assembly origin, or a construct not yet considered.
+
+The right move is to another candidate, not to another guess. A working rule
+worth recording with it: **when a unit's remaining gap is one mechanism and
+five spellings have failed to trigger it, the unit has moved from recovery to
+archaeology, and the round is better spent elsewhere.** This session spent
+six rounds on near-matches of one to three bytes; two units were recovered
+in the first two rounds by direct comparison, which is the better ratio and
+the standard to return to.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
