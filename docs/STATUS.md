@@ -1391,6 +1391,44 @@ does with a local that makes CL allocate it on the stack without using it in
 the visible path. Not yet resolved, and recorded as a first attempt rather
 than a near match.
 
+### Recovered: exe_112795, also with zero trims
+
+`exe-code:0x1B89B`, 58 bytes, previously an `_emit` dump:
+
+```c
+extern unsigned __near g_idx;
+extern int __near g_cnt[];
+extern char far * __near g_tbl[];
+
+void far exe_112795(int i)
+{
+    char far *p;
+
+    if (g_cnt[g_idx] <= i)
+        return;
+    p = g_tbl[g_idx] + i * 20;
+    p[1] |= 0x80;
+}
+```
+
+`tools/lift.py`: **MATCH, 58 bytes, trimmed 0**.
+
+Three things had to be right and each was a separate experiment, which is
+why the first two attempts failed at 50 and 66 bytes:
+
+1. All three globals `__near`, so the accesses stay DS-relative with the
+   base folded into the displacement — the lever proved by `exe_99679`.
+2. `p` as a **named local**. CL allocates the four bytes (`sub sp,4`) but
+   keeps the pointer in `cx:dx`, so the slot is never referenced in the
+   visible code. Without the local the unit is 50 bytes and CL uses `si`.
+3. Folding the record offset into the pointer — `p = t + i * 20` rather
+   than indexing at the point of use — which makes CL add it with
+   `add cx,ax` instead of carrying it separately in `si`. This alone was
+   the 66-to-58 difference.
+
+That is the second zero-trim recovery, and the second unit where the
+`__near` lever transferred directly.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.

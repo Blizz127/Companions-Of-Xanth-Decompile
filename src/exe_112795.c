@@ -1,57 +1,27 @@
+/*
+ * exe-code:0x1B89B, 58 bytes.
+ *
+ * Set bit 7 of the second byte of record `i` in a table reached through a
+ * far pointer selected by a global index, but only while the record index is
+ * still inside the count for that table.
+ *
+ * Every declaration here is forced by the code. All three globals are __near
+ * so the accesses stay DS-relative with the array base folded into the
+ * displacement. `p` must be a named local: CL then allocates the four bytes
+ * (sub sp,4) even though it keeps the pointer in cx:dx, and folding the
+ * record offset into the pointer (`p = t + i * 20`) is what makes CL add it
+ * with `add cx,ax` instead of carrying it separately in si.
+ */
+extern unsigned __near g_idx;
+extern int __near g_cnt[];
+extern char far * __near g_tbl[];
 
-int far exe_112795(int a)
+void far exe_112795(int i)
 {
-    _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x04
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0xC0
-        _emit 0x67
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x39
-        _emit 0x87
-        _emit 0xE2
-        _emit 0x67
-        _emit 0x7E
-        _emit 0x21
-        _emit 0xB8
-        _emit 0x14
-        _emit 0x00
-        _emit 0xF7
-        _emit 0x6E
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0xC0
-        _emit 0x67
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x8B
-        _emit 0x8F
-        _emit 0xC2
-        _emit 0x67
-        _emit 0x8B
-        _emit 0x97
-        _emit 0xC4
-        _emit 0x67
-        _emit 0x03
-        _emit 0xC8
-        _emit 0x8B
-        _emit 0xD9
-        _emit 0x8E
-        _emit 0xC2
-        _emit 0x26
-        _emit 0x80
-        _emit 0x4F
-        _emit 0x01
-        _emit 0x80
-    }
+    char far *p;
+
+    if (g_cnt[g_idx] <= i)
+        return;
+    p = g_tbl[g_idx] + i * 20;
+    p[1] |= 0x80;
 }
