@@ -1995,6 +1995,56 @@ thunks with register saves — and the toolchain ships assembly sources
 for that subset. It is recorded as a hypothesis with three supporting
 observations, not as a conclusion.
 
+### CL wraps an _asm block containing a call with push di/push si
+
+A directly observed mechanism, from the listing rather than inferred:
+
+```c
+void far f(char c)
+{
+    _asm {
+        push di
+        push si
+        mov ah, [bp+6]
+        call far ptr helper
+        pop si
+        pop di
+    }
+}
+```
+
+compiles to
+
+```
+0003 57        push di      <- CL's own save
+0004 56        push si      <- CL's own save
+0005 57        push di      <- the source's
+0006 56        push si      <- the source's
+0007 8A 66 06  mov ah,[bp+6]
+000A 9A ...    call far
+000F 5E        pop si       <- the source's
+0010 5F        pop di       <- the source's
+0011 5E        pop si       <- CL's own restore
+0012 5F        pop di       <- CL's own restore
+```
+
+So **CL itself saves and restores DI and SI around an `_asm` block that
+contains a call**, which is exactly the structure retail's `exe_714` has:
+`push di ; push si ; mov ah,[bp+6] ; call far ; pop si ; pop di`. The
+register saves that puzzled me are not a hand-written prologue and not an
+unexplained residue — they are CL's own code, which means `exe_714` is
+recoverable as C with a small `_asm` block rather than being an assembly
+routine.
+
+**Not yet pinned, and not claimed:** the two variants tried compile to
+**24 bytes** (explicit pushes plus CL's) and **16 bytes** (no explicit
+pushes) against retail's **17**, with the first difference at `+3` in both.
+So the mechanism is identified and the exact source form is not: one variant
+double-saves, the other is a byte short. That is a two-experiment gap with a
+known cause, not an open question about provenance — and it retires the
+"register saves mean assembly" reading I recorded one round earlier for
+this unit.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
