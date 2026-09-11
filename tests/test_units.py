@@ -50,14 +50,17 @@ class DumpExtentTests(unittest.TestCase):
             checked += 1
         self.assertGreater(checked, 2000)
 
-    def test_function_shaped_units_are_framed_and_end_with_an_epilogue(self):
+    def test_function_shaped_units_are_framed_and_end_with_a_return(self):
         seen = 0
         for row in self.rows:
             if row["shape"] != "function":
                 continue
             blob = self.images[row["image"]][row["offset"] : row["offset"] + row["extent"]]
             self.assertEqual(blob[:3], units.PROLOGUE, row["source"])
-            self.assertIn(blob[-2:], (b"\x5d\xcb", b"\x5d\xc3"), row["source"])
+            # `5d cb`/`5d c3` plus the `5d ca iw` / `5d c2 iw` pop-count forms;
+            # the narrow `blob[-2:]` check this test used to make was the same
+            # gap that let the splitter glue `__pascal` functions together.
+            self.assertTrue(units.returns(blob), row["source"])
             seen += 1
         self.assertGreater(seen, 1000)
 

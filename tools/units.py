@@ -36,6 +36,19 @@ PROLOGUE = b"\x55\x8b\xec"
 EPILOGUES = (b"\x8b\xe5\x5d\xcb", b"\x8b\xe5\x5d\xc3", b"\x5d\xcb", b"\x5d\xc3")
 _RET = (b"\x5d\xcb", b"\x5d\xc3", b"\x8b\xe5\x5d")
 
+# A far return with a stack-pop count (`CA iw`) or a near one (`C2 iw`) also
+# ends a function. These are the `__pascal` / `__stdcall` forms; the splitter
+# used to miss them and glue such a function to whatever followed it.
+_RET_PLAIN = (b"\x5d\xcb", b"\x5d\xc3")
+_RET_IMM16 = (b"\x5d\xca", b"\x5d\xc2")
+
+
+def returns(window: bytes) -> bool:
+    """Does `window` end in a return, including the `imm16` pop-count forms?"""
+    if window[-2:] in _RET_PLAIN:
+        return True
+    return len(window) >= 4 and window[-4:-2] in _RET_IMM16
+
 _TOKEN = re.compile(r"_emit\s+0x([0-9A-Fa-f]{2})|call\s+far\s+ptr\s+([A-Za-z_]\w*)")
 _ASM_BLOCK = re.compile(r"_asm\s*\{", re.S)
 
@@ -167,7 +180,7 @@ def classify(image: bytes, offset: int, extent: int | None) -> str:
         return "unknown"
     window = image[offset : offset + extent]
     framed = window[:3] == PROLOGUE
-    ends = window[-2:] in (b"\x5d\xcb", b"\x5d\xc3")
+    ends = returns(window)
     if framed and ends:
         return "function"
     if framed:
