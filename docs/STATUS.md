@@ -1025,6 +1025,40 @@ at once. The two forms differ in one thing — whether the false branch
 returns a value or falls to a shared exit — so the next probe should vary
 what makes CL merge exits, not the branch structure, which now matches.
 
+### Exit merging: a controlled matrix, and a classification
+
+A minimal experiment was run to test whether CL 8.00c can emit a forward
+`jmp` to a shared epilogue at all, rather than continuing to vary sources
+for individual units. Four shapes, one function each:
+
+| shape | code | shared exit? |
+|---|---|---|
+| `if (a) return 0; return "ABCDEF";` | 22 B | no — two `pop bp; retf` |
+| `if (a) { g = 1; return 0; } return "ABCDEF";` | 26 B | no |
+| `do { if (a) break; return "ABCDEF"; } while (0); return 0;` | 22 B | no — layout changes, still two epilogues |
+| `char far *r; if (a) r = 0; else r = "ABCDEF"; return r;` | 40 B | no — a stack local instead |
+
+None produced the retail form. The third is the interesting one: the
+`do { } while (0)` + `break` idiom *does* change the layout to put the
+string path first and the zero path last, which is closer to retail, but it
+still emits a second `pop bp; retf` rather than jumping to a shared one.
+
+**Classification.** `exe_98653` and the four overlay members
+(`ovl_103506`, `ovl_165711`, `ovl_187298`, `ovl_193562`) are recorded as
+**COMPILER-LIMITED**, which per `docs/MATCHING.md` requires that controlled
+experiments demonstrate the remaining limitation. Across those five units
+that is now roughly ten source shapes and five optimisation settings, every
+one of which duplicates the epilogue where retail shares it.
+
+**The caveat is recorded with the classification, not buried.** Ten shapes
+is a finite search, and `docs/MATCHING.md` is explicit that failure to find
+a spelling is not proof none exists. What the matrix establishes is narrower
+and still useful: the three obvious source-level levers — conditional
+expression, `else`, and explicit `goto`/`break` exit — do not move CL's exit
+merging, so further spelling variants for these units are not worth the
+rounds. If the limitation is ever disproved, one experiment reverses it for
+all five.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
