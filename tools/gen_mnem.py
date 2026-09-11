@@ -274,7 +274,12 @@ def convert(unit: dict, root: Path | None = None) -> dict:
     for insn in insns:
         addr = insn["addr"]
         if addr in targets:
-            lines.append(f"lbl{addr:02X}:")
+            # Two names for one address: MASM mis-resolves a short jump whose
+            # label is referenced from both directions (it expands one and
+            # leaves the other's displacement stale), so forward jumps use the
+            # `f` name and backward jumps the `b` name.
+            lines.append(f"lbl{addr:02X}f:")
+            lines.append(f"lbl{addr:02X}b:")
         if insn["mnemonic"].startswith("db "):
             # A byte ndisasm could not decode as an instruction. Emitting a
             # `db` here would be a byte transcript inside the source, so the
@@ -307,22 +312,23 @@ def convert(unit: dict, root: Path | None = None) -> dict:
             target = int(match.group(2), 16)
             delta = target - addr
             offset = f"$+{delta}" if delta >= 0 else f"$-{-delta}"
+            suffix = "f" if target > addr else "b"
             if name == "jmp":
                 # MASM shortens a `jmp` whose distance is already known, so a
                 # rel16 jump has to name a label it cannot resolve in pass 1.
                 if insn["raw"][:1] == b"\xeb":
-                    lines.append(f"        jmp short lbl{target:02X}")
+                    lines.append(f"        jmp short lbl{target:02X}{suffix}")
                 else:
-                    lines.append(f"        jmp lbl{target:02X}")
+                    lines.append(f"        jmp lbl{target:02X}{suffix}")
                 continue
             # `short` pins the rel8 the retail image uses; without it MASM
             # expands a backward conditional jump to `inverse; jmp`. A
             # `$`-relative displacement is avoided because the compiler ICEs
             # on some of them (see the seventh-pass notes).
             if name == "jcxz" or name.startswith("loop"):
-                lines.append(f"        {name} lbl{target:02X}")
+                lines.append(f"        {name} lbl{target:02X}{suffix}")
             else:
-                lines.append(f"        {name} short lbl{target:02X}")
+                lines.append(f"        {name} short lbl{target:02X}{suffix}")
             continue
         asm_text = _masm(mnemonic, symgen)
         if insn["raw"][:1] == b"\x81":
@@ -345,7 +351,8 @@ def convert(unit: dict, root: Path | None = None) -> dict:
 
     for target in sorted(targets):
         if target >= len(body):
-            lines.append(f"lbl{target:02X}:")
+            lines.append(f"lbl{target:02X}f:")
+            lines.append(f"lbl{target:02X}b:")
 
     note = ""
     if helper_index != len(calls):
@@ -435,7 +442,9 @@ def render(source_text: str, result: dict) -> str:
         index += 1
     head = source_text[: match.start()]
     tail = source_text[index:]
-    decls = result["decls"]
+    # Re-converting an already-converted unit must not stack a second copy of
+    # its declarations into the header.
+    decls = [decl for decl in result["decls"] if decl not in head]
     decl_text = "\n".join(decls) + ("\n" if decls else "")
     return f"{decl_text}{head}_asm {{\n{result['body']}    }}{tail}"
 

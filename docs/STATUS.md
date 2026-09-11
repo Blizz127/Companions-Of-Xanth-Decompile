@@ -14,25 +14,25 @@ the numbers that are locked.
 
 | Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
 |---|---|---|---|---|---|---|
-| `exe-code` | 191,656 | 1,253 | 108 | 294 | 320 | 44.75% (85,760 B) |
+| `exe-code` | 191,656 | 1,253 | 108 | 295 | 319 | 44.44% (85,179 B) |
 | `ovl-payload` | 325,595 | 1,591 | 334 | 664 | 209 | 33.06% (107,652 B) |
 
 | Source kind | units |
 |---|---|
 | unaided C (no `_asm`) | 442 |
-| mnemonic `_asm` | 958 |
+| mnemonic `_asm` | 959 |
 | transcribed data (`char` array) | 915 |
-| `_emit` dump | 529 |
+| `_emit` dump | 528 |
 
 Dump-unit shapes (C/asm units are `unknown` because they have no extent
 without `--compile`):
 
 | Shape | count | meaning |
 |---|---|---|
-| `function` | 512 | framed dump that starts `55 8B EC` and ends in a return |
+| `function` | 511 | framed dump that starts `55 8B EC` and ends in a return |
 | `unframed-function` | 3 | no frame, ends in a return |
 | `fragment` | 0 | no fragment dump remains |
-| `unknown` | 2,329 | 442 C + 958 mnemonic `_asm` + 915 data + 14 mixed dumps |
+| `unknown` | 2,330 | 442 C + 959 mnemonic `_asm` + 915 data + 14 mixed dumps |
 
 Rebuild is still `listing-splice` BINARY-MATCH for both images, not
 CL+LINK, and is verified end to end: `python3 tools/verify.py` reports
@@ -218,6 +218,23 @@ level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
 lodsb` silently drops the prefix and emits `AC`), and a direct far jump
 (`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
 
+### Session 2026-09-11 (ninth pass) — two labels for one address, and an
+idempotent render
+
+MASM mis-resolves a short jump when the *same* label is referenced from both
+directions: it expands the backward one and leaves the forward one's
+displacement stale, which is what the `DIFF +11`/`+8`/`+7` classes were. The
+probe reproduces it in eleven lines and the fix is to give each target two
+names — forward jumps use `<label>f`, backward jumps `<label>b` — so no symbol
+is ever referenced both ways. One unit converted; the class survives where a
+pass-1 length estimate also goes stale, so this is a real but partial fix.
+
+`render()` is now idempotent: re-converting an already-converted unit no
+longer stacks a second copy of its `extern` declarations into the header
+(discovered when a re-run doubled them).
+
+Dump population 529 → 528.
+
 ### Session 2026-09-11 (eighth pass) — labelled short jumps, and target-aware decode
 
 Two changes, neither of which needs the missing assembler:
@@ -373,7 +390,7 @@ once, write once, compile. Do not grind 1–3 byte residues.
 
 ### Next
 
-Everything left is code: 529 dump units, all complete functions or framed
+Everything left is code: 528 dump units, all complete functions or framed
 bodies.
 
 1. The 563 dump *functions* need the C behind their `81 EC imm16` frame and
@@ -389,7 +406,7 @@ bodies.
 
 - Fast suite `tests/test_units.py` carries the ratchets.
 - Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
-  (529 dump units) and `image_source == "cl-link"`.
+  (528 dump units) and `image_source == "cl-link"`.
 - `python3 tools/verify.py` is green: `BINARY-MATCH` for both images.
 
 ---
