@@ -241,11 +241,22 @@ the frame, the source-order pushes and the unoptimised imm16/disp16 forms are
 all assembler choices.
 
 `tools/gen_wasm.py` is the converter: retail slice → Watcom/MASM listing with
-`offset`/symbol operands where the longer encoding is needed, labels with
-per-direction names for jumps, and byte-exact verification through wasm
-(including the fixup substitution the splice performs). It is not yet wired
-into `c_units`; that needs `.asm`-unit splice support, which is the next step
-and the one that retires the remaining 528 units.
+`offset`/symbol operands where the longer encoding is needed, per-direction
+jump labels, `EXTRN ...:FAR/NEAR` for absolute calls and jumps (so the fixup
+gets overwritten with the retail bytes), and byte-exact verification through
+wasm including that same fixup substitution.
+
+**Measured on a 30-unit sample of the queue: 20 MATCH.** The rest split into
+seven `same lengths, bytes differ` (the jump displacement goes stale because
+an instruction before the target needs its longer form - the iteration to
+decide that is still being finished) and three dialect details
+(`E100: Missing 'PTR'` on an operand shape, `E251` on one label form). Those
+are editor-level fixes, not new unknowns.
+
+What remains to actually retire the units is the splice integration:
+`c_units` must assemble an `.asm` unit with wasm and verify it byte-for-byte
+the way it now compiles a `.c` unit with CL, `units.py` must classify that
+kind, and `coverage.py` must report it. That is the last mile.
 
 ### Session 2026-09-11 (eleventh pass) — the CPU-level route is closed too
 
