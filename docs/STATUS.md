@@ -163,10 +163,26 @@ mnemonics by the pinned toolchain. Four controlled experiments
    MASM's preference is the `8B` form for register-to-register `mov` and
    (in the 5.x generation) the `81` form for `sub sp,small`; that profile is
    what the retail bytes show, which points at MASM 5.x, not at the pinned
-   CL 1.52. `tools/gen_nasm.py` is the probe built for this: it emits a NASM
+  CL 1.52. `tools/gen_nasm.py` is the probe built for this: it emits a NASM
    listing with `strict`/`near`/`short` spellings and accepts a unit only
    when NASM reproduces the bytes with no `db` fallback. It converts 1 of the
    578.
+
+Two further negatives close the remaining obvious doors:
+
+- **Open Watcom is already in the tree** (`tools/toolchain/watcom`) and was
+  the project's earlier negative control. Re-run with a function that has
+  locals, `wcc -ml` emits `push bx; push dx; push si; push bp; mov bp,sp`
+  (`89 E5`), then `83 EC imm8` — pushes *before* the frame, which is the
+  opposite of retail, and neither the `81` frame nor the `8B` `mov`.
+- **No CL 1.52 flag combination changes the frame form.** `/AL /AM /AS /AC`,
+  `/Od /Ot /Os /O1 /O2 /Ox /O /Oa /Ol`, `/Gc`, `/Za`, `/Zp1`, `/Gs`,
+  `/Gx-`, `/Ze`, `/Zg` all emit `83 EC imm8` for a small local frame.
+
+That leaves a 16-bit assembler of the MASM 5.x generation, or the Microsoft C
+of the same era whose output was assembled by it. Neither is on this
+machine: `ML.EXE`, `MASM.EXE`, `TASM.EXE`, `JWASM` and `UASM` are all absent
+(searched `/var/home/blizz`, `/usr`, `/opt`).
 
 Re-running the current converter over the 578 confirms the ceiling: **1 of
 563 complete functions** is still spellable as inline asm; the other 562 need
@@ -177,6 +193,10 @@ The three ways out, in the order that preserves the project's intent:
 1. Supply the original assembler (MASM 5.x `ML.EXE`, or whatever produced the
    `81 EC` + `8B EC` + source-order `push si/push di` profile). Then these
    units become ordinary mnemonic listings and the bar is met as written.
+   Only an *assembler* is needed, not a compiler: `tools/gen_nasm.py` already
+   emits the listing for each unit and the encodings it cannot force are
+   exactly the two quirks above, so the conversion would be mechanical and
+   byte-verified per unit.
 2. Record them as `COMPILER-LIMITED` and keep the `_emit` transcription,
    which leaves the bar red for exactly these units.
 3. Accept a data-array transcription for them, which would be a byte
