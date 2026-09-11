@@ -3154,6 +3154,40 @@ that the sequence is the whole of it.
 gap in the same three bytes of the same prologue and everything else
 reproduced.
 
+### The struct-copy segment set: a minimal form still uses push ss/pop es
+
+The experiment named last round, run as two minimal shapes that do nothing but
+copy a 20-byte struct from far memory into a local:
+
+| shape | segment set |
+|---|---|
+| `s = *gp;` from a global far pointer | `push ss` / `pop es` |
+| `s = g_tbl[i][0];` from a table element | `push ss` / `pop es` |
+
+**Both use `push ss` / `pop es`.** So this is not triggered by the surrounding
+body, and the two-shape answer to the branch question is the second one: no
+minimal form tried produces retail's `mov ax,ss` / `mov es,ax`.
+
+That makes **four observations** of CL emitting `push ss`/`pop es` for this
+copy — the two minimal cases and the two real units (`exe_109083`,
+`exe_109741`) — against retail's `mov ax,ss`/`mov es,ax` in both real units.
+The instruction sequence is the whole of the shared 3-byte gap, and it is CL's
+form for the construct in every shape tried.
+
+**Classification: `COMPILER_LIMITED` for the far-struct-copy segment set**, on
+two units, with the residue localised to one instruction pair and everything
+else in both functions reproduced. The caveat recorded with every
+classification in this file applies: four shapes is a finite search, and
+`MOV AX,SS` may be reachable through a construct not yet considered — for
+instance an explicit two-step copy or a union member rather than a direct
+struct assignment. It is not claimed as unreachable; it is claimed as
+unreached, with the construct's own minimal forms tested.
+
+**What this buys.** The two units are now classified together rather than
+carried as separate unexplained gaps, and the next unit in this family can be
+attempted with the knowledge that a 3-byte shortfall in a `rep movsw` prologue
+is expected rather than a new mystery.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
