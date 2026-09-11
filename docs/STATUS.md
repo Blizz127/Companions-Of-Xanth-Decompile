@@ -1470,6 +1470,59 @@ That is the third unit in a row where a local CL keeps in registers is
 still allocated stack space, and the first where the *order* of declaration
 is observable.
 
+### Near match: exe_115231 (exe-code:0x1C21F, 78 B)
+
+A guarded table entry with a far-pointer call, and the first unit where a
+**near pointer local** was required:
+
+```c
+struct T { char v[16]; };
+
+extern unsigned __near g_idx;
+extern int __near g_a[];
+extern struct T __near g_b[];
+void far helper(int i, char far *p);
+
+void far exe_115231(void)
+{
+    int __near *p;
+
+    p = &g_a[g_idx];
+    if (*p == 0)
+        return;
+    *p = 0;
+    helper(g_idx, (char far *)&g_b[g_idx]);
+    g_b[g_idx].v[0] = 0;
+    g_a[g_idx] = 1;
+}
+```
+
+Retail: index `g_idx` into a word table at `68D0h`, bail if the entry is
+zero, clear it, call `helper(g_idx, (char far*)&g_b[g_idx])` where `g_b`
+holds 16-byte records at `68E0h`, then clear the first byte of the record
+and set the word entry to 1. Every one of those steps reproduces.
+
+Two things had to be right and both were found by compiling:
+
+- `p` as `int __near *`. A plain `int *` is a **far** pointer in the large
+  model, so the local takes four bytes and the unit comes out `sub sp,4`
+  instead of retail's `sub sp,2`; the store is `mov [bp-2],ds` rather than
+  `mov [bp-2],bx`.
+- All three globals `__near`, the lever from earlier rounds.
+
+**The remaining difference is two bytes**: the compiled unit is **76 against
+retail's 78**, and the missing pair is one `mov cl,4`. Retail sets `cl` to 4
+*before* the shift at `+33` and sets it **again** at `+49` after the far
+call, because the call may clobber `cx`. CL appears to hoist the second
+shift above the call and so only sets `cl` once. That is a scheduling
+difference of the same kind as the `cli` hoisting recorded earlier, not a
+source problem — the reasoning is that the only way to save those two bytes
+is to move the shift, which is exactly what CL did.
+
+Not yet confirmed as a compiler limitation; a source change that forces the
+recomputation would settle it, and this is the third unit where the
+difference is a scheduler decision rather than a missing spelling.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
