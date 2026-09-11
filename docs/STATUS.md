@@ -1958,6 +1958,43 @@ Two guesses have now been tested against it (a shared-site restructure,
 which does not apply, and a temporary variable, which is worse) and both are
 recorded.
 
+### A third blocker category: register-convention thunks
+
+Scanning for fresh units of 60 bytes or less with at most two calls turned up
+a class that neither the source-recovery levers nor the earlier blockers
+explain. Two of the smallest:
+
+```
+exe_714   55 8B EC | 57 | 56 | 8A 66 06 | 9A .. | 5E | 5F | 5D CB
+          prologue | push di | push si | mov ah,[bp+6] | call far | pop si | pop di
+
+exe_24890 55 8B EC | 8B 46 08 | 8B 5E 06 | 9A .. | 8C C2 | 8B C3 | 5D CB
+          prologue | mov ax,[bp+8] | mov bx,[bp+6] | call far | mov dx,es | mov ax,bx
+```
+
+Both call a far helper with their arguments in **registers** and no pushes.
+That is not cdecl or pascal, so the natural reading is `__fastcall`, and
+MSC 8.00 does support it for 16-bit code — its byte arguments go in
+AL/AH/DL/DH/BL/BH and words in AX/DX/BX, which is exactly why `exe_714`
+loads AH alone.
+
+**The hypothesis was tested and gets close but does not close.**
+Declaring the helper `__fastcall far` and the parameter `char` compiles
+`exe_714` to **16 bytes against retail's 17**, diverging at `+3` — retail
+has `push di`/`push si` before the call and `pop si`/`pop di` after, which
+the C form does not emit. So the calling convention is probably right and
+the register saves are not explained by it: nothing in the function body
+uses SI or DI, so CL has no reason to preserve them.
+
+That is the same shape of unexplained residue as the DS family and the
+`loop` in `exe_790`: a construct retail contains that CL will not produce
+from C. Three independent categories now point the same way — `exe_790`'s
+`loop`, `exe_42`'s delay-loop `in` runs, and these register-convention
+thunks with register saves — and the toolchain ships assembly sources
+(`CRT0FP.ASM`, `CHKSTK.ASM`), so assembly origin is the leading explanation
+for that subset. It is recorded as a hypothesis with three supporting
+observations, not as a conclusion.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
