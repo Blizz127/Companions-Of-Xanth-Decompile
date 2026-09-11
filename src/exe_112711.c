@@ -1,83 +1,34 @@
+/*
+ * exe-code:0x1B847, 84 bytes.
+ *
+ * Walk the records of the far table selected by the global index and, for
+ * every record whose word at +10 equals the argument, set bit 7 of its
+ * second byte.
+ *
+ * The declarations are forced by the code. All three globals are __near so
+ * the base folds into the displacement. The local `p` is declared *first*:
+ * CL does not reference the slot (the pointer stays in es:di) but it still
+ * lays out `i` at bp-6 and `off` at bp-8, and declaring p after them puts i
+ * at bp-2 and the whole unit two bytes off from retail.
+ */
+extern unsigned __near g_idx;
+extern int __near g_cnt[];
+extern char far * __near g_tbl[];
 
-int far exe_112711(int a)
+void far exe_112711(int v)
 {
-    _asm {
-        _emit 0x83
-        _emit 0xEC
-        _emit 0x08
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x00
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0xC0
-        _emit 0x67
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x83
-        _emit 0xBF
-        _emit 0xE2
-        _emit 0x67
-        _emit 0x00
-        _emit 0x7E
-        _emit 0x38
-        _emit 0xC7
-        _emit 0x46
-        _emit 0xF8
-        _emit 0x00
-        _emit 0x00
-        _emit 0x8B
-        _emit 0x46
-        _emit 0x06
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0xC0
-        _emit 0x67
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x03
-        _emit 0xDB
-        _emit 0xC4
-        _emit 0x9F
-        _emit 0xC2
-        _emit 0x67
-        _emit 0x03
-        _emit 0x5E
-        _emit 0xF8
-        _emit 0x26
-        _emit 0x39
-        _emit 0x47
-        _emit 0x0A
-        _emit 0x75
-        _emit 0x05
-        _emit 0x26
-        _emit 0x80
-        _emit 0x4F
-        _emit 0x01
-        _emit 0x80
-        _emit 0x83
-        _emit 0x46
-        _emit 0xF8
-        _emit 0x14
-        _emit 0xFF
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x8B
-        _emit 0x46
-        _emit 0xFA
-        _emit 0x8B
-        _emit 0x1E
-        _emit 0xC0
-        _emit 0x67
-        _emit 0x03
-        _emit 0xDB
-        _emit 0x39
-        _emit 0x87
-        _emit 0xE2
-        _emit 0x67
-        _emit 0x7F
-        _emit 0xCD
+    char far *p;
+    int i, off;
+
+    i = 0;
+    if (g_cnt[g_idx] > 0) {
+        off = 0;
+        do {
+            p = g_tbl[g_idx] + off;
+            if (*(int *)(p + 10) == v)
+                p[1] |= 0x80;
+            off += 20;
+            i++;
+        } while (g_cnt[g_idx] > i);
     }
 }
