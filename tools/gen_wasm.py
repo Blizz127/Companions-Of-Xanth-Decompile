@@ -45,8 +45,10 @@ def _hexify(text):
     return re.sub(r'0x([0-9a-fA-F]+)', repl, text)
 
 def assemble(lines, extrns, cpu='-1'):
-    src = (_HEAD + ''.join(f"    EXTRN {n}:NEAR\n" for n in extrns) + "mnem_unit:\n"
-           + "\n".join("    " + l for l in lines) + "\n" + _TAIL)
+    def decl(n):
+        return f"    EXTRN {n}:" + ("FAR" if n.startswith(('mf', 'mj')) else "NEAR") + "\n"
+    src = (_HEAD + ''.join(decl(n) for n in extrns) + "mnem_unit:\n"
+           + "\n".join(("" if l.endswith(':') else "    ") + l for l in lines) + "\n" + _TAIL)
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
         (work / 'u.asm').write_text(src)
@@ -75,7 +77,7 @@ def _plain(m):
     t = re.sub(r'\[(cs|es|ss|ds):', r'\1:[', t)
     t = re.sub(r'\b(word|byte|dword)\s+(?:near\s+)?((?:cs|es|ss|ds):)?\[', r'\1 ptr \2[', t)
     t = re.sub(r'\b(mov)\s+(es|ds|ss|cs)\s*,\s*(?:word|byte|dword)\s+ptr\s+', r'\1 \2, ', t)
-    t = re.sub(r'\b(les|lds)\s+(\w+)\s*,\s*(word|byte|dword)\s+ptr\s+', r'\1 \2, ', t)
+    t = re.sub(r'\b(les|lds)\s+(\w+)\s*,\s*(word|byte|dword)\s+ptr\s+', r'\1 \2, dword ptr ', t)
     t = re.sub(r'\bcall\s+word\s+far\s+', 'call far ', t)
     t = re.sub(r'\b(retf?)\s+word\s+', r'\1 ', t)
     # absolute (no base) memory operands: an explicit ds: keeps MASM happy and
@@ -88,10 +90,14 @@ def _plain(m):
 
 def listing_for(unit, extend_disp, extend_imm):
     import gen_mnem
+    import gen_nasm
     img = units.image_bytes()[unit['image']]
-    blob = img[unit['offset']:unit['offset'] + (unit['extent'] or 0)]
-    if not blob:
-        blob, _c = gen_mnem.body_for(unit, (ROOT / unit['source']).read_text(errors='replace'), ROOT)
+    if unit['extent']:
+        blob = img[unit['offset']:unit['offset'] + unit['extent']]
+    else:
+        # a unit whose extent only the real splice can resolve: take the retail
+        # slice of the matched length, which includes the compiler frame
+        blob = gen_nasm.bytes_for(unit, ROOT)
     if not blob:
         return None, None, 'no bytes'
     insns = ndisasm(blob)
@@ -99,6 +105,19 @@ def listing_for(unit, extend_disp, extend_imm):
     for idx, ins in enumerate(insns):
         if ins['mnemonic'].startswith('db '):
             return None, None, f"undecodable {ins['mnemonic']}"
+        # calls and jumps to an absolute target: an external label gives the
+        # right opcode plus a fixup, which is what the splice then overwrites
+        # with the retail bytes.
+        first = ins['raw'][:1]
+        if first == b'\x9a':
+            name = f"mf{idx}"; extrns.append(name)
+            lines.append(f"call {name}"); continue
+        if first == b'\xea':
+            name = f"mj{idx}"; extrns.append(name)
+            lines.append(f"jmp {name}"); continue
+        if first == b'\xe8':
+            name = f"mn{idx}"; extrns.append(name)
+            lines.append(f"call {name}"); continue
         m = re.match(r'^(j[a-z]+|loop[a-z]*)\s+0x([0-9a-f]+)$', ins['mnemonic'])
         if m:
             name_, t = m.group(1), int(m.group(2), 16)
@@ -121,6 +140,19 @@ def listing_for(unit, extend_disp, extend_imm):
         lines.append(text)
     targets = {}
     for ins in insns:
+        # calls and jumps to an absolute target: an external label gives the
+        # right opcode plus a fixup, which is what the splice then overwrites
+        # with the retail bytes.
+        first = ins['raw'][:1]
+        if first == b'\x9a':
+            name = f"mf{idx}"; extrns.append(name)
+            lines.append(f"call {name}"); continue
+        if first == b'\xea':
+            name = f"mj{idx}"; extrns.append(name)
+            lines.append(f"jmp {name}"); continue
+        if first == b'\xe8':
+            name = f"mn{idx}"; extrns.append(name)
+            lines.append(f"call {name}"); continue
         m = re.match(r'^(j[a-z]+|loop[a-z]*)\s+0x([0-9a-f]+)$', ins['mnemonic'])
         if m:
             t = int(m.group(2), 16)
