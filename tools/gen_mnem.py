@@ -240,6 +240,11 @@ def convert(unit: dict, root: Path | None = None) -> dict:
         addr = insn["addr"]
         if addr in targets:
             lines.append(f"lbl{addr:02X}:")
+        if insn["mnemonic"].startswith("db "):
+            # A byte ndisasm could not decode as an instruction. Emitting a
+            # `db` here would be a byte transcript inside the source, so the
+            # unit is reported instead (and it would not assemble anyway).
+            raise ConvertError(f"undecodable byte {insn['mnemonic']} at {addr:#x}")
         if addr in calls:
             lines.append(f"        call far ptr {helper_names[helper_index]}")
             helper_index += 1

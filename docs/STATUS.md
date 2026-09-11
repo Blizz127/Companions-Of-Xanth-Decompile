@@ -218,6 +218,34 @@ level, and `/G2`/`/G3` do not change that), `es lodsb` (`C2400`, and `es:
 lodsb` silently drops the prefix and emits `AC`), and a direct far jump
 (`jmp 1dfah:901dh`, `jmp far ptr …` both `C2415`).
 
+### Session 2026-09-11 (sixth pass) — the SI/DI pair left to CL's wrapper
+
+The 362-unit `DIFF +3` class splits in two. Where the retail save pair is
+`push di; push si` — the order CL's wrapper itself emits — the body's own pair
+is redundant: dropping it and letting the wrapper provide it reproduces the
+bytes exactly, as long as the block still writes SI/DI elsewhere.
+`tools/gen_mnem.py` now keeps that as a second candidate spelling and tries it
+when the first fails; 22 of 546 converted (dump population 561 → 539). The
+`DIFF +5`/`+4` classes are gone entirely, which is what those were.
+
+The other half of the class has the pair in the *reverse* order
+(`push si; push di`, which is the source order the retail bytes show) or uses
+SI/DI only later in the body; CL's wrapper order is fixed at `di` then `si`,
+so those cannot be spelled and they stay dumps.
+
+Two more findings from this pass, both recorded for the assembler question:
+
+- **A fourth encoding difference.** Retail sometimes carries the *longer*
+  disp16 form where MASM 8.00c's assembler picks disp8 — e.g. retail
+  `26 88 87 32 00` (`mov [es:bx+0x32],al`) against compiled `26 88 47 32`.
+  That is another no-optimisation trait of the older assembler, and it
+  accounts for most of the remaining non-`+3` DIFF classes. A symbol-based
+  displacement (`[bx+mnDISP]`, an `extern` symbol so the fixup is emitted and
+  rewritten by `_relocate`) should spell it; that is the next thing to try.
+- **`db` never lands in a source.** A byte ndisasm cannot decode now raises
+  `ConvertError` instead of emitting a `db` line, so a listing that would be a
+  byte transcript inside `_asm` is reported rather than generated.
+
 Re-running the current converter over the 577 confirms the ceiling: **none**
 of the 563 function-shaped units is spellable as inline asm any more (one
 did convert, `exe_87075`, whose body carried the SI/DI push in the compiler's
