@@ -1671,6 +1671,38 @@ five-word call — make this a poor next target; it is recorded as decoded so
 the next attempt starts from the structure rather than the bytes, and the
 simpler remaining global-index units are the better continuation.
 
+### The small global-index vein is worked out
+
+The scan for units with a `mov bx,[mem]` global index has now yielded
+everything it can cheaply. Of the 28 blocker-free candidates it found:
+
+- 4 are recovered (`exe_99679`, `exe_112795`, `exe_112711` as zero-trim
+  matches; `exe_117397` size-exact on a dead store),
+- 2 are decoded with their gap localised (`exe_115231`, `exe_91501`),
+- 1 is decoded and judged a poor target (`exe_94984`),
+- **25 remain, and all of them are 131 bytes or larger** — the smallest is
+  `exe_123400` at 131, then 141, 141, 142.
+
+That matters for planning rather than for the record: the class that
+produced two zero-trim matches from four attempts was the *small* end of it,
+and that end is now empty. The remaining members are 3-4x the size and
+several carry interrupt-style prologues (`push ax/bx/cx/dx/di/si/ds; pushf;
+mov ds,SYM`), `les`-based far table walks and `imul`-scaled indices, none of
+which any matched unit has needed yet.
+
+One of them, `exe_111158` (142 B), does reuse the exact structures just
+recovered — the far-pointer table at `67C2h` with 4-byte elements and an
+`imul` by 20 — so the family is not exhausted so much as supersized. It is
+the natural next target if a larger unit is attempted, but it needs a
+26-byte frame and several locals, so it is a different kind of work from
+the four that matched.
+
+**What this means for the next round.** Continuing to pick small units will
+now mean picking small units *outside* this class. The honest options are:
+work a larger function end to end, or shift effort to the CL+LINK lane,
+where the 94-116 library-classified units would be satisfied by linking
+rather than by writing source at all.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
