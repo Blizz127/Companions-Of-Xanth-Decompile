@@ -15,24 +15,24 @@ the numbers that are locked.
 | Image | bytes | units | unaided C | mnemonic `_asm` | `_emit` dumps | dump byte coverage |
 |---|---|---|---|---|---|---|
 | `exe-code` | 191,656 | 1,253 | 108 | 294 | 320 | 44.75% (85,760 B) |
-| `ovl-payload` | 325,595 | 1,591 | 334 | 657 | 216 | 33.43% (108,846 B) |
+| `ovl-payload` | 325,595 | 1,591 | 334 | 664 | 209 | 33.06% (107,652 B) |
 
 | Source kind | units |
 |---|---|
 | unaided C (no `_asm`) | 442 |
-| mnemonic `_asm` | 951 |
+| mnemonic `_asm` | 958 |
 | transcribed data (`char` array) | 915 |
-| `_emit` dump | 536 |
+| `_emit` dump | 529 |
 
 Dump-unit shapes (C/asm units are `unknown` because they have no extent
 without `--compile`):
 
 | Shape | count | meaning |
 |---|---|---|
-| `function` | 519 | framed dump that starts `55 8B EC` and ends in a return |
+| `function` | 512 | framed dump that starts `55 8B EC` and ends in a return |
 | `unframed-function` | 3 | no frame, ends in a return |
 | `fragment` | 0 | no fragment dump remains |
-| `unknown` | 2,322 | 442 C + 951 mnemonic `_asm` + 915 data + 14 mixed dumps |
+| `unknown` | 2,329 | 442 C + 958 mnemonic `_asm` + 915 data + 14 mixed dumps |
 
 Rebuild is still `listing-splice` BINARY-MATCH for both images, not
 CL+LINK, and is verified end to end: `python3 tools/verify.py` reports
@@ -353,7 +353,7 @@ once, write once, compile. Do not grind 1–3 byte residues.
 
 ### Next
 
-Everything left is code: 536 dump units, all complete functions or framed
+Everything left is code: 529 dump units, all complete functions or framed
 bodies.
 
 1. The 563 dump *functions* need the C behind their `81 EC imm16` frame and
@@ -369,7 +369,7 @@ bodies.
 
 - Fast suite `tests/test_units.py` carries the ratchets.
 - Still red by design: `test_recovered_sources_have_no_emit_byte_dumps`
-  (536 dump units) and `image_source == "cl-link"`.
+  (529 dump units) and `image_source == "cl-link"`.
 - `python3 tools/verify.py` is green: `BINARY-MATCH` for both images.
 
 ---
