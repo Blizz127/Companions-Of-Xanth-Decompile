@@ -303,17 +303,26 @@ def convert(unit: dict, root: Path | None = None) -> dict:
     note = ""
     if helper_index != len(calls):
         note = f"only {helper_index}/{len(calls)} far calls placed"
-    bodies = ["\n".join(lines) + "\n"]
-    variant = _drop_wrapper_pair(lines)
-    if variant is not None:
-        bodies.append("\n".join(variant) + "\n")
+    def joined(candidate: list[str]) -> str:
+        return "\n".join(candidate) + "\n"
+
+    variants = [{"body": joined(lines), "decls": list(decls)}]
+    wrapper = _drop_wrapper_pair(lines)
+    if wrapper is not None:
+        variants.append({"body": joined(wrapper), "decls": list(decls)})
+    # A displacement that retail encoded as disp16 while MASM shrinks it to
+    # disp8 is NOT reachable this way: `mov es:[bx+sym],al` with an extern
+    # symbol assembles to the direct-address form `26 A2 iw` (MaS sees an
+    # absolute address and drops the base), not `26 88 87 iw`. Recorded in
+    # docs/STATUS.md rather than attempted here.
     return {
         "decls": decls,
-        "bodies": bodies,
-        "body": bodies[0],
+        "variants": variants,
+        "body": variants[0]["body"],
         "note": note,
         "text": text,
     }
+
 
 
 def _drop_wrapper_pair(lines: list[str]) -> list[str] | None:
@@ -543,10 +552,11 @@ def _verify(
     with tempfile.TemporaryDirectory(prefix="mnem_") as tmp:
         work = Path(tmp)
 
-        def candidate(index: int, body_index: int, result: dict) -> Path:
-            path = work / f"cand{index:04d}_{body_index}.c"
+        def candidate(index: int, variant_index: int, result: dict) -> Path:
+            path = work / f"cand{index:04d}_{variant_index}.c"
             attempt = dict(result)
-            attempt["body"] = result["bodies"][body_index]
+            attempt["body"] = result["variants"][variant_index]["body"]
+            attempt["decls"] = result["variants"][variant_index]["decls"]
             path.write_text(render(result["text"], attempt), encoding="utf-8")
             return path
 
@@ -580,22 +590,37 @@ def _verify(
 
         # Units whose first spelling did not match get a second attempt with
         # the asm-authored SI/DI save pair left to CL's own wrapper.
-        retry = [
+        pending = [
             index
             for index, (unit, result) in enumerate(selected)
-            if len(result["bodies"]) > 1
+            if len(result["variants"]) > 1
             and (outcomes[index] is None or outcomes[index]["result"] != "MATCH")
         ]
-        if retry:
-            retry_built = compile_all([candidate(i, 1, selected[i][1]) for i in retry])
-            for index, value in zip(retry, retry_built):
-                if isinstance(value, RetailError):
-                    continue
-                outcome = evaluate(selected[index][0], value)
+        variant_index = 1
+        while pending:
+            tries = [
+                (index, variant_index)
+                for index in pending
+                if len(selected[index][1]["variants"]) > variant_index
+            ]
+            if not tries:
+                break
+            retry_built = compile_all(
+                [candidate(index, variant, selected[index][1]) for index, variant in tries]
+            )
+            still: list[int] = []
+            for (index, variant), value in zip(tries, retry_built):
+                outcome = None if isinstance(value, RetailError) else evaluate(
+                    selected[index][0], value
+                )
                 if outcome is not None and outcome["result"] == "MATCH":
                     outcomes[index] = outcome
                     errors[index] = None
-                    chosen[index] = 1
+                    chosen[index] = variant
+                else:
+                    still.append(index)
+            pending = still
+            variant_index += 1
 
         good = 0
         ok: dict[str, bool] = {}
@@ -615,7 +640,9 @@ def _verify(
             matched = outcome["result"] == "MATCH"
             if matched and chosen.get(index):
                 # The winning spelling is the one that has to be written out.
-                result["body"] = result["bodies"][chosen[index]]
+                winner = result["variants"][chosen[index]]
+                result["body"] = winner["body"]
+                result["decls"] = winner["decls"]
             # A source registered at more than one offset is only replaced
             # when every one of its registrations matches.
             ok[unit["source"]] = ok.get(unit["source"], True) and matched

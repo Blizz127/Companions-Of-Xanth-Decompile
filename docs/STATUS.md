@@ -235,13 +235,17 @@ so those cannot be spelled and they stay dumps.
 
 Two more findings from this pass, both recorded for the assembler question:
 
-- **A fourth encoding difference.** Retail sometimes carries the *longer*
-  disp16 form where MASM 8.00c's assembler picks disp8 — e.g. retail
-  `26 88 87 32 00` (`mov [es:bx+0x32],al`) against compiled `26 88 47 32`.
-  That is another no-optimisation trait of the older assembler, and it
-  accounts for most of the remaining non-`+3` DIFF classes. A symbol-based
-  displacement (`[bx+mnDISP]`, an `extern` symbol so the fixup is emitted and
-  rewritten by `_relocate`) should spell it; that is the next thing to try.
+- **A fourth encoding difference, and it is not reachable.** Retail sometimes
+  carries the *longer* disp16 form where MASM 8.00c's assembler picks disp8 —
+  e.g. retail `26 88 87 32 00` (`mov [es:bx+0x32],al`) against compiled
+  `26 88 47 32`. That is another no-optimisation trait of the older assembler
+  and it accounts for most of the remaining non-`+3` DIFF classes. The
+  symbol-in-displacement route was tried and rejected by experiment: with
+  `extern char __near mn0032;`, `mov es:[bx+mn0032],al` assembles to
+  `26 A2 00 00` — MASM resolves the symbol as an absolute address and drops
+  the `bx` base entirely (and `[bx+offset sym]` is `C2443 operand size
+  conflict`). There is no MASM 8.00c spelling for "force disp16", so units
+  whose retail bytes did that stay dumps pending the older assembler.
 - **`db` never lands in a source.** A byte ndisasm cannot decode now raises
   `ConvertError` instead of emitting a `db` line, so a listing that would be a
   byte transcript inside `_asm` is reported rather than generated.
