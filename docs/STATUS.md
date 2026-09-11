@@ -1362,6 +1362,35 @@ Each was confirmed by compiling the alternative. The caveat recorded
 earlier still applies: this is a finite search and not a proof that no
 spelling exists.
 
+### exe_112795: first attempt, one structural gap
+
+`exe-code:0x1B89B`, 58 bytes, the same global-array idiom as `exe_117397`
+(index global, scaled by 2 for an int count array and by 4 for a far-pointer
+table) plus an `imul` by 20 onto a far base and an `or byte [es:bx+1],80h`.
+
+```c
+extern unsigned __near g_idx;
+extern int __near g_cnt[];
+extern char far * __near g_tbl[];
+
+struct S { char a[20]; };
+
+void far f(int i)
+{
+    if (g_cnt[g_idx] <= i)
+        return;
+    ((struct S far *)g_tbl[g_idx])[i].a[1] |= 0x80;
+}
+```
+
+This gives **50 bytes against retail's 58**, and the divergence is at `+3`:
+retail has `sub sp,4`, a four-byte stack local, where CL keeps the pointer
+in `si` instead. The scaling, the `imul` by 20, the far base and the
+`or byte [es:bx+1],80h` all appear; the open question is what the source
+does with a local that makes CL allocate it on the stack without using it in
+the visible path. Not yet resolved, and recorded as a first attempt rather
+than a near match.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
