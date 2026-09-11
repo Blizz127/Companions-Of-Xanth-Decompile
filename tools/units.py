@@ -44,10 +44,28 @@ _RET_IMM16 = (b"\x5d\xca", b"\x5d\xc2")
 
 
 def returns(window: bytes) -> bool:
-    """Does `window` end in a return, including the `imm16` pop-count forms?"""
+    """Does `window` end in a `pop bp`-style epilogue?
+
+    Used for units with no prologue, where the evidence has to be strong: a
+    lone trailing ret byte is not enough to call something a function.
+    """
     if window[-2:] in _RET_PLAIN:
         return True
     return len(window) >= 4 and window[-4:-2] in _RET_IMM16
+
+
+def ends_in_return(window: bytes) -> bool:
+    """Is the window's final instruction some return?
+
+    Used for units that already start with the standard frame, where ending
+    in a ret is strong evidence. The return need not be preceded by
+    `pop bp`: `pop di; ret` (`5f c3`) and `pop di; retf` (`5f cb`) are just
+    as final, and rejecting them is what left `exe_13444` and `exe_14566`
+    looking like fragments.
+    """
+    if window[-1:] in (b"\xc3", b"\xcb"):
+        return True
+    return len(window) >= 3 and window[-3:-2] in (b"\xca", b"\xc2")
 
 _TOKEN = re.compile(r"_emit\s+0x([0-9A-Fa-f]{2})|call\s+far\s+ptr\s+([A-Za-z_]\w*)")
 _ASM_BLOCK = re.compile(r"_asm\s*\{", re.S)
@@ -179,15 +197,11 @@ def classify(image: bytes, offset: int, extent: int | None) -> str:
     if extent is None:
         return "unknown"
     window = image[offset : offset + extent]
-    framed = window[:3] == PROLOGUE
-    ends = returns(window)
-    if framed and ends:
-        return "function"
-    if framed:
-        return "framed-fragment"
-    if ends:
-        return "unframed-function"
-    return "fragment"
+    if window[:3] == PROLOGUE:
+        # already framed, so a trailing ret is enough to call it a function
+        return "function" if ends_in_return(window) else "framed-fragment"
+    # no prologue: demand a `pop bp`-style epilogue before saying "function"
+    return "unframed-function" if returns(window) else "fragment"
 
 
 def index(root: Path | None = None) -> list[dict]:

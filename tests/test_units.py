@@ -57,10 +57,11 @@ class DumpExtentTests(unittest.TestCase):
                 continue
             blob = self.images[row["image"]][row["offset"] : row["offset"] + row["extent"]]
             self.assertEqual(blob[:3], units.PROLOGUE, row["source"])
-            # `5d cb`/`5d c3` plus the `5d ca iw` / `5d c2 iw` pop-count forms;
-            # the narrow `blob[-2:]` check this test used to make was the same
+            # Framed units only have to end in some return: `pop di; ret`
+            # (`5f c3`) is as final as `pop bp; retf` (`5d cb`), and the
+            # narrow `blob[-2:]` check this test used to make was the same
             # gap that let the splitter glue `__pascal` functions together.
-            self.assertTrue(units.returns(blob), row["source"])
+            self.assertTrue(units.ends_in_return(blob), row["source"])
             seen += 1
         self.assertGreater(seen, 1000)
 

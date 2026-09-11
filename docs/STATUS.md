@@ -702,6 +702,50 @@ calls `units.returns()` instead of matching two byte pairs by hand, so the
 assertion and the classifier cannot drift apart again. The coverage
 ratchets are untouched and still pass.
 
+### All six glue splits landed; the return test is now asymmetric
+
+`exe_13444` and `exe_14566` were finished after the reason they resisted
+became clear. Their predecessors end `pop di; ret` (`5f c3`) and
+`pop di; retf` (`5f cb`) — a `pop <reg>` then return tail, not the
+`pop bp` tail the predicate demanded.
+
+Rather than loosen the test for everything (which previously reclassified
+640 fragments as `unframed-function` on a single trailing byte), the rule
+is now asymmetric, which matches how much evidence each case actually has:
+
+| unit shape | predicate | why |
+|---|---|---|
+| starts with `55 8B EC` | `ends_in_return` — final instruction is any return (`c3`/`cb`, or `ca`/`c2` + imm16) | it is already framed, so a trailing return is strong evidence |
+| no prologue | `returns` — requires a `pop <reg>` + return pair | weak evidence otherwise; a lone trailing ret byte is not enough |
+
+Effect on the corpus, with the byte totals unchanged (`exe-code` 187,636;
+`ovl-payload` 314,821, identical to before any of this work):
+
+| shape | before | after |
+|---|---|---|
+| `function` | 1,135 | **1,137** |
+| `framed-fragment` | 3 | **0** |
+| `unframed-function` | 7 | 7 |
+| `fragment` | 1,171 | 1,171 |
+| `unknown` | 520 | 521 |
+
+No fragment was promoted, no function was demoted, and nothing was
+skipped: both the `framed-fragment` reclassifications and the six extent
+corrections are accounted for by the arithmetic in the tables above and in
+the "Boundary correction applied to four units" section.
+
+Final state of the six splits, each verified by
+`before = after + successor_extent`:
+
+| unit | before | after | successor |
+|---|---|---|---|
+| `exe_6094` | 144 | 43 | `exe_6137` (101) |
+| `exe_13444` | 594 | 510 | `exe_13954` (84) |
+| `exe_14566` | 203 | 82 | `exe_14648` (121) |
+| `exe_34621` | 77 | 42 | `exe_34663` (35) |
+| `exe_34698` | 77 | 42 | `exe_34740` (35) |
+| `exe_34775` | 278 | 42 | `exe_34817` (236) |
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
