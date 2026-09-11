@@ -3106,6 +3106,54 @@ start from, not a hypothesis.
 the cleanup difference in each localised to a single instruction and every
 other element of both functions reproduced.
 
+### exe_109741: same 3-byte gap at the same offset as exe_109083
+
+`exe-code:0x1ACAD`, 103 bytes, decoded cleanly and reconstructed to **100** —
+and the first difference is at `+23`, the **same offset** as `exe_109083`'s,
+in the struct-copy prologue:
+
+```c
+struct S { char f0; char f1; int f2, f4, f6, f8; char tail[10]; };
+
+extern char far * __near g_tbl[];
+
+int far exe_109741(int i, int n, int far *a, int far *b)
+{
+    struct S s;
+
+    s = *(struct S far *)((struct S far *)g_tbl[i] + n);
+    if (s.f1 & 0x80)
+        return 0;
+    if (a != 0)
+        *a = s.f2;
+    if (b != 0)
+        *b = s.f4;
+    return 1;
+}
+```
+
+Reproduced: the 20-byte struct copy, `s.f1 & 0x80` at byte 1, the two
+null-checked far-pointer stores (`or ax,hi ; or ax,lo ; jz`) with `s.f2` and
+`s.f4`, the two `return` values, and the cdecl use of two far-pointer
+parameters.
+
+**This narrows the residue usefully.** Two independent units, different
+bodies, different arguments, different return logic — and the identical
+3-byte gap at the identical offset. So the difference is **in the copy
+sequence itself**, not in anything the function does with the copy: the
+`rep movsw` prologue emitted by CL differs from retail's by three bytes in
+both cases.
+
+That is a much smaller search than "the cleanup form" was. It is one
+instruction sequence, reproduced across two units, with the gap already
+localised to `push ss`/`pop es` against `mov ax,ss`/`mov es,ax` from the
+`exe_109083` comparison. A third unit with the same prologue would confirm
+that the sequence is the whole of it.
+
+**State:** `exe_109741` at 100/103 and `exe_109083` at 98/101, both with the
+gap in the same three bytes of the same prologue and everything else
+reproduced.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
