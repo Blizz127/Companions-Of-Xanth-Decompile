@@ -2536,6 +2536,40 @@ it is the same *shape* of residue as the `si`-versus-`cx` counter in
 `exe_790` and the `add sp,6` in `exe_87918`: retail keeps something in one
 register where CL uses two.
 
+### The `les` load form was not produced by any shape tried
+
+The discriminating experiment for the register-pair pattern, run as three
+minimal shapes over the same table:
+
+| shape | index register | table load |
+|---|---|---|
+| `return g_tbl[i][n].f10;` | `si` | two near loads |
+| `char far *p = g_tbl[i];` then `*(int *)(p + n*20 + 10)` | `si` | two near loads |
+| `*(int *)(g_tbl[i] + n*20 + 10)` inline | `si` | two near loads |
+
+None emits `les`. All three put the table index in `si` and the scaled offset
+in `bx`; the `if` form (the best attempt, 58 bytes) puts the index in `bx`,
+which is what retail does. So **CL's register choice for this expression moves
+with the shape, and none of the four shapes tried lands on retail's
+`les bx,word [bx+67C2h]`.**
+
+**This does not make `les` a CL limitation, and the evidence says so.** Retail
+itself uses *both* forms in the same family: `exe_112711`'s retail body loads
+the table with two separate near moves (`mov bx,[bx+67C2h]` /
+`mov si,[bx+67C4h]`), and compiling that unit reproduced them exactly. So the
+two-load form is producible, retail uses it elsewhere, and only the
+`les`-with-folded-index form is unproduced so far. The honest statement is
+narrower than "one compiler behaviour shared by three units": it is that one
+specific load shape has not been reached in four attempts.
+
+**Classification for `exe_112853`:** NEAR_MATCH at 58 of 52 bytes, the
+difference localised to the table load, with the ordering, the stride, the
+field offsets and the `== 3 || == 7` dispatch all reproduced. The finite-search
+caveat applies as always: four shapes is not a proof that the form is
+unreachable, and the earlier note that grouped this with `exe_790` and
+`exe_87918` as one behaviour is weakened by the observation above — retail
+uses both load forms, so this is not a single missing capability.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
