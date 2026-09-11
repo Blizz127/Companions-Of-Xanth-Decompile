@@ -1278,6 +1278,57 @@ eight glue splits, which added eight units. Current totals: 2,844 units,
 unaided C 440, mnemonic `_asm` 22, `_emit` dump 2,382; exe dump byte
 coverage 97.90% -> **97.88%**, ovl unchanged at 96.69%.
 
+### exe_117397: source recovered, same exit-layout limitation
+
+`exe-code:0x1CA95`, 54 bytes. A null-checked far-pointer table lookup:
+
+```c
+extern unsigned __near g_idx;
+extern char far * __near g_table[];
+
+int far exe_117397(void)
+{
+    char far *p;
+
+    p = g_table[g_idx];
+    if (p == 0)
+        return 0;
+    if (*(unsigned far *)(p + 0x2C) != 1)
+        return 0;
+    return 1;
+}
+```
+
+It compiles to **exactly 54 bytes**, the same as retail, with the same
+`mov bx,[g_idx] / add bx,bx / add bx,bx` scaling for 4-byte far-pointer
+elements, the same `mov ax,[bx+6960h] / mov dx,[bx+6962h]` pair, the same
+stack local pair, the same `or dx,ax` null test, and the same
+`les bx,[bp-4] / cmp word [es:bx+2Ch],1`. `__near` on both globals is again
+what keeps the access DS-relative and the size right.
+
+**The one difference is the exit layout, and it is the same limitation
+already recorded twice.** Retail places the zero return at the end and jumps
+*forward* to it:
+
+```
+or dx,ax ; jz FIN          ; null -> the shared zero return
+les bx,[bp-4] ; cmp word [es:bx+2Ch],1 ; jnz FIN
+mov ax,1 ; jmp FIN ; nop
+FIN: xor ax,ax ...
+```
+
+CL emits the zero return inline and jumps *back* to it. Same total size,
+same instructions, different placement — and retail again carries the
+`EB xx 90` jump-then-nop padding that CL does not.
+
+**This matters for the classification.** The exit-layout limitation now
+covers `exe_98653`, the four overlay members, and `exe_117397` — six units,
+all of which have recovered sources, matching sizes, and a single shared
+exit that CL refuses to generate. Each was confirmed by compiling the
+alternative rather than asserted, and each adds to the same conclusion:
+these are not six independent near-misses but one compiler behaviour. If it
+is ever cracked, six units fall at once.
+
 ### Test status
 
 - `tests/test_units.py` — 9 tests, green.
