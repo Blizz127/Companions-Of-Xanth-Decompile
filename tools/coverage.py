@@ -32,12 +32,14 @@ KIND_LABELS = {
     unit_index.KIND_C: "unaided-c",
     unit_index.KIND_ASM: "mnemonic-asm",
     unit_index.KIND_DATA: "transcribed-data",
+    unit_index.KIND_WASM: "watcom-asm",
     unit_index.KIND_DUMP: "emit-dump",
 }
 
 _ALL_KINDS = (
     unit_index.KIND_C,
     unit_index.KIND_ASM,
+    unit_index.KIND_WASM,
     unit_index.KIND_DATA,
     unit_index.KIND_DUMP,
 )

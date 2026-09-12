@@ -58,7 +58,7 @@ def link_objects(obj_names_and_bytes: list[tuple[str, bytes]]) -> dict:
         rsp.write_bytes(("\r\n".join(lines) + "\r\n").encode("ascii"))
         # Overlay layout for this game is Legend's .OVL, not LINK (file) overlays.
         cmd = ["wine", str(work / "LINK.EXE"), f"@{rsp.name}"]
-        proc = subprocess.run(cmd, cwd=work, env=env, capture_output=True, text=True, input="\n")
+        proc = subprocess.run(cmd, cwd=work, env=env, capture_output=True, text=True, errors="replace", input="\n")
         mz = work / "units.exe"
         return {
             "linker": "Microsoft LINK (MSVC 8.00c)",
@@ -101,6 +101,7 @@ def compile_to_obj(source: Path) -> bytes:
             env=env,
             capture_output=True,
             text=True,
+            errors="replace",
         )
         obj = work / (source.stem + ".obj")
         if proc.returncode != 0 or not obj.is_file():

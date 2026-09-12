@@ -363,72 +363,72 @@
     {
       "image": "exe-code",
       "offset": 75705,
-      "source": "src/exe_75705.c"
+      "source": "src/exe_75705.asm"
     },
     {
       "image": "exe-code",
       "offset": 81139,
-      "source": "src/exe_81139.c"
+      "source": "src/exe_81139.asm"
     },
     {
       "image": "exe-code",
       "offset": 65183,
-      "source": "src/exe_65183.c"
+      "source": "src/exe_65183.asm"
     },
     {
       "image": "exe-code",
       "offset": 81239,
-      "source": "src/exe_81239.c"
+      "source": "src/exe_81239.asm"
     },
     {
       "image": "exe-code",
       "offset": 70110,
-      "source": "src/exe_70110.c"
+      "source": "src/exe_70110.asm"
     },
     {
       "image": "exe-code",
       "offset": 75530,
-      "source": "src/exe_75530.c"
+      "source": "src/exe_75530.asm"
     },
     {
       "image": "exe-code",
       "offset": 67769,
-      "source": "src/exe_67769.c"
+      "source": "src/exe_67769.asm"
     },
     {
       "image": "exe-code",
       "offset": 67809,
-      "source": "src/exe_67809.c"
+      "source": "src/exe_67809.asm"
     },
     {
       "image": "exe-code",
       "offset": 64464,
-      "source": "src/exe_64464.c"
+      "source": "src/exe_64464.asm"
     },
     {
       "image": "exe-code",
       "offset": 66884,
-      "source": "src/exe_66884.c"
+      "source": "src/exe_66884.asm"
     },
     {
       "image": "exe-code",
       "offset": 70566,
-      "source": "src/exe_70566.c"
+      "source": "src/exe_70566.asm"
     },
     {
       "image": "exe-code",
       "offset": 72274,
-      "source": "src/exe_72274.c"
+      "source": "src/exe_72274.asm"
     },
     {
       "image": "exe-code",
       "offset": 72331,
-      "source": "src/exe_72274.c"
+      "source": "src/exe_72274.asm"
     },
     {
       "image": "exe-code",
       "offset": 81180,
-      "source": "src/exe_81180.c"
+      "source": "src/exe_81180.asm"
     },
     {
       "image": "exe-code",
@@ -1203,7 +1203,7 @@
     {
       "image": "ovl-payload",
       "offset": 151404,
-      "source": "src/if15_151404.c"
+      "source": "src/if15_151404.asm"
     },
     {
       "image": "ovl-payload",
@@ -1233,7 +1233,7 @@
     {
       "image": "exe-code",
       "offset": 714,
-      "source": "src/exe_714.c"
+      "source": "src/exe_714.asm"
     },
     {
       "image": "exe-code",
@@ -1278,12 +1278,12 @@
     {
       "image": "exe-code",
       "offset": 3390,
-      "source": "src/exe_3390.c"
+      "source": "src/exe_3390.asm"
     },
     {
       "image": "exe-code",
       "offset": 3428,
-      "source": "src/exe_3428.c"
+      "source": "src/exe_3428.asm"
     },
     {
       "image": "exe-code",
@@ -1293,12 +1293,12 @@
     {
       "image": "exe-code",
       "offset": 6604,
-      "source": "src/exe_6604.c"
+      "source": "src/exe_6604.asm"
     },
     {
       "image": "exe-code",
       "offset": 7480,
-      "source": "src/exe_7480.c"
+      "source": "src/exe_7480.asm"
     },
     {
       "image": "exe-code",
@@ -1308,17 +1308,17 @@
     {
       "image": "exe-code",
       "offset": 12632,
-      "source": "src/exe_12632.c"
+      "source": "src/exe_12632.asm"
     },
     {
       "image": "exe-code",
       "offset": 14038,
-      "source": "src/exe_14038.c"
+      "source": "src/exe_14038.asm"
     },
     {
       "image": "exe-code",
       "offset": 14098,
-      "source": "src/exe_14098.c"
+      "source": "src/exe_14098.asm"
     },
     {
       "image": "exe-code",
@@ -1343,7 +1343,7 @@
     {
       "image": "exe-code",
       "offset": 14876,
-      "source": "src/exe_14876.c"
+      "source": "src/exe_14876.asm"
     },
     {
       "image": "exe-code",
@@ -1353,7 +1353,7 @@
     {
       "image": "exe-code",
       "offset": 17110,
-      "source": "src/exe_17110.c"
+      "source": "src/exe_17110.asm"
     },
     {
       "image": "exe-code",
@@ -1408,32 +1408,32 @@
     {
       "image": "exe-code",
       "offset": 30496,
-      "source": "src/exe_30496.c"
+      "source": "src/exe_30496.asm"
     },
     {
       "image": "exe-code",
       "offset": 30705,
-      "source": "src/exe_30705.c"
+      "source": "src/exe_30705.asm"
     },
     {
       "image": "exe-code",
       "offset": 31310,
-      "source": "src/exe_31310.c"
+      "source": "src/exe_31310.asm"
     },
     {
       "image": "exe-code",
       "offset": 34586,
-      "source": "src/exe_34586.c"
+      "source": "src/exe_34586.asm"
     },
     {
       "image": "exe-code",
       "offset": 34663,
-      "source": "src/exe_34663.c"
+      "source": "src/exe_34663.asm"
     },
     {
       "image": "exe-code",
       "offset": 34740,
-      "source": "src/exe_34740.c"
+      "source": "src/exe_34740.asm"
     },
     {
       "image": "exe-code",
@@ -1443,7 +1443,7 @@
     {
       "image": "exe-code",
       "offset": 39404,
-      "source": "src/exe_39404.c"
+      "source": "src/exe_39404.asm"
     },
     {
       "image": "exe-code",
@@ -1453,17 +1453,17 @@
     {
       "image": "exe-code",
       "offset": 44101,
-      "source": "src/exe_44101.c"
+      "source": "src/exe_44101.asm"
     },
     {
       "image": "exe-code",
       "offset": 47223,
-      "source": "src/exe_47223.c"
+      "source": "src/exe_47223.asm"
     },
     {
       "image": "exe-code",
       "offset": 47301,
-      "source": "src/exe_47301.c"
+      "source": "src/exe_47301.asm"
     },
     {
       "image": "exe-code",
@@ -1508,7 +1508,7 @@
     {
       "image": "exe-code",
       "offset": 57233,
-      "source": "src/exe_57233.c"
+      "source": "src/exe_57233.asm"
     },
     {
       "image": "exe-code",
@@ -1553,57 +1553,57 @@
     {
       "image": "exe-code",
       "offset": 65134,
-      "source": "src/exe_65134.c"
+      "source": "src/exe_65134.asm"
     },
     {
       "image": "exe-code",
       "offset": 67708,
-      "source": "src/exe_67708.c"
+      "source": "src/exe_67708.asm"
     },
     {
       "image": "exe-code",
       "offset": 67846,
-      "source": "src/exe_67846.c"
+      "source": "src/exe_67846.asm"
     },
     {
       "image": "exe-code",
       "offset": 68476,
-      "source": "src/exe_68476.c"
+      "source": "src/exe_68476.asm"
     },
     {
       "image": "exe-code",
       "offset": 71328,
-      "source": "src/exe_71328.c"
+      "source": "src/exe_71328.asm"
     },
     {
       "image": "exe-code",
       "offset": 75160,
-      "source": "src/exe_75160.c"
+      "source": "src/exe_75160.asm"
     },
     {
       "image": "exe-code",
       "offset": 76114,
-      "source": "src/exe_76114.c"
+      "source": "src/exe_76114.asm"
     },
     {
       "image": "exe-code",
       "offset": 76175,
-      "source": "src/exe_76175.c"
+      "source": "src/exe_76175.asm"
     },
     {
       "image": "exe-code",
       "offset": 76249,
-      "source": "src/exe_76249.c"
+      "source": "src/exe_76249.asm"
     },
     {
       "image": "exe-code",
       "offset": 76824,
-      "source": "src/exe_76824.c"
+      "source": "src/exe_76824.asm"
     },
     {
       "image": "exe-code",
       "offset": 80795,
-      "source": "src/exe_80795.c"
+      "source": "src/exe_80795.asm"
     },
     {
       "image": "exe-code",
@@ -1633,7 +1633,7 @@
     {
       "image": "exe-code",
       "offset": 89097,
-      "source": "src/exe_89097.c"
+      "source": "src/exe_89097.asm"
     },
     {
       "image": "exe-code",
@@ -1643,7 +1643,7 @@
     {
       "image": "exe-code",
       "offset": 90737,
-      "source": "src/exe_90737.c"
+      "source": "src/exe_90737.asm"
     },
     {
       "image": "exe-code",
@@ -1773,7 +1773,7 @@
     {
       "image": "exe-code",
       "offset": 107398,
-      "source": "src/exe_107398.c"
+      "source": "src/exe_107398.asm"
     },
     {
       "image": "exe-code",
@@ -2003,7 +2003,7 @@
     {
       "image": "ovl-payload",
       "offset": 154148,
-      "source": "src/ovl_154148.c"
+      "source": "src/ovl_154148.asm"
     },
     {
       "image": "ovl-payload",
@@ -2118,12 +2118,12 @@
     {
       "image": "exe-code",
       "offset": 5244,
-      "source": "src/exe_5244.c"
+      "source": "src/exe_5244.asm"
     },
     {
       "image": "exe-code",
       "offset": 5934,
-      "source": "src/exe_5934.c"
+      "source": "src/exe_5934.asm"
     },
     {
       "image": "exe-code",
@@ -2133,7 +2133,7 @@
     {
       "image": "exe-code",
       "offset": 7570,
-      "source": "src/exe_7570.c"
+      "source": "src/exe_7570.asm"
     },
     {
       "image": "exe-code",
@@ -2158,17 +2158,17 @@
     {
       "image": "exe-code",
       "offset": 14416,
-      "source": "src/exe_14416.c"
+      "source": "src/exe_14416.asm"
     },
     {
       "image": "exe-code",
       "offset": 14648,
-      "source": "src/exe_14648.c"
+      "source": "src/exe_14648.asm"
     },
     {
       "image": "exe-code",
       "offset": 14770,
-      "source": "src/exe_14770.c"
+      "source": "src/exe_14770.asm"
     },
     {
       "image": "exe-code",
@@ -2188,7 +2188,7 @@
     {
       "image": "exe-code",
       "offset": 17230,
-      "source": "src/exe_17230.c"
+      "source": "src/exe_17230.asm"
     },
     {
       "image": "exe-code",
@@ -2213,7 +2213,7 @@
     {
       "image": "exe-code",
       "offset": 26304,
-      "source": "src/exe_26304.c"
+      "source": "src/exe_26304.asm"
     },
     {
       "image": "exe-code",
@@ -2223,7 +2223,7 @@
     {
       "image": "exe-code",
       "offset": 36771,
-      "source": "src/exe_36771.c"
+      "source": "src/exe_36771.asm"
     },
     {
       "image": "exe-code",
@@ -2243,7 +2243,7 @@
     {
       "image": "exe-code",
       "offset": 43791,
-      "source": "src/exe_43791.c"
+      "source": "src/exe_43791.asm"
     },
     {
       "image": "exe-code",
@@ -2253,112 +2253,112 @@
     {
       "image": "exe-code",
       "offset": 44612,
-      "source": "src/exe_44612.c"
+      "source": "src/exe_44612.asm"
     },
     {
       "image": "exe-code",
       "offset": 44759,
-      "source": "src/exe_44759.c"
+      "source": "src/exe_44759.asm"
     },
     {
       "image": "exe-code",
       "offset": 44910,
-      "source": "src/exe_44910.c"
+      "source": "src/exe_44910.asm"
     },
     {
       "image": "exe-code",
       "offset": 45001,
-      "source": "src/exe_45001.c"
+      "source": "src/exe_45001.asm"
     },
     {
       "image": "exe-code",
       "offset": 45310,
-      "source": "src/exe_45310.c"
+      "source": "src/exe_45310.asm"
     },
     {
       "image": "exe-code",
       "offset": 45408,
-      "source": "src/exe_45408.c"
+      "source": "src/exe_45408.asm"
     },
     {
       "image": "exe-code",
       "offset": 45506,
-      "source": "src/exe_45506.c"
+      "source": "src/exe_45506.asm"
     },
     {
       "image": "exe-code",
       "offset": 45606,
-      "source": "src/exe_45606.c"
+      "source": "src/exe_45606.asm"
     },
     {
       "image": "exe-code",
       "offset": 45704,
-      "source": "src/exe_45704.c"
+      "source": "src/exe_45704.asm"
     },
     {
       "image": "exe-code",
       "offset": 46031,
-      "source": "src/exe_46031.c"
+      "source": "src/exe_46031.asm"
     },
     {
       "image": "exe-code",
       "offset": 46129,
-      "source": "src/exe_46129.c"
+      "source": "src/exe_46129.asm"
     },
     {
       "image": "exe-code",
       "offset": 46227,
-      "source": "src/exe_46227.c"
+      "source": "src/exe_46227.asm"
     },
     {
       "image": "exe-code",
       "offset": 46325,
-      "source": "src/exe_46325.c"
+      "source": "src/exe_46325.asm"
     },
     {
       "image": "exe-code",
       "offset": 46431,
-      "source": "src/exe_46431.c"
+      "source": "src/exe_46431.asm"
     },
     {
       "image": "exe-code",
       "offset": 46539,
-      "source": "src/exe_46539.c"
+      "source": "src/exe_46539.asm"
     },
     {
       "image": "exe-code",
       "offset": 46642,
-      "source": "src/exe_46642.c"
+      "source": "src/exe_46642.asm"
     },
     {
       "image": "exe-code",
       "offset": 46752,
-      "source": "src/exe_46752.c"
+      "source": "src/exe_46752.asm"
     },
     {
       "image": "exe-code",
       "offset": 46864,
-      "source": "src/exe_46864.c"
+      "source": "src/exe_46864.asm"
     },
     {
       "image": "exe-code",
       "offset": 46974,
-      "source": "src/exe_46974.c"
+      "source": "src/exe_46974.asm"
     },
     {
       "image": "exe-code",
       "offset": 47086,
-      "source": "src/exe_47086.c"
+      "source": "src/exe_47086.asm"
     },
     {
       "image": "exe-code",
       "offset": 47377,
-      "source": "src/exe_47377.c"
+      "source": "src/exe_47377.asm"
     },
     {
       "image": "exe-code",
       "offset": 49898,
-      "source": "src/exe_49898.c"
+      "source": "src/exe_49898.asm"
     },
     {
       "image": "exe-code",
@@ -2373,7 +2373,7 @@
     {
       "image": "exe-code",
       "offset": 52470,
-      "source": "src/exe_52470.c"
+      "source": "src/exe_52470.asm"
     },
     {
       "image": "exe-code",
@@ -2428,7 +2428,7 @@
     {
       "image": "exe-code",
       "offset": 63764,
-      "source": "src/exe_63764.c"
+      "source": "src/exe_63764.asm"
     },
     {
       "image": "exe-code",
@@ -2443,162 +2443,162 @@
     {
       "image": "exe-code",
       "offset": 64920,
-      "source": "src/exe_64920.c"
+      "source": "src/exe_64920.asm"
     },
     {
       "image": "exe-code",
       "offset": 65032,
-      "source": "src/exe_65032.c"
+      "source": "src/exe_65032.asm"
     },
     {
       "image": "exe-code",
       "offset": 65601,
-      "source": "src/exe_65601.c"
+      "source": "src/exe_65601.asm"
     },
     {
       "image": "exe-code",
       "offset": 65922,
-      "source": "src/exe_65922.c"
+      "source": "src/exe_65922.asm"
     },
     {
       "image": "exe-code",
       "offset": 66317,
-      "source": "src/exe_66317.c"
+      "source": "src/exe_66317.asm"
     },
     {
       "image": "exe-code",
       "offset": 66426,
-      "source": "src/exe_66426.c"
+      "source": "src/exe_66426.asm"
     },
     {
       "image": "exe-code",
       "offset": 66521,
-      "source": "src/exe_66521.c"
+      "source": "src/exe_66521.asm"
     },
     {
       "image": "exe-code",
       "offset": 66933,
-      "source": "src/exe_66933.c"
+      "source": "src/exe_66933.asm"
     },
     {
       "image": "exe-code",
       "offset": 67068,
-      "source": "src/exe_67068.c"
+      "source": "src/exe_67068.asm"
     },
     {
       "image": "exe-code",
       "offset": 67171,
-      "source": "src/exe_67171.c"
+      "source": "src/exe_67171.asm"
     },
     {
       "image": "exe-code",
       "offset": 67509,
-      "source": "src/exe_67509.c"
+      "source": "src/exe_67509.asm"
     },
     {
       "image": "exe-code",
       "offset": 67619,
-      "source": "src/exe_67619.c"
+      "source": "src/exe_67619.asm"
     },
     {
       "image": "exe-code",
       "offset": 67890,
-      "source": "src/exe_67890.c"
+      "source": "src/exe_67890.asm"
     },
     {
       "image": "exe-code",
       "offset": 68004,
-      "source": "src/exe_68004.c"
+      "source": "src/exe_68004.asm"
     },
     {
       "image": "exe-code",
       "offset": 68907,
-      "source": "src/exe_68907.c"
+      "source": "src/exe_68907.asm"
     },
     {
       "image": "exe-code",
       "offset": 70625,
-      "source": "src/exe_70625.c"
+      "source": "src/exe_70625.asm"
     },
     {
       "image": "exe-code",
       "offset": 71378,
-      "source": "src/exe_71378.c"
+      "source": "src/exe_71378.asm"
     },
     {
       "image": "exe-code",
       "offset": 71506,
-      "source": "src/exe_71506.c"
+      "source": "src/exe_71506.asm"
     },
     {
       "image": "exe-code",
       "offset": 74370,
-      "source": "src/exe_74370.c"
+      "source": "src/exe_74370.asm"
     },
     {
       "image": "exe-code",
       "offset": 75575,
-      "source": "src/exe_75575.c"
+      "source": "src/exe_75575.asm"
     },
     {
       "image": "exe-code",
       "offset": 75737,
-      "source": "src/exe_75737.c"
+      "source": "src/exe_75737.asm"
     },
     {
       "image": "exe-code",
       "offset": 75827,
-      "source": "src/exe_75827.c"
+      "source": "src/exe_75827.asm"
     },
     {
       "image": "exe-code",
       "offset": 75975,
-      "source": "src/exe_75975.c"
+      "source": "src/exe_75975.asm"
     },
     {
       "image": "exe-code",
       "offset": 76675,
-      "source": "src/exe_76675.c"
+      "source": "src/exe_76675.asm"
     },
     {
       "image": "exe-code",
       "offset": 77880,
-      "source": "src/exe_77880.c"
+      "source": "src/exe_77880.asm"
     },
     {
       "image": "exe-code",
       "offset": 78595,
-      "source": "src/exe_78595.c"
+      "source": "src/exe_78595.asm"
     },
     {
       "image": "exe-code",
       "offset": 78707,
-      "source": "src/exe_78707.c"
+      "source": "src/exe_78707.asm"
     },
     {
       "image": "exe-code",
       "offset": 78805,
-      "source": "src/exe_78805.c"
+      "source": "src/exe_78805.asm"
     },
     {
       "image": "exe-code",
       "offset": 79943,
-      "source": "src/exe_79943.c"
+      "source": "src/exe_79943.asm"
     },
     {
       "image": "exe-code",
       "offset": 81042,
-      "source": "src/exe_81042.c"
+      "source": "src/exe_81042.asm"
     },
     {
       "image": "exe-code",
       "offset": 81538,
-      "source": "src/exe_81538.c"
+      "source": "src/exe_81538.asm"
     },
     {
       "image": "exe-code",
       "offset": 82588,
-      "source": "src/exe_82588.c"
+      "source": "src/exe_82588.asm"
     },
     {
       "image": "exe-code",
@@ -2633,7 +2633,7 @@
     {
       "image": "exe-code",
       "offset": 84924,
-      "source": "src/exe_84924.c"
+      "source": "src/exe_84924.asm"
     },
     {
       "image": "exe-code",
@@ -2648,7 +2648,7 @@
     {
       "image": "exe-code",
       "offset": 86916,
-      "source": "src/exe_86916.c"
+      "source": "src/exe_86916.asm"
     },
     {
       "image": "exe-code",
@@ -2708,7 +2708,7 @@
     {
       "image": "exe-code",
       "offset": 94984,
-      "source": "src/exe_94984.c"
+      "source": "src/exe_94984.asm"
     },
     {
       "image": "exe-code",
@@ -2718,27 +2718,27 @@
     {
       "image": "exe-code",
       "offset": 95885,
-      "source": "src/exe_95885.c"
+      "source": "src/exe_95885.asm"
     },
     {
       "image": "exe-code",
       "offset": 96769,
-      "source": "src/exe_96769.c"
+      "source": "src/exe_96769.asm"
     },
     {
       "image": "exe-code",
       "offset": 96983,
-      "source": "src/exe_96983.c"
+      "source": "src/exe_96983.asm"
     },
     {
       "image": "exe-code",
       "offset": 97140,
-      "source": "src/exe_97140.c"
+      "source": "src/exe_97140.asm"
     },
     {
       "image": "exe-code",
       "offset": 97261,
-      "source": "src/exe_97261.c"
+      "source": "src/exe_97261.asm"
     },
     {
       "image": "exe-code",
@@ -2753,12 +2753,12 @@
     {
       "image": "exe-code",
       "offset": 97706,
-      "source": "src/exe_97706.c"
+      "source": "src/exe_97706.asm"
     },
     {
       "image": "exe-code",
       "offset": 97862,
-      "source": "src/exe_97862.c"
+      "source": "src/exe_97862.asm"
     },
     {
       "image": "exe-code",
@@ -2863,12 +2863,12 @@
     {
       "image": "exe-code",
       "offset": 108947,
-      "source": "src/exe_108947.c"
+      "source": "src/exe_108947.asm"
     },
     {
       "image": "exe-code",
       "offset": 109083,
-      "source": "src/exe_109083.c"
+      "source": "src/exe_109083.asm"
     },
     {
       "image": "exe-code",
@@ -2883,12 +2883,12 @@
     {
       "image": "exe-code",
       "offset": 109407,
-      "source": "src/exe_109407.c"
+      "source": "src/exe_109407.asm"
     },
     {
       "image": "exe-code",
       "offset": 109741,
-      "source": "src/exe_109741.c"
+      "source": "src/exe_109741.asm"
     },
     {
       "image": "exe-code",
@@ -2913,7 +2913,7 @@
     {
       "image": "exe-code",
       "offset": 111158,
-      "source": "src/exe_111158.c"
+      "source": "src/exe_111158.asm"
     },
     {
       "image": "exe-code",
@@ -2953,12 +2953,12 @@
     {
       "image": "exe-code",
       "offset": 114736,
-      "source": "src/exe_114736.c"
+      "source": "src/exe_114736.asm"
     },
     {
       "image": "exe-code",
       "offset": 114839,
-      "source": "src/exe_114839.c"
+      "source": "src/exe_114839.asm"
     },
     {
       "image": "exe-code",
@@ -2968,12 +2968,12 @@
     {
       "image": "exe-code",
       "offset": 124463,
-      "source": "src/exe_124463.c"
+      "source": "src/exe_124463.asm"
     },
     {
       "image": "exe-code",
       "offset": 124547,
-      "source": "src/exe_124547.c"
+      "source": "src/exe_124547.asm"
     },
     {
       "image": "ovl-payload",
@@ -2983,12 +2983,12 @@
     {
       "image": "ovl-payload",
       "offset": 2868,
-      "source": "src/ovl_2868.c"
+      "source": "src/ovl_2868.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 3618,
-      "source": "src/ovl_3618.c"
+      "source": "src/ovl_3618.asm"
     },
     {
       "image": "ovl-payload",
@@ -3018,17 +3018,17 @@
     {
       "image": "ovl-payload",
       "offset": 14576,
-      "source": "src/ovl_14576.c"
+      "source": "src/ovl_14576.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 18596,
-      "source": "src/ovl_18596.c"
+      "source": "src/ovl_18596.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 18729,
-      "source": "src/ovl_18729.c"
+      "source": "src/ovl_18729.asm"
     },
     {
       "image": "ovl-payload",
@@ -3058,7 +3058,7 @@
     {
       "image": "ovl-payload",
       "offset": 29745,
-      "source": "src/ovl_29745.c"
+      "source": "src/ovl_29745.asm"
     },
     {
       "image": "ovl-payload",
@@ -3518,32 +3518,32 @@
     {
       "image": "ovl-payload",
       "offset": 210513,
-      "source": "src/ovl_210513.c"
+      "source": "src/ovl_210513.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 210654,
-      "source": "src/ovl_210654.c"
+      "source": "src/ovl_210654.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 210779,
-      "source": "src/ovl_210779.c"
+      "source": "src/ovl_210779.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 210904,
-      "source": "src/ovl_210904.c"
+      "source": "src/ovl_210904.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 211022,
-      "source": "src/ovl_211022.c"
+      "source": "src/ovl_211022.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 211273,
-      "source": "src/ovl_211273.c"
+      "source": "src/ovl_211273.asm"
     },
     {
       "image": "ovl-payload",
@@ -3578,12 +3578,12 @@
     {
       "image": "ovl-payload",
       "offset": 225431,
-      "source": "src/ovl_225431.c"
+      "source": "src/ovl_225431.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 235229,
-      "source": "src/ovl_235229.c"
+      "source": "src/ovl_235229.asm"
     },
     {
       "image": "ovl-payload",
@@ -3593,7 +3593,7 @@
     {
       "image": "ovl-payload",
       "offset": 236800,
-      "source": "src/ovl_236800.c"
+      "source": "src/ovl_236800.asm"
     },
     {
       "image": "ovl-payload",
@@ -3848,7 +3848,7 @@
     {
       "image": "exe-code",
       "offset": 102,
-      "source": "src/exe_102.c"
+      "source": "src/exe_102.asm"
     },
     {
       "image": "exe-code",
@@ -3858,12 +3858,12 @@
     {
       "image": "exe-code",
       "offset": 3224,
-      "source": "src/exe_3224.c"
+      "source": "src/exe_3224.asm"
     },
     {
       "image": "exe-code",
       "offset": 6318,
-      "source": "src/exe_6318.c"
+      "source": "src/exe_6318.asm"
     },
     {
       "image": "exe-code",
@@ -3878,17 +3878,17 @@
     {
       "image": "exe-code",
       "offset": 7726,
-      "source": "src/exe_7726.c"
+      "source": "src/exe_7726.asm"
     },
     {
       "image": "exe-code",
       "offset": 8094,
-      "source": "src/exe_8094.c"
+      "source": "src/exe_8094.asm"
     },
     {
       "image": "exe-code",
       "offset": 15146,
-      "source": "src/exe_15146.c"
+      "source": "src/exe_15146.asm"
     },
     {
       "image": "exe-code",
@@ -3898,12 +3898,12 @@
     {
       "image": "exe-code",
       "offset": 16564,
-      "source": "src/exe_16564.c"
+      "source": "src/exe_16564.asm"
     },
     {
       "image": "exe-code",
       "offset": 16770,
-      "source": "src/exe_16770.c"
+      "source": "src/exe_16770.asm"
     },
     {
       "image": "exe-code",
@@ -3913,7 +3913,7 @@
     {
       "image": "exe-code",
       "offset": 34817,
-      "source": "src/exe_34817.c"
+      "source": "src/exe_34817.asm"
     },
     {
       "image": "exe-code",
@@ -3938,22 +3938,22 @@
     {
       "image": "exe-code",
       "offset": 39607,
-      "source": "src/exe_39607.c"
+      "source": "src/exe_39607.asm"
     },
     {
       "image": "exe-code",
       "offset": 45861,
-      "source": "src/exe_45861.c"
+      "source": "src/exe_45861.asm"
     },
     {
       "image": "exe-code",
       "offset": 48365,
-      "source": "src/exe_48365.c"
+      "source": "src/exe_48365.asm"
     },
     {
       "image": "exe-code",
       "offset": 48668,
-      "source": "src/exe_48668.c"
+      "source": "src/exe_48668.asm"
     },
     {
       "image": "exe-code",
@@ -3978,7 +3978,7 @@
     {
       "image": "exe-code",
       "offset": 55838,
-      "source": "src/exe_55838.c"
+      "source": "src/exe_55838.asm"
     },
     {
       "image": "exe-code",
@@ -4003,102 +4003,102 @@
     {
       "image": "exe-code",
       "offset": 64504,
-      "source": "src/exe_64504.c"
+      "source": "src/exe_64504.asm"
     },
     {
       "image": "exe-code",
       "offset": 64719,
-      "source": "src/exe_64719.c"
+      "source": "src/exe_64719.asm"
     },
     {
       "image": "exe-code",
       "offset": 65226,
-      "source": "src/exe_65226.c"
+      "source": "src/exe_65226.asm"
     },
     {
       "image": "exe-code",
       "offset": 65440,
-      "source": "src/exe_65440.c"
+      "source": "src/exe_65440.asm"
     },
     {
       "image": "exe-code",
       "offset": 65685,
-      "source": "src/exe_65685.c"
+      "source": "src/exe_65685.asm"
     },
     {
       "image": "exe-code",
       "offset": 66053,
-      "source": "src/exe_66053.c"
+      "source": "src/exe_66053.asm"
     },
     {
       "image": "exe-code",
       "offset": 66612,
-      "source": "src/exe_66612.c"
+      "source": "src/exe_66612.asm"
     },
     {
       "image": "exe-code",
       "offset": 67274,
-      "source": "src/exe_67274.c"
+      "source": "src/exe_67274.asm"
     },
     {
       "image": "exe-code",
       "offset": 68538,
-      "source": "src/exe_68538.c"
+      "source": "src/exe_68538.asm"
     },
     {
       "image": "exe-code",
       "offset": 68735,
-      "source": "src/exe_68735.c"
+      "source": "src/exe_68735.asm"
     },
     {
       "image": "exe-code",
       "offset": 69512,
-      "source": "src/exe_69512.c"
+      "source": "src/exe_69512.asm"
     },
     {
       "image": "exe-code",
       "offset": 71113,
-      "source": "src/exe_71113.c"
+      "source": "src/exe_71113.asm"
     },
     {
       "image": "exe-code",
       "offset": 71616,
-      "source": "src/exe_71616.c"
+      "source": "src/exe_71616.asm"
     },
     {
       "image": "exe-code",
       "offset": 71779,
-      "source": "src/exe_71779.c"
+      "source": "src/exe_71779.asm"
     },
     {
       "image": "exe-code",
       "offset": 71970,
-      "source": "src/exe_71970.c"
+      "source": "src/exe_71970.asm"
     },
     {
       "image": "exe-code",
       "offset": 72388,
-      "source": "src/exe_72388.c"
+      "source": "src/exe_72388.asm"
     },
     {
       "image": "exe-code",
       "offset": 72984,
-      "source": "src/exe_72984.c"
+      "source": "src/exe_72984.asm"
     },
     {
       "image": "exe-code",
       "offset": 73909,
-      "source": "src/exe_73909.c"
+      "source": "src/exe_73909.asm"
     },
     {
       "image": "exe-code",
       "offset": 74126,
-      "source": "src/exe_74126.c"
+      "source": "src/exe_74126.asm"
     },
     {
       "image": "exe-code",
       "offset": 74884,
-      "source": "src/exe_74884.c"
+      "source": "src/exe_74884.asm"
     },
     {
       "image": "exe-code",
@@ -4108,17 +4108,17 @@
     {
       "image": "exe-code",
       "offset": 80817,
-      "source": "src/exe_80817.c"
+      "source": "src/exe_80817.asm"
     },
     {
       "image": "exe-code",
       "offset": 81280,
-      "source": "src/exe_81280.c"
+      "source": "src/exe_81280.asm"
     },
     {
       "image": "exe-code",
       "offset": 82898,
-      "source": "src/exe_82898.c"
+      "source": "src/exe_82898.asm"
     },
     {
       "image": "exe-code",
@@ -4128,7 +4128,7 @@
     {
       "image": "exe-code",
       "offset": 89271,
-      "source": "src/exe_89271.c"
+      "source": "src/exe_89271.asm"
     },
     {
       "image": "exe-code",
@@ -4143,7 +4143,7 @@
     {
       "image": "exe-code",
       "offset": 92230,
-      "source": "src/exe_92230.c"
+      "source": "src/exe_92230.asm"
     },
     {
       "image": "exe-code",
@@ -4158,12 +4158,12 @@
     {
       "image": "exe-code",
       "offset": 94751,
-      "source": "src/exe_94751.c"
+      "source": "src/exe_94751.asm"
     },
     {
       "image": "exe-code",
       "offset": 95069,
-      "source": "src/exe_95069.c"
+      "source": "src/exe_95069.asm"
     },
     {
       "image": "exe-code",
@@ -4173,7 +4173,7 @@
     {
       "image": "exe-code",
       "offset": 96279,
-      "source": "src/exe_96279.c"
+      "source": "src/exe_96279.asm"
     },
     {
       "image": "exe-code",
@@ -4193,12 +4193,12 @@
     {
       "image": "exe-code",
       "offset": 103125,
-      "source": "src/exe_103125.c"
+      "source": "src/exe_103125.asm"
     },
     {
       "image": "exe-code",
       "offset": 103288,
-      "source": "src/exe_103288.c"
+      "source": "src/exe_103288.asm"
     },
     {
       "image": "exe-code",
@@ -4213,12 +4213,12 @@
     {
       "image": "exe-code",
       "offset": 105831,
-      "source": "src/exe_105831.c"
+      "source": "src/exe_105831.asm"
     },
     {
       "image": "exe-code",
       "offset": 106054,
-      "source": "src/exe_106054.c"
+      "source": "src/exe_106054.asm"
     },
     {
       "image": "exe-code",
@@ -4228,37 +4228,37 @@
     {
       "image": "exe-code",
       "offset": 107015,
-      "source": "src/exe_107015.c"
+      "source": "src/exe_107015.asm"
     },
     {
       "image": "exe-code",
       "offset": 108209,
-      "source": "src/exe_108209.c"
+      "source": "src/exe_108209.asm"
     },
     {
       "image": "exe-code",
       "offset": 108755,
-      "source": "src/exe_108755.c"
+      "source": "src/exe_108755.asm"
     },
     {
       "image": "exe-code",
       "offset": 109530,
-      "source": "src/exe_109530.c"
+      "source": "src/exe_109530.asm"
     },
     {
       "image": "exe-code",
       "offset": 109971,
-      "source": "src/exe_109971.c"
+      "source": "src/exe_109971.asm"
     },
     {
       "image": "exe-code",
       "offset": 110146,
-      "source": "src/exe_110146.c"
+      "source": "src/exe_110146.asm"
     },
     {
       "image": "exe-code",
       "offset": 111300,
-      "source": "src/exe_111300.c"
+      "source": "src/exe_111300.asm"
     },
     {
       "image": "exe-code",
@@ -4268,7 +4268,7 @@
     {
       "image": "exe-code",
       "offset": 111757,
-      "source": "src/exe_111757.c"
+      "source": "src/exe_111757.asm"
     },
     {
       "image": "exe-code",
@@ -4278,7 +4278,7 @@
     {
       "image": "exe-code",
       "offset": 114080,
-      "source": "src/exe_114080.c"
+      "source": "src/exe_114080.asm"
     },
     {
       "image": "ovl-payload",
@@ -4293,7 +4293,7 @@
     {
       "image": "ovl-payload",
       "offset": 9291,
-      "source": "src/ovl_9291.c"
+      "source": "src/ovl_9291.asm"
     },
     {
       "image": "ovl-payload",
@@ -4308,7 +4308,7 @@
     {
       "image": "ovl-payload",
       "offset": 14729,
-      "source": "src/ovl_14729.c"
+      "source": "src/ovl_14729.asm"
     },
     {
       "image": "ovl-payload",
@@ -4323,17 +4323,17 @@
     {
       "image": "ovl-payload",
       "offset": 18382,
-      "source": "src/ovl_18382.c"
+      "source": "src/ovl_18382.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 27059,
-      "source": "src/ovl_27059.c"
+      "source": "src/ovl_27059.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 27247,
-      "source": "src/ovl_27247.c"
+      "source": "src/ovl_27247.asm"
     },
     {
       "image": "ovl-payload",
@@ -4468,7 +4468,7 @@
     {
       "image": "ovl-payload",
       "offset": 74170,
-      "source": "src/ovl_74170.c"
+      "source": "src/ovl_74170.asm"
     },
     {
       "image": "ovl-payload",
@@ -4513,12 +4513,12 @@
     {
       "image": "ovl-payload",
       "offset": 95440,
-      "source": "src/ovl_95440.c"
+      "source": "src/ovl_95440.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 96229,
-      "source": "src/ovl_96229.c"
+      "source": "src/ovl_96229.asm"
     },
     {
       "image": "ovl-payload",
@@ -4533,7 +4533,7 @@
     {
       "image": "ovl-payload",
       "offset": 98960,
-      "source": "src/ovl_98960.c"
+      "source": "src/ovl_98960.asm"
     },
     {
       "image": "ovl-payload",
@@ -4573,7 +4573,7 @@
     {
       "image": "ovl-payload",
       "offset": 110291,
-      "source": "src/ovl_110291.c"
+      "source": "src/ovl_110291.asm"
     },
     {
       "image": "ovl-payload",
@@ -4608,7 +4608,7 @@
     {
       "image": "ovl-payload",
       "offset": 143808,
-      "source": "src/ovl_143808.c"
+      "source": "src/ovl_143808.asm"
     },
     {
       "image": "ovl-payload",
@@ -4658,7 +4658,7 @@
     {
       "image": "ovl-payload",
       "offset": 158884,
-      "source": "src/ovl_158884.c"
+      "source": "src/ovl_158884.asm"
     },
     {
       "image": "ovl-payload",
@@ -4668,7 +4668,7 @@
     {
       "image": "ovl-payload",
       "offset": 160133,
-      "source": "src/ovl_160133.c"
+      "source": "src/ovl_160133.asm"
     },
     {
       "image": "ovl-payload",
@@ -4678,7 +4678,7 @@
     {
       "image": "ovl-payload",
       "offset": 161196,
-      "source": "src/ovl_161196.c"
+      "source": "src/ovl_161196.asm"
     },
     {
       "image": "ovl-payload",
@@ -4713,7 +4713,7 @@
     {
       "image": "ovl-payload",
       "offset": 176229,
-      "source": "src/ovl_176229.c"
+      "source": "src/ovl_176229.asm"
     },
     {
       "image": "ovl-payload",
@@ -4773,7 +4773,7 @@
     {
       "image": "ovl-payload",
       "offset": 195303,
-      "source": "src/ovl_195303.c"
+      "source": "src/ovl_195303.asm"
     },
     {
       "image": "ovl-payload",
@@ -4803,7 +4803,7 @@
     {
       "image": "ovl-payload",
       "offset": 199916,
-      "source": "src/ovl_199916.c"
+      "source": "src/ovl_199916.asm"
     },
     {
       "image": "ovl-payload",
@@ -4838,32 +4838,32 @@
     {
       "image": "ovl-payload",
       "offset": 211112,
-      "source": "src/ovl_211112.c"
+      "source": "src/ovl_211112.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 224481,
-      "source": "src/ovl_224481.c"
+      "source": "src/ovl_224481.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 234969,
-      "source": "src/ovl_234969.c"
+      "source": "src/ovl_234969.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 235370,
-      "source": "src/ovl_235370.c"
+      "source": "src/ovl_235370.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 235809,
-      "source": "src/ovl_235809.c"
+      "source": "src/ovl_235809.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 235975,
-      "source": "src/ovl_235975.c"
+      "source": "src/ovl_235975.asm"
     },
     {
       "image": "ovl-payload",
@@ -4893,7 +4893,7 @@
     {
       "image": "ovl-payload",
       "offset": 253131,
-      "source": "src/ovl_253131.c"
+      "source": "src/ovl_253131.asm"
     },
     {
       "image": "ovl-payload",
@@ -4973,7 +4973,7 @@
     {
       "image": "ovl-payload",
       "offset": 277440,
-      "source": "src/ovl_277440.c"
+      "source": "src/ovl_277440.asm"
     },
     {
       "image": "ovl-payload",
@@ -4983,7 +4983,7 @@
     {
       "image": "ovl-payload",
       "offset": 278717,
-      "source": "src/ovl_278717.c"
+      "source": "src/ovl_278717.asm"
     },
     {
       "image": "ovl-payload",
@@ -5038,7 +5038,7 @@
     {
       "image": "ovl-payload",
       "offset": 288374,
-      "source": "src/ovl_288374.c"
+      "source": "src/ovl_288374.asm"
     },
     {
       "image": "ovl-payload",
@@ -5133,7 +5133,7 @@
     {
       "image": "ovl-payload",
       "offset": 306009,
-      "source": "src/ovl_306009.c"
+      "source": "src/ovl_306009.asm"
     },
     {
       "image": "ovl-payload",
@@ -5143,7 +5143,7 @@
     {
       "image": "ovl-payload",
       "offset": 308547,
-      "source": "src/ovl_308547.c"
+      "source": "src/ovl_308547.asm"
     },
     {
       "image": "ovl-payload",
@@ -5183,7 +5183,7 @@
     {
       "image": "ovl-payload",
       "offset": 314824,
-      "source": "src/ovl_314824.c"
+      "source": "src/ovl_314824.asm"
     },
     {
       "image": "ovl-payload",
@@ -5203,7 +5203,7 @@
     {
       "image": "ovl-payload",
       "offset": 316700,
-      "source": "src/ovl_316700.c"
+      "source": "src/ovl_316700.asm"
     },
     {
       "image": "ovl-payload",
@@ -5278,7 +5278,7 @@
     {
       "image": "ovl-payload",
       "offset": 324592,
-      "source": "src/ovl_324592.c"
+      "source": "src/ovl_324592.asm"
     },
     {
       "image": "exe-code",
@@ -5288,12 +5288,12 @@
     {
       "image": "exe-code",
       "offset": 15420,
-      "source": "src/exe_15420.c"
+      "source": "src/exe_15420.asm"
     },
     {
       "image": "exe-code",
       "offset": 16234,
-      "source": "src/exe_16234.c"
+      "source": "src/exe_16234.asm"
     },
     {
       "image": "exe-code",
@@ -5313,7 +5313,7 @@
     {
       "image": "exe-code",
       "offset": 44178,
-      "source": "src/exe_44178.c"
+      "source": "src/exe_44178.asm"
     },
     {
       "image": "exe-code",
@@ -5323,12 +5323,12 @@
     {
       "image": "exe-code",
       "offset": 50839,
-      "source": "src/exe_50839.c"
+      "source": "src/exe_50839.asm"
     },
     {
       "image": "exe-code",
       "offset": 51944,
-      "source": "src/exe_51944.c"
+      "source": "src/exe_51944.asm"
     },
     {
       "image": "exe-code",
@@ -5348,52 +5348,52 @@
     {
       "image": "exe-code",
       "offset": 68089,
-      "source": "src/exe_68089.c"
+      "source": "src/exe_68089.asm"
     },
     {
       "image": "exe-code",
       "offset": 69033,
-      "source": "src/exe_69033.c"
+      "source": "src/exe_69033.asm"
     },
     {
       "image": "exe-code",
       "offset": 69679,
-      "source": "src/exe_69679.c"
+      "source": "src/exe_69679.asm"
     },
     {
       "image": "exe-code",
       "offset": 70146,
-      "source": "src/exe_70146.c"
+      "source": "src/exe_70146.asm"
     },
     {
       "image": "exe-code",
       "offset": 70764,
-      "source": "src/exe_70764.c"
+      "source": "src/exe_70764.asm"
     },
     {
       "image": "exe-code",
       "offset": 72635,
-      "source": "src/exe_72635.c"
+      "source": "src/exe_72635.asm"
     },
     {
       "image": "exe-code",
       "offset": 74501,
-      "source": "src/exe_74501.c"
+      "source": "src/exe_74501.asm"
     },
     {
       "image": "exe-code",
       "offset": 78018,
-      "source": "src/exe_78018.c"
+      "source": "src/exe_78018.asm"
     },
     {
       "image": "exe-code",
       "offset": 78902,
-      "source": "src/exe_78902.c"
+      "source": "src/exe_78902.asm"
     },
     {
       "image": "exe-code",
       "offset": 79317,
-      "source": "src/exe_79317.c"
+      "source": "src/exe_79317.asm"
     },
     {
       "image": "exe-code",
@@ -5403,7 +5403,7 @@
     {
       "image": "exe-code",
       "offset": 90804,
-      "source": "src/exe_90804.c"
+      "source": "src/exe_90804.asm"
     },
     {
       "image": "exe-code",
@@ -5423,17 +5423,17 @@
     {
       "image": "exe-code",
       "offset": 102381,
-      "source": "src/exe_102381.c"
+      "source": "src/exe_102381.asm"
     },
     {
       "image": "exe-code",
       "offset": 104145,
-      "source": "src/exe_104145.c"
+      "source": "src/exe_104145.asm"
     },
     {
       "image": "exe-code",
       "offset": 105370,
-      "source": "src/exe_105370.c"
+      "source": "src/exe_105370.asm"
     },
     {
       "image": "exe-code",
@@ -5448,17 +5448,17 @@
     {
       "image": "exe-code",
       "offset": 110485,
-      "source": "src/exe_110485.c"
+      "source": "src/exe_110485.asm"
     },
     {
       "image": "exe-code",
       "offset": 112178,
-      "source": "src/exe_112178.c"
+      "source": "src/exe_112178.asm"
     },
     {
       "image": "exe-code",
       "offset": 112905,
-      "source": "src/exe_112905.c"
+      "source": "src/exe_112905.asm"
     },
     {
       "image": "exe-code",
@@ -5473,12 +5473,12 @@
     {
       "image": "exe-code",
       "offset": 117057,
-      "source": "src/exe_117057.c"
+      "source": "src/exe_117057.asm"
     },
     {
       "image": "exe-code",
       "offset": 117570,
-      "source": "src/exe_117570.c"
+      "source": "src/exe_117570.asm"
     },
     {
       "image": "exe-code",
@@ -5498,17 +5498,17 @@
     {
       "image": "ovl-payload",
       "offset": 2992,
-      "source": "src/ovl_2992.c"
+      "source": "src/ovl_2992.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 3841,
-      "source": "src/ovl_3841.c"
+      "source": "src/ovl_3841.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 8667,
-      "source": "src/ovl_8667.c"
+      "source": "src/ovl_8667.asm"
     },
     {
       "image": "ovl-payload",
@@ -5518,12 +5518,12 @@
     {
       "image": "ovl-payload",
       "offset": 13474,
-      "source": "src/ovl_13474.c"
+      "source": "src/ovl_13474.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 15132,
-      "source": "src/ovl_15132.c"
+      "source": "src/ovl_15132.asm"
     },
     {
       "image": "ovl-payload",
@@ -5538,7 +5538,7 @@
     {
       "image": "ovl-payload",
       "offset": 17990,
-      "source": "src/ovl_17990.c"
+      "source": "src/ovl_17990.asm"
     },
     {
       "image": "ovl-payload",
@@ -5578,7 +5578,7 @@
     {
       "image": "ovl-payload",
       "offset": 55224,
-      "source": "src/ovl_55224.c"
+      "source": "src/ovl_55224.asm"
     },
     {
       "image": "ovl-payload",
@@ -5588,7 +5588,7 @@
     {
       "image": "ovl-payload",
       "offset": 58961,
-      "source": "src/ovl_58961.c"
+      "source": "src/ovl_58961.asm"
     },
     {
       "image": "ovl-payload",
@@ -5658,7 +5658,7 @@
     {
       "image": "ovl-payload",
       "offset": 90117,
-      "source": "src/ovl_90117.c"
+      "source": "src/ovl_90117.asm"
     },
     {
       "image": "ovl-payload",
@@ -5768,7 +5768,7 @@
     {
       "image": "ovl-payload",
       "offset": 131108,
-      "source": "src/ovl_131108.c"
+      "source": "src/ovl_131108.asm"
     },
     {
       "image": "ovl-payload",
@@ -5783,7 +5783,7 @@
     {
       "image": "ovl-payload",
       "offset": 138186,
-      "source": "src/ovl_138186.c"
+      "source": "src/ovl_138186.asm"
     },
     {
       "image": "ovl-payload",
@@ -5838,7 +5838,7 @@
     {
       "image": "ovl-payload",
       "offset": 160794,
-      "source": "src/ovl_160794.c"
+      "source": "src/ovl_160794.asm"
     },
     {
       "image": "ovl-payload",
@@ -5853,7 +5853,7 @@
     {
       "image": "ovl-payload",
       "offset": 164724,
-      "source": "src/ovl_164724.c"
+      "source": "src/ovl_164724.asm"
     },
     {
       "image": "ovl-payload",
@@ -5918,7 +5918,7 @@
     {
       "image": "ovl-payload",
       "offset": 198544,
-      "source": "src/ovl_198544.c"
+      "source": "src/ovl_198544.asm"
     },
     {
       "image": "ovl-payload",
@@ -5948,32 +5948,32 @@
     {
       "image": "ovl-payload",
       "offset": 208225,
-      "source": "src/ovl_208225.c"
+      "source": "src/ovl_208225.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 214444,
-      "source": "src/ovl_214444.c"
+      "source": "src/ovl_214444.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 219282,
-      "source": "src/ovl_219282.c"
+      "source": "src/ovl_219282.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 219910,
-      "source": "src/ovl_219910.c"
+      "source": "src/ovl_219910.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 224864,
-      "source": "src/ovl_224864.c"
+      "source": "src/ovl_224864.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 225590,
-      "source": "src/ovl_225590.c"
+      "source": "src/ovl_225590.asm"
     },
     {
       "image": "ovl-payload",
@@ -5993,7 +5993,7 @@
     {
       "image": "ovl-payload",
       "offset": 250937,
-      "source": "src/ovl_250937.c"
+      "source": "src/ovl_250937.asm"
     },
     {
       "image": "ovl-payload",
@@ -6048,7 +6048,7 @@
     {
       "image": "ovl-payload",
       "offset": 274217,
-      "source": "src/ovl_274217.c"
+      "source": "src/ovl_274217.asm"
     },
     {
       "image": "ovl-payload",
@@ -6073,7 +6073,7 @@
     {
       "image": "ovl-payload",
       "offset": 283454,
-      "source": "src/ovl_283454.c"
+      "source": "src/ovl_283454.asm"
     },
     {
       "image": "ovl-payload",
@@ -6098,7 +6098,7 @@
     {
       "image": "ovl-payload",
       "offset": 294265,
-      "source": "src/ovl_294265.c"
+      "source": "src/ovl_294265.asm"
     },
     {
       "image": "ovl-payload",
@@ -6128,12 +6128,12 @@
     {
       "image": "ovl-payload",
       "offset": 301739,
-      "source": "src/ovl_301739.c"
+      "source": "src/ovl_301739.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 302241,
-      "source": "src/ovl_302241.c"
+      "source": "src/ovl_302241.asm"
     },
     {
       "image": "ovl-payload",
@@ -6158,7 +6158,7 @@
     {
       "image": "ovl-payload",
       "offset": 309511,
-      "source": "src/ovl_309511.c"
+      "source": "src/ovl_309511.asm"
     },
     {
       "image": "ovl-payload",
@@ -6183,7 +6183,7 @@
     {
       "image": "ovl-payload",
       "offset": 318304,
-      "source": "src/ovl_318304.c"
+      "source": "src/ovl_318304.asm"
     },
     {
       "image": "ovl-payload",
@@ -6218,12 +6218,12 @@
     {
       "image": "exe-code",
       "offset": 41745,
-      "source": "src/exe_41745.c"
+      "source": "src/exe_41745.asm"
     },
     {
       "image": "exe-code",
       "offset": 42821,
-      "source": "src/exe_42821.c"
+      "source": "src/exe_42821.asm"
     },
     {
       "image": "exe-code",
@@ -6253,22 +6253,22 @@
     {
       "image": "exe-code",
       "offset": 62172,
-      "source": "src/exe_62172.c"
+      "source": "src/exe_62172.asm"
     },
     {
       "image": "exe-code",
       "offset": 73264,
-      "source": "src/exe_73264.c"
+      "source": "src/exe_73264.asm"
     },
     {
       "image": "exe-code",
       "offset": 76891,
-      "source": "src/exe_76891.c"
+      "source": "src/exe_76891.asm"
     },
     {
       "image": "exe-code",
       "offset": 80058,
-      "source": "src/exe_80058.c"
+      "source": "src/exe_80058.asm"
     },
     {
       "image": "exe-code",
@@ -6278,27 +6278,27 @@
     {
       "image": "exe-code",
       "offset": 84093,
-      "source": "src/exe_84093.c"
+      "source": "src/exe_84093.asm"
     },
     {
       "image": "exe-code",
       "offset": 85495,
-      "source": "src/exe_85495.c"
+      "source": "src/exe_85495.asm"
     },
     {
       "image": "exe-code",
       "offset": 88066,
-      "source": "src/exe_88066.c"
+      "source": "src/exe_88066.asm"
     },
     {
       "image": "exe-code",
       "offset": 89710,
-      "source": "src/exe_89710.c"
+      "source": "src/exe_89710.asm"
     },
     {
       "image": "exe-code",
       "offset": 92913,
-      "source": "src/exe_92913.c"
+      "source": "src/exe_92913.asm"
     },
     {
       "image": "exe-code",
@@ -6313,17 +6313,17 @@
     {
       "image": "exe-code",
       "offset": 119179,
-      "source": "src/exe_119179.c"
+      "source": "src/exe_119179.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 0,
-      "source": "src/ovl_0.c"
+      "source": "src/ovl_0.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 12261,
-      "source": "src/ovl_12261.c"
+      "source": "src/ovl_12261.asm"
     },
     {
       "image": "ovl-payload",
@@ -6338,12 +6338,12 @@
     {
       "image": "ovl-payload",
       "offset": 22694,
-      "source": "src/ovl_22694.c"
+      "source": "src/ovl_22694.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 23399,
-      "source": "src/ovl_23399.c"
+      "source": "src/ovl_23399.asm"
     },
     {
       "image": "ovl-payload",
@@ -6393,12 +6393,12 @@
     {
       "image": "ovl-payload",
       "offset": 76752,
-      "source": "src/ovl_76752.c"
+      "source": "src/ovl_76752.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 77820,
-      "source": "src/ovl_77820.c"
+      "source": "src/ovl_77820.asm"
     },
     {
       "image": "ovl-payload",
@@ -6408,7 +6408,7 @@
     {
       "image": "ovl-payload",
       "offset": 87301,
-      "source": "src/ovl_87301.c"
+      "source": "src/ovl_87301.asm"
     },
     {
       "image": "ovl-payload",
@@ -6443,7 +6443,7 @@
     {
       "image": "ovl-payload",
       "offset": 117103,
-      "source": "src/ovl_117103.c"
+      "source": "src/ovl_117103.asm"
     },
     {
       "image": "ovl-payload",
@@ -6453,12 +6453,12 @@
     {
       "image": "ovl-payload",
       "offset": 120569,
-      "source": "src/ovl_120569.c"
+      "source": "src/ovl_120569.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 121852,
-      "source": "src/ovl_121852.c"
+      "source": "src/ovl_121852.asm"
     },
     {
       "image": "ovl-payload",
@@ -6478,7 +6478,7 @@
     {
       "image": "ovl-payload",
       "offset": 132843,
-      "source": "src/ovl_132843.c"
+      "source": "src/ovl_132843.asm"
     },
     {
       "image": "ovl-payload",
@@ -6508,12 +6508,12 @@
     {
       "image": "ovl-payload",
       "offset": 152890,
-      "source": "src/ovl_152890.c"
+      "source": "src/ovl_152890.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 157872,
-      "source": "src/ovl_157872.c"
+      "source": "src/ovl_157872.asm"
     },
     {
       "image": "ovl-payload",
@@ -6543,7 +6543,7 @@
     {
       "image": "ovl-payload",
       "offset": 186302,
-      "source": "src/ovl_186302.c"
+      "source": "src/ovl_186302.asm"
     },
     {
       "image": "ovl-payload",
@@ -6578,12 +6578,12 @@
     {
       "image": "ovl-payload",
       "offset": 214970,
-      "source": "src/ovl_214970.c"
+      "source": "src/ovl_214970.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 218560,
-      "source": "src/ovl_218560.c"
+      "source": "src/ovl_218560.asm"
     },
     {
       "image": "ovl-payload",
@@ -6593,37 +6593,37 @@
     {
       "image": "ovl-payload",
       "offset": 223628,
-      "source": "src/ovl_223628.c"
+      "source": "src/ovl_223628.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 226135,
-      "source": "src/ovl_226135.c"
+      "source": "src/ovl_226135.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 231664,
-      "source": "src/ovl_231664.c"
+      "source": "src/ovl_231664.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 233037,
-      "source": "src/ovl_233037.c"
+      "source": "src/ovl_233037.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 234217,
-      "source": "src/ovl_234217.c"
+      "source": "src/ovl_234217.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 236157,
-      "source": "src/ovl_236157.c"
+      "source": "src/ovl_236157.asm"
     },
     {
       "image": "ovl-payload",
       "offset": 236941,
-      "source": "src/ovl_236941.c"
+      "source": "src/ovl_236941.asm"
     },
     {
       "image": "ovl-payload",
@@ -6688,12 +6688,12 @@
     {
       "image": "exe-code",
       "offset": 6831,
-      "source": "src/exe_6831.c"
+      "source": "src/exe_6831.asm"
     },
     {
       "image": "exe-code",
       "offset": 7235,
-      "source": "src/exe_7235.c"
+      "source": "src/exe_7235.asm"
     },
     {
       "image": "exe-code",
@@ -6708,17 +6708,17 @@
     {
       "image": "exe-code",
       "offset": 8410,
-      "source": "src/exe_8410.c"
+      "source": "src/exe_8410.asm"
     },
     {
       "image": "exe-code",
       "offset": 8539,
-      "source": "src/exe_8539.c"
+      "source": "src/exe_8539.asm"
     },
     {
       "image": "exe-code",
       "offset": 8698,
-      "source": "src/exe_8698.c"
+      "source": "src/exe_8698.asm"
     },
     {
       "image": "exe-code",
@@ -6733,7 +6733,7 @@
     {
       "image": "exe-code",
       "offset": 23165,
-      "source": "src/exe_23165.c"
+      "source": "src/exe_23165.asm"
     },
     {
       "image": "exe-code",
@@ -6753,12 +6753,12 @@
     {
       "image": "exe-code",
       "offset": 5219,
-      "source": "src/exe_5219.c"
+      "source": "src/exe_5219.asm"
     },
     {
       "image": "exe-code",
       "offset": 6094,
-      "source": "src/exe_6094.c"
+      "source": "src/exe_6094.asm"
     },
     {
       "image": "exe-code",
@@ -6843,42 +6843,42 @@
     {
       "image": "exe-code",
       "offset": 24910,
-      "source": "src/exe_24910.c"
+      "source": "src/exe_24910.asm"
     },
     {
       "image": "exe-code",
       "offset": 26556,
-      "source": "src/exe_26556.c"
+      "source": "src/exe_26556.asm"
     },
     {
       "image": "exe-code",
       "offset": 30534,
-      "source": "src/exe_30534.c"
+      "source": "src/exe_30534.asm"
     },
     {
       "image": "exe-code",
       "offset": 30747,
-      "source": "src/exe_30747.c"
+      "source": "src/exe_30747.asm"
     },
     {
       "image": "exe-code",
       "offset": 31345,
-      "source": "src/exe_31345.c"
+      "source": "src/exe_31345.asm"
     },
     {
       "image": "exe-code",
       "offset": 34621,
-      "source": "src/exe_34621.c"
+      "source": "src/exe_34621.asm"
     },
     {
       "image": "exe-code",
       "offset": 34698,
-      "source": "src/exe_34698.c"
+      "source": "src/exe_34698.asm"
     },
     {
       "image": "exe-code",
       "offset": 34775,
-      "source": "src/exe_34775.c"
+      "source": "src/exe_34775.asm"
     },
     {
       "image": "exe-code",
@@ -6903,12 +6903,12 @@
     {
       "image": "exe-code",
       "offset": 136683,
-      "source": "src/exe_136683.c"
+      "source": "src/exe_136683.asm"
     },
     {
       "image": "exe-code",
       "offset": 137101,
-      "source": "src/exe_137101.c"
+      "source": "src/exe_137101.asm"
     },
     {
       "image": "exe-code",
@@ -11093,7 +11093,7 @@
     {
       "image": "exe-code",
       "offset": 26464,
-      "source": "src/exe_26464.c"
+      "source": "src/exe_26464.asm"
     },
     {
       "image": "exe-code",
@@ -14198,7 +14198,7 @@
     {
       "image": "exe-code",
       "offset": 25234,
-      "source": "src/exe_25234.c"
+      "source": "src/exe_25234.asm"
     },
     {
       "image": "exe-code",
@@ -14208,7 +14208,7 @@
     {
       "image": "exe-code",
       "offset": 30576,
-      "source": "src/exe_30576.c"
+      "source": "src/exe_30576.asm"
     },
     {
       "image": "exe-code",
@@ -14228,7 +14228,7 @@
     {
       "image": "exe-code",
       "offset": 100448,
-      "source": "src/exe_100448.c"
+      "source": "src/exe_100448.asm"
     }
   ]
 }

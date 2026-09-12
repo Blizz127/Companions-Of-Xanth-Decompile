@@ -69,6 +69,7 @@ def _compile_objs(sources: list[Path], flags: list[str]) -> dict[Path, bytes]:
             env=env,
             capture_output=True,
             text=True,
+            errors="replace",
         )
         out: dict[Path, bytes] = {}
         missing: list[Path] = []

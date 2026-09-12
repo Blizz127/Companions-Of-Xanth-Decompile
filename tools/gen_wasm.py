@@ -187,23 +187,76 @@ def try_unit(unit, cpu='-1'):
             return 'MATCH', src
         a, b = ndisasm(bytes(rel)), ndisasm(want)
         done = False
+        equal_len_imm = None
         for idx, (ia, ib) in enumerate(zip(a, b)):
-            if len(ia['raw']) == len(ib['raw']):
-                continue
             if idx in ed or idx in ei:
-                return 'STUCK', f"len fixed but still differs: {ia['mnemonic']} vs {ib['mnemonic']}"
-            if len(ib['raw']) > len(ia['raw']):
-                (ed if '[' in ia['mnemonic'] else ei).add(idx)
+                if ia['raw'] != ib['raw'] and len(ia['raw']) == len(ib['raw']):
+                    return 'STUCK', f"extended but differs: {ia['mnemonic']} vs {ib['mnemonic']}"
+                if len(ia['raw']) != len(ib['raw']):
+                    return 'STUCK', f"extended, wrong length: {ia['mnemonic']} vs {ib['mnemonic']}"
+                continue
+            if len(ia['raw']) != len(ib['raw']):
+                if len(ib['raw']) > len(ia['raw']):
+                    (ed if '[' in ia['mnemonic'] else ei).add(idx)
+                    done = True
+                else:
+                    return 'STUCK', f"retail shorter: {ia['mnemonic']} vs {ib['mnemonic']}"
+                break
+            if ia['raw'] != ib['raw'] and re.search(r',\s*(?:0x[0-9a-f]+|\d[0-9a-f]*h)\s*$', ia['mnemonic']):
+                # same length, different bytes, with an immediate operand: the
+                # AX-specific imm16 form (05/0D/... ) versus MASM's byte form.
+                if equal_len_imm is None:
+                    equal_len_imm = idx
+        if not done:
+            if equal_len_imm is not None:
+                ei.add(equal_len_imm)
                 done = True
             else:
-                return 'STUCK', f"retail shorter: {ia['mnemonic']} vs {ib['mnemonic']}"
-            break
+                return 'STUCK', 'same lengths, bytes differ'
         if not done:
             return 'STUCK', 'same lengths, bytes differ'
     return 'LOOP', ''
 
 if __name__ == '__main__':
-    for name in sys.argv[1:]:
-        u = [r for r in units.index() if r['source'] == f'src/{name}.c'][0]
-        st, info = try_unit(u)
-        print(f"{name:<16} {st} {'' if st=='MATCH' else info[:80]}")
+    import argparse
+    import json
+    from retail_common import write_json_atomic
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('units', nargs='+')
+    parser.add_argument('--write', action='store_true',
+                        help='write src/<stem>.asm and repoint c-units.json at it')
+    args = parser.parse_args()
+
+    index = units.index()
+    good = 0
+    for name in args.units:
+        matches = [r for r in index if name in (r['source'], Path(r['source']).stem)]
+        if not matches:
+            print(f"{name:<16} NO-SUCH-UNIT")
+            continue
+        unit = matches[0]
+        st, info = try_unit(unit)
+        if st != 'MATCH':
+            print(f"{name:<16} {st} {info[:80]}")
+            continue
+        good += 1
+        if not args.write:
+            print(f"{name:<16} MATCH")
+            continue
+        source = ROOT / unit['source']
+        listing = source.with_suffix('.asm')
+        listing.write_text(info, encoding='utf-8')
+        path = ROOT / 'config/c-units.json'
+        data = json.loads(path.read_text())
+        # A source can back more than one registered offset; repoint them all.
+        repointed = 0
+        for entry in data['units']:
+            if entry['source'] == unit['source'] and entry['image'] == unit['image']:
+                entry['source'] = listing.relative_to(ROOT).as_posix()
+                repointed += 1
+        write_json_atomic(path, data)
+        if source.suffix == '.c' and source.is_file():
+            source.unlink()
+        print(f"{name:<16} MATCH -> {listing.relative_to(ROOT).as_posix()} ({repointed} entries)")
+    print(f"{good}/{len(args.units)} MATCH")
