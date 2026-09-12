@@ -32,6 +32,7 @@ KIND_DUMP = "dump"  # `_asm { _emit ... }` byte dump
 KIND_ASM = "asm"  # `_asm` with real mnemonics, no `_emit`
 KIND_C = "c"  # no `_asm` at all
 KIND_DATA = "data"  # a transcribed data region, not an instruction stream
+KIND_WASM = "wasm"  # a .asm listing assembled by the vendored Watcom wasm
 
 # `tools/gen_mnem.py --data` writes this sentence into the unit's header so a
 # data region is never counted as recovered C or as an instruction listing.
@@ -110,7 +111,9 @@ def asm_body(text: str) -> str | None:
     return text[match.end() : index - 1]
 
 
-def source_kind(text: str) -> str:
+def source_kind(text: str, source: str | None = None) -> str:
+    if source is not None and source.endswith(".asm"):
+        return KIND_WASM
     if "_emit" in text:
         return KIND_DUMP
     if DATA_MARKER in text:
@@ -222,7 +225,7 @@ def index(root: Path | None = None) -> list[dict]:
             raise UnitError(f"unknown image in c-units.json: {unit.get('image')}")
         source = root / unit["source"]
         text = source.read_text(encoding="utf-8", errors="replace")
-        kind = source_kind(text)
+        kind = source_kind(text, unit["source"])
         resolved = resolve_extent(text, image, int(unit["offset"])) if kind == KIND_DUMP else None
         extent = resolved[0] if resolved else None
         rows.append(

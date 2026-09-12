@@ -11,6 +11,7 @@ if str(_TOOLS) not in sys.path:
 
 from compile_msc import DEFAULT_FLAGS, compile_omf_many, toolchain_available
 from retail_common import ROOT, RetailError, load_json
+from wasm_backend import assemble_many, toolchain_available as wasm_available
 
 
 def load_units(root: Path | None = None) -> list[dict]:
@@ -100,15 +101,19 @@ def splice_image(code: bytearray, image: str, *, root: Path | None = None) -> li
     if not toolchain_available():
         raise RetailError("historical compiler missing: cannot splice C units")
     units = [unit for unit in load_units(root) if unit.get("image") == image]
-    paths = []
+    paths: list[Path] = []
+    listings: list[Path] = []
     seen: set[Path] = set()
     for unit in units:
         path = (root / unit["source"]).resolve()
         if path in seen:
             continue
         seen.add(path)
-        paths.append(path)
+        (listings if path.suffix == ".asm" else paths).append(path)
+    if listings and not wasm_available():
+        raise RetailError("Watcom assembler missing: cannot splice .asm units")
     compiled_map = compile_omf_many(paths, flags=list(DEFAULT_FLAGS)) if paths else {}
+    compiled_map.update(assemble_many(listings))
     applied = []
     for unit in units:
         offset = int(unit["offset"])
@@ -125,7 +130,11 @@ def splice_image(code: bytearray, image: str, *, root: Path | None = None) -> li
                 "offset": offset,
                 "size": len(matched),
                 "fixups": len(fixups),
-                "compiler": "Microsoft C/C++ 8.00c",
+                "compiler": (
+                    "Open Watcom WASM"
+                    if source.suffix == ".asm"
+                    else "Microsoft C/C++ 8.00c"
+                ),
             }
         )
     return applied
