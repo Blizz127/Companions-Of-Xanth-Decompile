@@ -5,6 +5,89 @@ sessions below are lab notes; counts inside a dated session are of that
 date. A unit is recovered only when its source is in `src/` and
 `tools/lift.py` reports MATCH. Notebook C is not a recovery.
 
+
+## STOP NOTE for the next session (2026-09-11 20:00 CST)
+
+Stopped at the user's request (8:00 pm CST). HEAD `c0b981a`, working tree clean,
+fast ratchet suite green. Nothing pushed.
+
+### State
+
+| | objective start | at stop |
+|---|---|---|
+| `_emit` dump units | 1,753 (2,380 originally) | **197** |
+| Watcom `.asm` listings (`wasm` kind) | 0 | **331** |
+| mnemonic `_asm` (CL) | 649 | 959 |
+| transcribed data | 0 | 915 |
+| unaided C | 442 | 442 |
+| `exe-code` / overlay dump coverage | 88.73% / 64.61% | **18.92% / 18.98%** |
+
+### FIRST THING: re-run the whole-image gate
+
+`python3 tools/verify.py` has **not** had a clean run since the 331 `.asm` units
+entered the splice. Each unit was verified byte-exact by `wasm` at conversion
+time (`tools/gen_wasm.py` does that check itself), and the splice path is wired,
+but the end-to-end BINARY-MATCH claim is unproven for the current mix. Run it
+before anything else and record the result in this file.
+
+Two things bit the earlier runs:
+
+1. CL emitted a non-UTF-8 byte in a message and the subprocess decode crashed
+   (`UnicodeDecodeError`). Fixed by `errors="replace"` in `tools/compile_msc.py`,
+   `tools/link_msc.py` and `tools/wasm_backend.py`.
+2. CL then dropped into its interactive *"Please enter new filename"* prompt on
+   one of the remaining dump units and the run hung. That is still unexplained:
+   find the offending `.c`, or compile the remaining dumps in smaller batches to
+   isolate it.
+
+Use `TMPDIR=/var/tmp/xanth-mnem` for wine work: `/tmp` is a small tmpfs that has
+hit "Disk quota exceeded" during long sweeps.
+
+### The toolchain that unlocked this (do not re-derive)
+
+`tools/toolchain/watcom/binnt/wasm.exe` — the Open Watcom **assembler** already
+vendored in the tree — has exactly the retail encoding profile. Evidence table in
+the twelfth pass above. The earlier negative control had tested Watcom's
+*compiler* (`wcc`), which is why this was missed.
+
+- `tools/wasm_backend.py` — assemble a `.asm` unit listing with wasm, return
+  Ledata + fixups (`-ml /0`; a listing that needs 186/286/386 says so with its
+  own `.186`/`.286`/`.386` directive).
+- `tools/gen_wasm.py` — retail slice → Watcom listing, byte-exact verified.
+  `--write` writes `src/<stem>.asm`, repoints **every** `c-units.json` entry
+  sharing that source, and deletes the superseded `.c`.
+- `tools/asm_profile.py` — scores a candidate assembler against the profile
+  facts; NASM under `--syntax nasm` scores 2/3 as the control.
+
+### Remaining queue and what to do with it
+
+197 dumps. The last conversion pass over a 351-unit queue converted 153 and left
+69 `STUCK ("same lengths, bytes differ")` and 53 `ASMFAIL` (`E100: Missing
+'PTR'` on one operand shape, `E251` on one label form). Re-run the converter on
+the queue after each fix — it always reports honestly and only writes
+byte-verified units:
+
+```sh
+python3 -c "import sys; sys.path.insert(0,'tools'); import units; print(' '.join(sorted(r['source'].split('/')[-1][:-2] for r in units.index() if r['kind']=='dump')))" > /tmp/queue.txt
+TMPDIR=/var/tmp/xanth-mnem python3 -u tools/gen_wasm.py --write $(cat /tmp/queue.txt)
+python3 tools/coverage.py            # ratchets live in tests/test_units.py
+python3 -m unittest discover -s tests -p "test_units.py"
+python3 tools/verify.py              # the gate
+```
+
+If the converter crashes mid-run it can leave a `c-units.json` entry pointing at
+a deleted `.c`; repair by repointing any missing source to its `.asm` sibling
+(there is a snippet for that in the thirteenth pass work).
+
+### Cautions
+
+- The `.asm` units are real mnemonic source assembled by a real assembler, not
+  byte transcripts; do not "simplify" them back to `_emit`.
+- `src/**.c` dumps are deleted as they convert; `c-units.json` is the index, so
+  a missing source there is a bug, not a cleanup opportunity.
+- No push, no force, no history rewrite: the session ended with the user's stop
+  instruction, and publication was never authorised.
+
 ## Current (2026-09-11)
 
 Measured by `python3 tools/coverage.py` (wine-free). C and mnemonic-`_asm`
