@@ -1,4 +1,6 @@
-# Companions of Xanth matching decompilation
+# Companions of Xanth - Byte-Verified Decompilation & Native Port
+
+Old 1993 game *Companions of Xanth* decompiled byte for byte, with a native modern 64-bit cross-platform port for modern Linux (including Bazzite, Fedora, Ubuntu, Arch) and Windows 11. Retail game assets are required.
 
 `tools/verify.py` reports whole-program BINARY-MATCH for this disc’s
 `XANTH.EXE` and `XANTH.OVL`. All 2,844 source units have been recovered (0 remaining byte dump units).
