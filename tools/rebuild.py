@@ -50,6 +50,12 @@ def rebuild_exe(original: bytes) -> tuple[bytes, dict]:
             if unit.get("image") != "exe-code":
                 continue
             source = unit["source"]
+            # `.asm` units are assembled by the vendored Watcom wasm, not by
+            # CL; feeding one to CL makes it fall into its interactive
+            # "Please enter new filename" prompt. They are spliced by
+            # `c_units.splice_image`, which is where the byte gate lives.
+            if source.endswith(".asm"):
+                continue
             if source in seen_sources:
                 continue
             seen_sources.add(source)

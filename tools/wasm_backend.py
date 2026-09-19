@@ -28,42 +28,53 @@ from retail_common import ROOT, RetailError
 WATCOM = ROOT / "tools/toolchain/watcom"
 WASM = WATCOM / "binnt/wasm.exe"
 
-# 8086 by default: a listing that needs 186/286/386 opcodes says so itself
-# with a `.186`/`.286`/`.386` directive, which is what the retail units do.
-DEFAULT_CPU = "/0"
+# The converter assembles with 80186 semantics, which is what the retail units
+# need; a unit that needs a higher level is retried up the ladder. Every step
+# is byte-verified by the splice, so a wrong level cannot pass unnoticed.
+CPU_LADDER = ("/1", "/2", "/3")
+DEFAULT_CPU = CPU_LADDER[0]
 
 
 def toolchain_available() -> bool:
     return WASM.is_file() and shutil.which("wine") is not None
 
 
-def assemble_listing(source: Path, *, cpu: str = DEFAULT_CPU) -> tuple[bytes, list[tuple[int, int]]]:
-    """Assemble one `.asm` unit listing and return its code bytes and fixups."""
-    if not toolchain_available():
-        raise RetailError("Watcom assembler missing: tools/toolchain/watcom/binnt/wasm.exe")
-    source = source.resolve()
+def _assemble_once(source: Path, work: Path, cpu: str) -> tuple[bytes | None, str]:
     env = os.environ.copy()
     env["WINEDEBUG"] = "-all"
     env["WATCOM"] = str(WATCOM)
     env["INCLUDE"] = str(WATCOM / "h")
+    proc = subprocess.run(
+        ["wine", str(WASM), "-ml", cpu, "-fo=unit.obj", "unit.asm"],
+        cwd=work,
+        env=env,
+        capture_output=True,
+        text=True,
+        errors="replace",
+    )
+    obj = work / "unit.obj"
+    if not obj.is_file():
+        detail = [line for line in (proc.stdout + proc.stderr).splitlines() if "rror" in line]
+        return None, " | ".join(detail[:3]) or "no object"
+    return ledata_and_fixups(obj.read_bytes()), ""
+
+
+def assemble_listing(source: Path, *, cpu: str | None = None) -> tuple[bytes, list[tuple[int, int]]]:
+    """Assemble one `.asm` unit listing and return its code bytes and fixups."""
+    if not toolchain_available():
+        raise RetailError("Watcom assembler missing: tools/toolchain/watcom/binnt/wasm.exe")
+    source = source.resolve()
+    ladder = (cpu,) if cpu else CPU_LADDER
+    last = "no attempt"
     with tempfile.TemporaryDirectory(prefix="wasmunit_") as tmp:
         work = Path(tmp)
         shutil.copy2(source, work / "unit.asm")
-        proc = subprocess.run(
-            ["wine", str(WASM), "-ml", cpu, "-fo=unit.obj", "unit.asm"],
-            cwd=work,
-            env=env,
-            capture_output=True,
-            text=True,
-            errors="replace",
-        )
-        obj = work / "unit.obj"
-        if not obj.is_file():
-            detail = [line for line in (proc.stdout + proc.stderr).splitlines() if "rror" in line]
-            raise RetailError(
-                f"wasm failed on {source.name}: {' | '.join(detail[:3]) or 'no object'}"
-            )
-        return ledata_and_fixups(obj.read_bytes())
+        for step in ladder:
+            result, detail = _assemble_once(source, work, step)
+            if result is not None:
+                return result
+            last = detail
+    raise RetailError(f"wasm failed on {source.name}: {last}")
 
 
 def assemble_many(sources: list[Path]) -> dict[Path, tuple[bytes, list[tuple[int, int]]]]:

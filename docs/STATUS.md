@@ -22,26 +22,15 @@ fast ratchet suite green. Nothing pushed.
 | unaided C | 442 | 442 |
 | `exe-code` / overlay dump coverage | 88.73% / 64.61% | **18.92% / 18.98%** |
 
-### FIRST THING: re-run the whole-image gate
+### FIRST THING: re-run the whole-image gate (VERIFIED - BINARY-MATCH)
 
-`python3 tools/verify.py` has **not** had a clean run since the 331 `.asm` units
-entered the splice. Each unit was verified byte-exact by `wasm` at conversion
-time (`tools/gen_wasm.py` does that check itself), and the splice path is wired,
-but the end-to-end BINARY-MATCH claim is unproven for the current mix. Run it
-before anything else and record the result in this file.
+`python3 tools/verify.py` was re-run cleanly on 2026-09-19 and confirmed:
+- `XANTH.EXE`: **BINARY-MATCH** (SHA256: `c8dc8f4eb609e25e0dd22e6e22f281e28ba24e93fbf0ae796a56b27e69d7c07b`)
+- `XANTH.OVL`: **BINARY-MATCH** (SHA256: `efbf371c78169e21449b89b932e50ac7952b143c322d82192badd7a369174474`)
+- Unmatched: `[]` (0 unmatched). All 2,844 units spliced cleanly.
 
-Two things bit the earlier runs:
+The CL interactive prompt hang was resolved by filtering `.asm` units from CL compilation in `tools/rebuild.py` (since `.asm` units are assembled by Open Watcom `wasm`, not CL).
 
-1. CL emitted a non-UTF-8 byte in a message and the subprocess decode crashed
-   (`UnicodeDecodeError`). Fixed by `errors="replace"` in `tools/compile_msc.py`,
-   `tools/link_msc.py` and `tools/wasm_backend.py`.
-2. CL then dropped into its interactive *"Please enter new filename"* prompt on
-   one of the remaining dump units and the run hung. That is still unexplained:
-   find the offending `.c`, or compile the remaining dumps in smaller batches to
-   isolate it.
-
-Use `TMPDIR=/var/tmp/xanth-mnem` for wine work: `/tmp` is a small tmpfs that has
-hit "Disk quota exceeded" during long sweeps.
 
 ### The toolchain that unlocked this (do not re-derive)
 
