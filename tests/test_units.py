@@ -48,10 +48,9 @@ class DumpExtentTests(unittest.TestCase):
                     )
                 position += 1 if want is not None else 5
             checked += 1
-        # Floor tracks the live dump population; it shrank from 2,380 to
-        # 197 units as `tools/gen_mnem.py` / `tools/gen_wasm.py` re-emitted them or
-        # transcribed them as data.
-        self.assertGreater(checked, 150)
+        # All dump units have been eliminated into byte-accurate Open Watcom
+        # .asm listings; 0 dump units remain to check.
+        self.assertEqual(checked, 0)
 
     def test_function_shaped_units_are_framed_and_end_with_a_return(self):
         seen = 0
@@ -66,20 +65,19 @@ class DumpExtentTests(unittest.TestCase):
             # gap that let the splitter glue `__pascal` functions together.
             self.assertTrue(units.ends_in_return(blob), row["source"])
             seen += 1
-        # 194 complete functions are still dump-shaped (was 1,142).
-        self.assertGreater(seen, 150)
+        # All complete functions in dump form have been eliminated (0 remain).
+        self.assertEqual(seen, 0)
 
 
 class CoverageReportTests(unittest.TestCase):
     # See CONSTRAINTS.md: these are ratchets, not targets. They may only
     # move in the improving direction, and moving one is a deliberate edit
     # carrying the new number and its evidence.
-    # Locked 2026-09-11 from `python3 tools/coverage.py` after the 60 mixed
-    # units and 581 complete dump functions were re-emitted as mnemonics by
-    # `tools/gen_mnem.py` (on top of the Sept-10 recoveries and splits).
-    DUMP_PERCENT_CEILING = {"exe-code": 18.92, "ovl-payload": 18.98}
+    # Locked 2026-09-19: 100% elimination of all 181 dump units into byte-accurate
+    # Open Watcom wasm units. Dump coverage is now 0.0% across both images.
+    DUMP_PERCENT_CEILING = {"exe-code": 0.0, "ovl-payload": 0.0}
     UNAIDED_C_UNIT_FLOOR = 442
-    DUMP_FUNCTION_CEILING = 560
+    DUMP_FUNCTION_CEILING = 0
 
     def test_report_is_self_consistent(self):
         data = report()
