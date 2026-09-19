@@ -146,7 +146,15 @@ typedef struct {
     bool fridge_open;
     bool phone_answered;
     bool package_received;
+    bool package_picked_up;
+    bool front_door_open;
+    bool envelope_opened;
+    bool letter_read;
+    bool monitor_on;
+    int monitor_anim_frame;
+    bool sandwich_taken;
     bool disk_in_drive;
+    char hovered_object[64];
 } EngineContext;
 
 extern EngineContext g_engine_ctx;

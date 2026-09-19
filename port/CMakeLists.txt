@@ -155,6 +155,8 @@ set(XANTH_COMMON_SOURCES
     src/blast.c
     src/pic_loader.c
     src/story_loader.c
+    src/rgn_loader.c
+    src/midi_player.c
 )
 
 set(XANTH_PORT_SOURCES
@@ -230,6 +232,7 @@ if(XANTH_BUILD_TESTS)
     add_executable(test_stress_audio_engine
         tests/test_stress_audio_engine.c
         src/hal_fs.c
+        src/midi_player.c
     )
 
     target_include_directories(test_stress_audio_engine PRIVATE
@@ -243,6 +246,24 @@ if(XANTH_BUILD_TESTS)
 
     if(UNIX AND NOT APPLE)
         target_link_libraries(test_stress_audio_engine PRIVATE m)
+    endif()
+
+    add_executable(test_interactive_rooms
+        tests/test_interactive_rooms.c
+        ${XANTH_COMMON_SOURCES}
+    )
+
+    target_include_directories(test_interactive_rooms PRIVATE
+        include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+
+    if(SDL2_FOUND_ANY)
+        target_link_libraries(test_interactive_rooms PRIVATE ${SDL2_TARGET_LIB})
+    endif()
+
+    if(UNIX AND NOT APPLE)
+        target_link_libraries(test_interactive_rooms PRIVATE m)
     endif()
 
     add_test(NAME NativeUnitTests COMMAND xanth_tests)
