@@ -1,6 +1,8 @@
 #include "port_engine.h"
 #include "port_font.h"
 #include "port_pic.h"
+#include "port_rgn.h"
+#include "port_midi.h"
 #include "port_story.h"
 #include "port_hal.h"
 #include <stdio.h>
@@ -15,11 +17,13 @@ StoryDatabase g_story_db = {0};
 EngineContext g_engine_ctx = {0};
 
 /* Loaded Game Asset Containers */
+static PicContainer *g_pic_ui     = NULL; /* XANTH_00.PIC */
 static PicContainer *g_pic_legend = NULL; /* XANTH_98.PIC */
 static PicContainer *g_pic_title  = NULL; /* XANTH_99.PIC */
 static PicContainer *g_pic_demons = NULL; /* XANTH_94.PIC */
 static PicContainer *g_pic_xanth  = NULL; /* XANTH_91.PIC */
 static PicContainer *g_pic_room02 = NULL; /* XANTH_02.PIC */
+static RgnContainer *g_rgn_room02 = NULL; /* XANTH_02.RGN */
 
 /* -------------------------------------------------------------------------
  * Overlay Consolidation Implementation (original/XANTH.OVL)
@@ -361,7 +365,10 @@ void engine_shutdown(EngineContext *ctx) {
     if (g_pic_demons) { pic_close(g_pic_demons); g_pic_demons = NULL; }
     if (g_pic_xanth)  { pic_close(g_pic_xanth);  g_pic_xanth = NULL; }
     if (g_pic_room02) { pic_close(g_pic_room02); g_pic_room02 = NULL; }
+    if (g_pic_ui)     { pic_close(g_pic_ui);     g_pic_ui = NULL; }
+    if (g_rgn_room02) { rgn_free(g_rgn_room02);   g_rgn_room02 = NULL; }
 
+    midi_shutdown();
     hal_audio_shutdown();
     hal_video_shutdown();
     hal_input_shutdown();
@@ -485,19 +492,85 @@ static void render_cutscene_xanth(EngineContext *ctx) {
 /* Phase 8: Authentic Classic Legend 3-Panel Interactive Room View */
 static void render_gameplay_room(EngineContext *ctx) {
     uint8_t *buf = ctx->back_buffer;
-    /* Clean base */
     memset(buf, 0, HAL_VIDEO_FRAME_SIZE);
 
-    /* 1. Viewport Graphic (x=8, y=6, w=264, h=122): Authentic Room Scene */
+    /* 0. Detect Hovered Interactive Hotspot from .RGN polygon regions */
+    int rx = ctx->mouse_x - 8;
+    int ry = ctx->mouse_y - 6;
+    ctx->hovered_object[0] = '\0';
+    if (rx >= 0 && rx < 264 && ry >= 0 && ry < 122 && g_rgn_room02) {
+        int rgn_slot = (ctx->current_room == 0) ? 0 : ((ctx->current_room == 1) ? 41 : 68);
+        const RgnRoom *rr = rgn_get_room(g_rgn_room02, rgn_slot);
+        if (rr) {
+            int oid = rgn_find_object_at(rr, rx, ry);
+            if (oid >= 0) {
+                const char *oname = object_table_get(oid);
+                if (oname) {
+                    strncpy(ctx->hovered_object, oname, sizeof(ctx->hovered_object) - 1);
+                }
+            }
+        }
+    }
+
+    /* 1. Viewport Graphic (x=8, y=6, w=264, h=122): Authentic Room Scene & Overlays */
     int room_entry_idx = 0;
-    if (ctx->current_room == 1) room_entry_idx = 41; /* Front Hall / Foyer */
+    if (ctx->current_room == 1) room_entry_idx = ctx->foyer_light_on ? 42 : 41; /* Foyer */
     else if (ctx->current_room == 2) room_entry_idx = 68; /* Kitchen */
 
     if (g_pic_room02 && g_pic_room02->count > room_entry_idx) {
         pic_decompress_entry(g_pic_room02, room_entry_idx);
         pic_apply_palette(&g_pic_room02->entries[room_entry_idx]);
         pic_blit(&g_pic_room02->entries[room_entry_idx], buf, SCREEN_W, SCREEN_H, 8, 6, false, 0);
+
+        /* Room 0 (Bedroom Desk): Authentic sprite overlays */
+        if (ctx->current_room == 0) {
+            /* Unopened envelope on desk at (202, 82) */
+            if (!ctx->envelope_opened && g_pic_room02->count > 3) {
+                pic_decompress_entry(g_pic_room02, 3);
+                pic_blit(&g_pic_room02->entries[3], buf, SCREEN_W, SCREEN_H, 8 + 202, 6 + 82, true, 0);
+            }
+            /* Yellow Post-It note at (201, 61) */
+            if (g_pic_room02->count > 6) {
+                pic_decompress_entry(g_pic_room02, 6);
+                pic_blit(&g_pic_room02->entries[6], buf, SCREEN_W, SCREEN_H, 8 + 201, 6 + 61, true, 0);
+            }
+            /* Computer monitor screen if on */
+            if (ctx->monitor_on) {
+                int frame = 20 + ((int)(ctx->frame_count / 8) % 13);
+                if (g_pic_room02->count > frame) {
+                    pic_decompress_entry(g_pic_room02, frame);
+                    pic_blit(&g_pic_room02->entries[frame], buf, SCREEN_W, SCREEN_H, 8 + 145, 6 + 13, true, 0);
+                }
+            }
+        }
+        /* Room 1 (Foyer): Authentic sprite overlays */
+        else if (ctx->current_room == 1) {
+            /* Open front door at (192, 2) */
+            if (ctx->front_door_open && g_pic_room02->count > 65) {
+                pic_decompress_entry(g_pic_room02, 65);
+                pic_blit(&g_pic_room02->entries[65], buf, SCREEN_W, SCREEN_H, 8 + 192, 6 + 2, true, 0);
+            }
+            /* Delivered package on floor at (216, 94) */
+            if (ctx->package_received && !ctx->package_picked_up && g_pic_room02->count > 44) {
+                pic_decompress_entry(g_pic_room02, 44);
+                pic_blit(&g_pic_room02->entries[44], buf, SCREEN_W, SCREEN_H, 8 + 216, 6 + 94, true, 0);
+            }
+        }
+        /* Room 2 (Kitchen): Authentic sprite overlays */
+        else if (ctx->current_room == 2) {
+            /* Open refrigerator at (107, 37) */
+            if (ctx->fridge_open && g_pic_room02->count > 69) {
+                pic_decompress_entry(g_pic_room02, 69);
+                pic_blit(&g_pic_room02->entries[69], buf, SCREEN_W, SCREEN_H, 8 + 107, 6 + 37, true, 0);
+                /* Food / sandwich inside fridge at (142, 81) */
+                if (!ctx->sandwich_taken && g_pic_room02->count > 70) {
+                    pic_decompress_entry(g_pic_room02, 70);
+                    pic_blit(&g_pic_room02->entries[70], buf, SCREEN_W, SCREEN_H, 8 + 142, 6 + 81, true, 0);
+                }
+            }
+        }
     }
+
     /* Ornamental frame border around graphic viewport */
     font_draw_rect(buf, 7, 5, 266, 1, 14);
     font_draw_rect(buf, 7, 128, 266, 1, 14);
@@ -506,21 +579,23 @@ static void render_gameplay_room(EngineContext *ctx) {
 
     /* 2. Compass & Navigation Pane (x=276, y=5, w=38, h=124) */
     font_draw_box(buf, 276, 5, 38, 124, 14, 1);
-    font_draw_text(buf, 283, 8, "DIR", 14);
-    /* Dynamic compass directions based on current room */
-    bool can_n  = false;
+    if (g_pic_ui && g_pic_ui->count > 0) {
+        pic_decompress_entry(g_pic_ui, 0); /* 42x39 compass rose */
+        pic_blit(&g_pic_ui->entries[0], buf, SCREEN_W, SCREEN_H, 274, 16, true, 0);
+    } else {
+        font_draw_text(buf, 283, 8, "DIR", 14);
+    }
+
+    /* Dynamic directions based on room */
     bool can_nw = (ctx->current_room == 0);
     bool can_w  = (ctx->current_room == 1);
     bool can_e  = (ctx->current_room == 2);
     bool can_se = (ctx->current_room == 1);
-    bool can_s  = false;
 
-    font_draw_text(buf, 281, 24, can_nw ? "NW " : (can_n ? " N " : "   "), can_nw ? 14 : 7);
-    font_draw_text(buf, 281, 40, can_w ? " W " : (can_e ? " E " : "W+E"), (can_w || can_e) ? 14 : 7);
-    font_draw_text(buf, 281, 56, can_se ? "SE " : (can_s ? " S " : "   "), can_se ? 14 : 7);
-    font_draw_text(buf, 281, 74, "UP ", 8);
-    font_draw_text(buf, 281, 88, "DOWN", 8);
-    font_draw_text(buf, 281, 106, "MAP", 14);
+    font_draw_text(buf, 281, 60, can_nw ? "NW " : (can_se ? "SE " : (can_w ? " W " : (can_e ? " E " : "   "))), 14);
+    font_draw_text(buf, 281, 76, "UP ", 8);
+    font_draw_text(buf, 281, 90, "DOWN", 8);
+    font_draw_text(buf, 281, 108, "MAP", 14);
 
     /* 3. Action Verb Buttons (x=8, y=131, w=306, h=15) */
     static const char *verbs[] = { "LOOK", "TAKE", "TALK", "CAST", "INV", "EXAM", "USE" };
@@ -536,7 +611,6 @@ static void render_gameplay_room(EngineContext *ctx) {
     /* 4. Story & Narration Log Pane (x=8, y=146, w=306, h=42) */
     font_draw_box(buf, 8, 146, 306, 42, 8, 0);
 
-    /* Render recent story lines cleanly without truncation */
     int start_line = (ctx->story_line_count > 3) ? (ctx->story_line_count - 3) : 0;
     int sy = 149;
     for (int i = 0; i < 3 && (start_line + i) < ctx->story_line_count; i++) {
@@ -555,7 +629,12 @@ static void render_gameplay_room(EngineContext *ctx) {
     static const char *room_titles[] = { "Computer Desk", "Front Hall", "Kitchen" };
     const char *rtitle = (ctx->current_room >= 0 && ctx->current_room <= 2) ? room_titles[ctx->current_room] : "Mundania";
     char status_str[128];
-    snprintf(status_str, sizeof(status_str), "SCORE: %d | ROOM: %s | ESC: Exit", ctx->score, rtitle);
+    if (ctx->hovered_object[0] != '\0') {
+        snprintf(status_str, sizeof(status_str), "POINTING AT: %s | SCORE: %d | %s",
+                 ctx->hovered_object, ctx->score, rtitle);
+    } else {
+        snprintf(status_str, sizeof(status_str), "SCORE: %d | ROOM: %s | ESC: Exit", ctx->score, rtitle);
+    }
     font_draw_text(buf, 8, 191, status_str, 15);
 
     hal_video_set_active_buffer(1);
@@ -576,6 +655,7 @@ void engine_update_phase(EngineContext *ctx) {
             char obj_path[512] = {0};
             char str_path[512] = {0};
             char pic_path[512] = {0};
+            char rgn_path[512] = {0};
 
             if (hal_fs_resolve_gamedata("XANTH.OVL", ovl_path, sizeof(ovl_path))) {
                 overlay_init(ovl_path);
@@ -588,6 +668,9 @@ void engine_update_phase(EngineContext *ctx) {
             }
 
             /* Open authentic PIC asset containers */
+            if (hal_fs_resolve_gamedata("XANTH_00.PIC", pic_path, sizeof(pic_path))) {
+                g_pic_ui = pic_open(pic_path);
+            }
             if (hal_fs_resolve_gamedata("XANTH_98.PIC", pic_path, sizeof(pic_path))) {
                 g_pic_legend = pic_open(pic_path);
             }
@@ -602,6 +685,11 @@ void engine_update_phase(EngineContext *ctx) {
             }
             if (hal_fs_resolve_gamedata("XANTH_02.PIC", pic_path, sizeof(pic_path))) {
                 g_pic_room02 = pic_open(pic_path);
+            }
+
+            /* Open authentic .RGN hotspot region container */
+            if (hal_fs_resolve_gamedata("XANTH_02.RGN", rgn_path, sizeof(rgn_path))) {
+                g_rgn_room02 = rgn_load(rgn_path);
             }
 
             /* Initialize default adventure story narration lines from Mundania Bedroom */
@@ -628,6 +716,13 @@ void engine_update_phase(EngineContext *ctx) {
             ctx->phase = PHASE_TITLE_SCREEN;
             printf("[ENGINE] Displaying authentic COMPANIONS OF XANTH title screen\n");
             render_title_screen(ctx);
+
+            /* Start authentic title soundtrack on OPL3 via .MUS MIDI stream */
+            char mus_path[512] = {0};
+            if (hal_fs_resolve_gamedata("XANTH_01.MUS", mus_path, sizeof(mus_path))) {
+                midi_init(mus_path);
+                midi_play(0, true);
+            }
         }
     } else if (ctx->frame_count < 320) {
         if (ctx->phase < PHASE_CUTSCENE_DEMONS) {
@@ -646,6 +741,13 @@ void engine_update_phase(EngineContext *ctx) {
             ctx->phase = PHASE_GAMEPLAY_ROOM;
             printf("[ENGINE] Entering authentic 3-panel gameplay view: Room 2 Computer Desk\n");
             render_gameplay_room(ctx);
+
+            /* Start authentic Mundania room soundtrack on OPL3 via .MUS MIDI stream */
+            char mus_path[512] = {0};
+            if (hal_fs_resolve_gamedata("XANTH_02.MUS", mus_path, sizeof(mus_path))) {
+                midi_init(mus_path);
+                midi_play(0, true);
+            }
         }
     }
 
@@ -729,9 +831,11 @@ static void execute_command(EngineContext *ctx, const char *cmd) {
             story_add_line(ctx, "an unopened envelope, and a pencil holder. You can see a bad storm brewing outside.");
         } else if (strstr(lower, "envelope") || strstr(lower, "mail")) {
             hal_audio_play_sound_file("MAIL.RS");
+            ctx->envelope_opened = true;
             story_add_line(ctx, "You carefully open the envelope and a letter and a bracelet fall into your hands.");
             ctx->score += 5;
         } else if (strstr(lower, "letter") || strstr(lower, "read letter") || strstr(lower, "pia")) {
+            ctx->letter_read = true;
             story_add_line(ctx, "\"Dear Dug, It's over... I'm giving you back the bracelet you gave me. - Pia\"");
         } else if (strstr(lower, "bracelet")) {
             story_add_line(ctx, "The cheap silver bracelet is engraved: \"I <3 P\". It fit Pia's wrist perfectly.");
@@ -749,6 +853,7 @@ static void execute_command(EngineContext *ctx, const char *cmd) {
             story_add_line(ctx, "Your bookshelf contains motorcycle magazines and classics of fantasy literature.");
         } else if (strstr(lower, "computer") || strstr(lower, "monitor") || strstr(lower, "screen")) {
             hal_audio_play_sound_file("PCON.RS");
+            ctx->monitor_on = true;
             story_add_line(ctx, "On the screen, Grundy Golem dances excitedly: \"Choose your Companion!\"");
             ctx->score += 5;
         } else if (strstr(lower, "talk")) {
@@ -774,10 +879,14 @@ static void execute_command(EngineContext *ctx, const char *cmd) {
             story_add_line(ctx, ctx->foyer_light_on ? "Click. The foyer lights turn on brightly." : "Click. The foyer lights turn off.");
         } else if (strstr(lower, "door") || strstr(lower, "doorbell") || strstr(lower, "open door")) {
             hal_audio_play_sound_file("DOORBELL.RS");
+            ctx->front_door_open = true;
             ctx->package_received = true;
             ctx->score += 10;
             story_add_line(ctx, "Ding-dong! The delivery person hands you a package from Xanth!");
             story_add_line(ctx, "Inside is the Companions of Xanth game box, floppy disk, and 3D glasses!");
+        } else if (strstr(lower, "package") || strstr(lower, "box") || strstr(lower, "disk")) {
+            ctx->package_picked_up = true;
+            story_add_line(ctx, "You pick up the Companions of Xanth game package from the floor.");
         } else if (strstr(lower, "painting") || strstr(lower, "portrait") || strstr(lower, "beethoven")) {
             story_add_line(ctx, "A framed portrait of Ludwig van Beethoven scowls down at you in artistic genius.");
         } else if (strstr(lower, "plant") || strstr(lower, "fern") || strstr(lower, "flower") || strstr(lower, "table")) {
@@ -805,6 +914,7 @@ static void execute_command(EngineContext *ctx, const char *cmd) {
             ctx->fridge_open = !ctx->fridge_open;
             story_add_line(ctx, ctx->fridge_open ? "You open the refrigerator. Inside you see spicy mustard, a sandwich, and cold soda." : "You shut the refrigerator door.");
         } else if (strstr(lower, "mustard") || strstr(lower, "sandwich")) {
+            ctx->sandwich_taken = true;
             story_add_line(ctx, "You grab the spicy mustard and sandwich. Sustenance for an adventurer!");
             ctx->score += 5;
         } else if (strstr(lower, "phone") || strstr(lower, "telephone") || strstr(lower, "call") || strstr(lower, "ed")) {
@@ -825,6 +935,10 @@ static void execute_command(EngineContext *ctx, const char *cmd) {
 }
 
 void engine_handle_input(EngineContext *ctx, int mouse_x, int mouse_y, int mouse_btn, int key_code) {
+    ctx->mouse_x = mouse_x;
+    ctx->mouse_y = mouse_y;
+    ctx->mouse_btn = mouse_btn;
+
     /* Click or Space/Enter to advance through cutscenes and splashes */
     if (key_code == ' ' || key_code == 13 || mouse_btn != 0) {
         if (ctx->phase == PHASE_LOGO_SPLASH) {
@@ -852,45 +966,22 @@ void engine_handle_input(EngineContext *ctx, int mouse_x, int mouse_y, int mouse
         if (mouse_btn & 1) {
             /* 1. Click in Viewport (x=8..272, y=6..128) */
             if (mouse_x >= 8 && mouse_x <= 272 && mouse_y >= 6 && mouse_y <= 128) {
-                if (ctx->current_room == 0) {
-                    /* Bedroom */
-                    if (mouse_x >= 140 && mouse_x <= 230 && mouse_y >= 20 && mouse_y <= 85) {
-                        execute_command(ctx, "examine monitor");
-                    } else if (mouse_x >= 20 && mouse_x <= 110 && mouse_y >= 10 && mouse_y <= 80) {
-                        execute_command(ctx, "look window");
-                    } else if (mouse_x >= 80 && mouse_x <= 130 && mouse_y >= 85 && mouse_y <= 120) {
-                        execute_command(ctx, "look pencil jar");
-                    } else if (mouse_x < 30) {
-                        execute_command(ctx, "nw");
-                    } else {
-                        execute_command(ctx, "look desk");
+                if (ctx->hovered_object[0] != '\0') {
+                    static const char *verb_cmds[] = { "look", "take", "talk", "cast", "inventory", "examine", "use" };
+                    const char *verb = "look";
+                    if (ctx->active_verb >= 1 && ctx->active_verb <= 7) {
+                        verb = verb_cmds[ctx->active_verb - 1];
                     }
-                } else if (ctx->current_room == 1) {
-                    /* Front Hall / Foyer */
-                    if (mouse_x < 40) {
-                        execute_command(ctx, "west");
-                    } else if (mouse_x >= 250) {
-                        execute_command(ctx, "switch");
-                    } else if (mouse_x >= 180 && mouse_x <= 245) {
-                        execute_command(ctx, "open door");
-                    } else if (mouse_x >= 70 && mouse_x <= 140 && mouse_y <= 70) {
-                        execute_command(ctx, "look beethoven");
-                    } else if (mouse_y >= 110) {
-                        execute_command(ctx, "se");
-                    } else {
-                        execute_command(ctx, "look table");
-                    }
-                } else if (ctx->current_room == 2) {
-                    /* Kitchen */
-                    if (mouse_x >= 240) {
-                        execute_command(ctx, "east");
-                    } else if (mouse_x >= 210 && mouse_x <= 235 && mouse_y >= 20 && mouse_y <= 65) {
-                        execute_command(ctx, "phone");
-                    } else if (mouse_x >= 105 && mouse_x <= 195) {
-                        execute_command(ctx, "fridge");
-                    } else {
-                        execute_command(ctx, "sink");
-                    }
+                    char action[128];
+                    snprintf(action, sizeof(action), "%s %s", verb, ctx->hovered_object);
+                    execute_command(ctx, action);
+                } else {
+                    /* Edge navigation fallback */
+                    if (ctx->current_room == 0 && mouse_x < 30) execute_command(ctx, "nw");
+                    else if (ctx->current_room == 1 && mouse_x < 40) execute_command(ctx, "west");
+                    else if (ctx->current_room == 1 && mouse_y >= 110) execute_command(ctx, "se");
+                    else if (ctx->current_room == 2 && mouse_x >= 240) execute_command(ctx, "east");
+                    else execute_command(ctx, "look");
                 }
             }
             /* 2. Click in Verb Bar (y=131..144) */

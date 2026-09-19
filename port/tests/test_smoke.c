@@ -1,6 +1,8 @@
 #include "port_types.h"
 #include "port_hal.h"
 #include "port_engine.h"
+#include "port_rgn.h"
+#include "port_midi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -220,6 +222,87 @@ static void test_overlay_and_databases(void) {
     story_db_shutdown();
 }
 
+/* -------------------------------------------------------------------------
+ * Test 7: Retail .RGN Polygon Region Parser & Collision Engine
+ * ------------------------------------------------------------------------- */
+static void test_rgn_subsystem(void) {
+    printf("[TEST] Running test_rgn_subsystem...\n");
+
+    char rgn_path[512] = {0};
+    bool resolved = hal_fs_resolve_gamedata("XANTH_02.RGN", rgn_path, sizeof(rgn_path));
+    TEST_ASSERT(resolved, "Must resolve XANTH_02.RGN path");
+
+    RgnContainer *rgn = rgn_load(rgn_path);
+    TEST_ASSERT(rgn != NULL, "rgn_load must succeed for XANTH_02.RGN");
+    if (!rgn) return;
+
+    TEST_ASSERT(rgn->room_count >= 4, "XANTH_02.RGN must contain at least 4 active rooms");
+
+    /* Room 0: Bedroom */
+    const RgnRoom *room0 = rgn_get_room(rgn, 0);
+    TEST_ASSERT(room0 != NULL, "Room 0 (Bedroom) must be present in XANTH_02.RGN");
+    if (room0) {
+        TEST_ASSERT(room0->region_count == 18, "Room 0 must have 18 interactive regions");
+
+        /* Region 0 is desk surface (0, 85, 263, 121) */
+        TEST_ASSERT(rgn_point_in_region(&room0->regions[0], 100, 100), "Point (100,100) must be inside desk surface");
+        TEST_ASSERT(!rgn_point_in_region(&room0->regions[0], 100, 20), "Point (100,20) must not be inside desk surface");
+
+        /* Object lookup in Room 0 */
+        int obj_desk = rgn_find_object_at(room0, 100, 100);
+        TEST_ASSERT(obj_desk >= 0, "rgn_find_object_at must return valid object ID for desk");
+
+        int obj_envelope = rgn_find_object_at(room0, 205, 85);
+        TEST_ASSERT(obj_envelope >= 0, "rgn_find_object_at must return valid object ID for envelope area");
+    }
+
+    /* Room 41: Foyer */
+    const RgnRoom *room41 = rgn_get_room(rgn, 41);
+    TEST_ASSERT(room41 != NULL, "Room 41 (Foyer) must be present in XANTH_02.RGN");
+    if (room41) {
+        TEST_ASSERT(room41->region_count == 14, "Room 41 must have 14 interactive regions");
+    }
+
+    /* Room 68: Kitchen */
+    const RgnRoom *room68 = rgn_get_room(rgn, 68);
+    TEST_ASSERT(room68 != NULL, "Room 68 (Kitchen) must be present in XANTH_02.RGN");
+    if (room68) {
+        TEST_ASSERT(room68->region_count == 18, "Room 68 must have 18 interactive regions");
+    }
+
+    rgn_free(rgn);
+}
+
+/* -------------------------------------------------------------------------
+ * Test 8: Retail .MUS Standard MIDI Stream & OPL3 Synthesizer Sequencer
+ * ------------------------------------------------------------------------- */
+static void test_midi_subsystem(void) {
+    printf("[TEST] Running test_midi_subsystem...\n");
+
+    char mus_path[512] = {0};
+    bool resolved = hal_fs_resolve_gamedata("XANTH_01.MUS", mus_path, sizeof(mus_path));
+    TEST_ASSERT(resolved, "Must resolve XANTH_01.MUS path");
+
+    int init_res = midi_init(mus_path);
+    TEST_ASSERT(init_res == 0, "midi_init must succeed for XANTH_01.MUS");
+    TEST_ASSERT(g_midi_player.track_count >= 16, "XANTH_01.MUS must contain >= 16 MIDI tracks");
+
+    int play_res = midi_play(0, false);
+    TEST_ASSERT(play_res == 0, "midi_play track 0 must succeed");
+    TEST_ASSERT(g_midi_player.playing, "Midi player playing state must be true");
+    TEST_ASSERT(g_midi_player.num_tracks > 0, "Loaded track must have > 0 MIDI tracks");
+
+    /* Tick sequencer forward by 4096 audio frames */
+    midi_tick(4096, 44100);
+    TEST_ASSERT(g_midi_player.current_tick > 0, "current_tick must advance after midi_tick");
+
+    midi_stop();
+    TEST_ASSERT(!g_midi_player.playing, "Midi player playing state must be false after midi_stop");
+
+    midi_shutdown();
+    TEST_ASSERT(g_midi_player.mus_data == NULL, "mus_data must be NULL after midi_shutdown");
+}
+
 int main(void) {
     printf("====================================================================\n");
     printf(" Running Native Port Unit Test Suite\n");
@@ -231,6 +314,8 @@ int main(void) {
     test_filesystem_and_ini();
     test_audio_subsystem();
     test_overlay_and_databases();
+    test_rgn_subsystem();
+    test_midi_subsystem();
 
     printf("====================================================================\n");
     printf(" Unit Tests Completed: %d / %d assertions passed.\n", g_tests_passed, g_tests_run);

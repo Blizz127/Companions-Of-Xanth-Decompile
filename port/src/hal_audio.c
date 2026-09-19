@@ -1,4 +1,5 @@
 #include "port_hal.h"
+#include "port_midi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -587,6 +588,7 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
 
         /* 1. Synthesize OPL3 FM Music */
         if (mixer->opl_active && !mixer->dummy_mode) {
+            midi_tick((uint32_t)chunk_frames, AUDIO_SAMPLE_RATE);
             hal_audio_render_opl(mixer->opl_temp, (uint32_t)chunk_frames);
         } else {
             memset(mixer->opl_temp, 0, (size_t)chunk_frames * AUDIO_CHANNELS * sizeof(int16_t));
