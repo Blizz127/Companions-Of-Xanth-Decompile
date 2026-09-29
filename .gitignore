@@ -23,5 +23,7 @@ __pycache__/
 !/original/.gitignore
 /evidence/local/
 /tools/toolchain/
+mods/*
+!mods/README.md
 /asm/
 .agents/

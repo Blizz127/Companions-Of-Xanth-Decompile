@@ -20,7 +20,7 @@ unchanged.
 | Host hotkeys | `--hotkeys` or `hotkeys=true` | Opt-in F11 fullscreen toggle and F10 scanline toggle. These host shortcuts are not sent to the guest when enabled. |
 | Per-channel volume | `--volume-master`, `--volume-music`, `--volume-sfx`, `--volume-voice` | Each accepts 0–128. Existing defaults are retained when omitted. |
 | General MIDI soundfont | `--soundfont <user.sf2>` or `soundfont=<user.sf2>` | Opt-in FluidSynth runtime backend; requires a system FluidSynth library and user-supplied SF2. No library, ROM, or soundfont is bundled. The existing AdLib route remains default. |
-| Hash-keyed asset mods | `--mods <directory>` or `mods=<directory>` | Local replacements are looked up by lowercase SHA-256 of the original asset. No replacement is active unless explicitly configured. |
+| Hash-keyed asset mods | `--mods mods` or `mods=mods` | Local replacements in `mods/` are looked up by lowercase SHA-256 of the original asset. No replacement is active unless explicitly configured; files in the directory are ignored by Git. |
 
 Config files are simple `key=value` text. For example:
 
@@ -38,7 +38,7 @@ volume_master=128
 volume_music=100
 volume_sfx=110
 volume_voice=120
-# mods=/path/to/local/mods
+# mods=mods
 # soundfont=/path/to/user.sf2
 ```
 
