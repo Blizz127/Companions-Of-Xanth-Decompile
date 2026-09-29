@@ -798,3 +798,8 @@ run 30
 move 305 196
 checkpoint wt14_fire_dialogue_response
 shot build/frames/wt14_fire_dialogue_response.bmp
+key 13 28
+run 60
+move 305 196
+checkpoint wt14_gap_dialogue_next
+shot build/frames/wt14_gap_dialogue_next.bmp
