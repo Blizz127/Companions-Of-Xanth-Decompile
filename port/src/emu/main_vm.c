@@ -53,6 +53,7 @@ static void print_usage(const char *prog) {
     printf("  --saves <dir>    Directory for saves and generated config\n");
     printf("  --mods <dir>     Opt in to SHA-256-keyed asset replacements\n");
     printf("  --replacement-fonts  Also allow hash-keyed .FNT replacements from --mods\n");
+    printf("  --replacement-graphics  Allow hash-keyed .PIC/.RGN replacements from --mods\n");
     printf("  --config <file>  Load optional Xanth port settings\n");
     printf("  --exe <file>     Path to XANTH.EXE (default: <data>/XANTH.EXE)\n");
     printf("  --scale <n>      Window scale factor (default 3)\n");
@@ -92,6 +93,7 @@ static bool load_port_config(const char *path, int *scale, bool *fullscreen,
                              bool *hotkeys,
                              bool *enhanced_graphics,
                              bool *replacement_fonts,
+                             bool *replacement_graphics,
                              uint8_t *master, uint8_t *music, uint8_t *sfx,
                              uint8_t *voice, char *mods, size_t mods_size,
                              char *soundfont, size_t soundfont_size) {
@@ -121,6 +123,7 @@ static bool load_port_config(const char *path, int *scale, bool *fullscreen,
         else if (!strcmp(key,"hotkeys")) *hotkeys=config_bool(value);
         else if (!strcmp(key,"enhanced_graphics")) *enhanced_graphics=config_bool(value);
         else if (!strcmp(key,"replacement_fonts")) *replacement_fonts=config_bool(value);
+        else if (!strcmp(key,"replacement_graphics")) *replacement_graphics=config_bool(value);
         else if (!strcmp(key,"volume_master")) *master=parse_volume(value);
         else if (!strcmp(key,"volume_music")) *music=parse_volume(value);
         else if (!strcmp(key,"volume_sfx")) *sfx=parse_volume(value);
@@ -143,6 +146,7 @@ int main(int argc, char **argv) {
     bool gamepad = false, hotkeys = false;
     bool enhanced_graphics = false;
     bool replacement_fonts = false;
+    bool replacement_graphics = false;
     char config_path[512] = "";
     char soundfont_path[512] = "";
     long long max_frames = 0;
@@ -161,6 +165,7 @@ int main(int argc, char **argv) {
         !load_port_config(config_path,&scale,&fullscreen,&headless,&pixel_perfect,
                          &crt,&linear,&handheld,&gamepad,&hotkeys,
                          &enhanced_graphics,&replacement_fonts,
+                         &replacement_graphics,
                          &volume_master,
                          &volume_music,&volume_sfx,&volume_voice,cfg.mods_dir,
                          sizeof(cfg.mods_dir),soundfont_path,sizeof(soundfont_path))) {
@@ -180,6 +185,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--mods") && i + 1 < argc)
             snprintf(cfg.mods_dir, sizeof(cfg.mods_dir), "%s", argv[++i]);
         else if (!strcmp(argv[i], "--replacement-fonts")) replacement_fonts = true;
+        else if (!strcmp(argv[i], "--replacement-graphics")) replacement_graphics = true;
         else if (!strcmp(argv[i], "--soundfont") && i+1<argc)
             snprintf(soundfont_path,sizeof(soundfont_path),"%s",argv[++i]);
         else if (!strcmp(argv[i],"--config") && i+1<argc) ++i;
@@ -276,6 +282,7 @@ int main(int argc, char **argv) {
     vm_audio_mpu_write_cmd = hal_audio_mpu_write_cmd;
     cfg.use_general_midi = soundfont_path[0] != '\0';
     cfg.replacement_fonts = replacement_fonts;
+    cfg.replacement_graphics = replacement_graphics;
 
     if (!vm_init(&machine, &cfg, err, sizeof(err))) {
         fprintf(stderr, "[FATAL] %s\n", err);

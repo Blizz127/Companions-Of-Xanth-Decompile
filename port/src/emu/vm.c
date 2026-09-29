@@ -118,12 +118,15 @@ static bool find_hash_replacement(const vm *v, const char *original_path,
     const char *base = strrchr(original_path, '/');
     const char *back = strrchr(original_path, '\\');
     const char *dot;
-    bool is_font;
+    bool is_font, is_graphics;
     if (!base || (back && back > base)) base = back;
     base = base ? base + 1 : original_path;
     dot = strrchr(base, '.');
     is_font = dot && strcasecmp(dot, ".FNT") == 0;
     if (is_font && !v->cfg.replacement_fonts) return false;
+    is_graphics = dot && (strcasecmp(dot, ".PIC") == 0 ||
+                          strcasecmp(dot, ".RGN") == 0);
+    if (is_graphics && !v->cfg.replacement_graphics) return false;
     if (!v->cfg.mods_dir[0] || !xanth_sha256_file(original_path,digest)) return false;
     n=snprintf(candidate,sizeof(candidate),"%s/%s",v->cfg.mods_dir,digest);
     if (n<0 || (size_t)n>=sizeof(candidate)) return false;

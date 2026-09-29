@@ -392,6 +392,7 @@ int main(int argc, char **argv) {
     char script_path[512] = {0};
     bool vm_only = false;
     bool replacement_fonts = false;
+    bool replacement_graphics = false;
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
@@ -408,6 +409,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--mods") && i + 1 < argc)
             snprintf(cfg.mods_dir, sizeof(cfg.mods_dir), "%s", argv[++i]);
         else if (!strcmp(argv[i], "--replacement-fonts")) replacement_fonts = true;
+        else if (!strcmp(argv[i], "--replacement-graphics")) replacement_graphics = true;
         else if (!strcmp(argv[i], "--insns") && i + 1 < argc)
             insns = strtoull(argv[++i], NULL, 0);
         else if (!strcmp(argv[i], "--script") && i + 1 < argc)
@@ -435,6 +437,7 @@ int main(int argc, char **argv) {
 
     cfg.max_instructions = insns;
     cfg.replacement_fonts = replacement_fonts;
+    cfg.replacement_graphics = replacement_graphics;
 
     if (script_path[0] && !load_script(script_path)) return 2;
 

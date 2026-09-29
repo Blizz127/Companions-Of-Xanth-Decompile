@@ -27,7 +27,8 @@ runtime-selected music backend; the current OPL/AdLib path remains the default.
 | Host hotkeys | `--hotkeys` or `hotkeys=true` | Opt-in F11 fullscreen toggle and F10 scanline toggle. These host shortcuts are not sent to the guest when enabled. |
 | Per-channel volume | `--volume-master`, `--volume-music`, `--volume-sfx`, `--volume-voice` | Each accepts 0–128. Existing defaults are retained when omitted. |
 | General MIDI soundfont | `--soundfont <user.sf2>` or `soundfont=<user.sf2>` | Opt-in FluidSynth runtime backend over the emulated MPU-401 path; selects `MUSIC=mt32` in the save-side LEGEND.INI. Requires a system FluidSynth library and user-supplied SF2. No library, ROM, or soundfont is bundled. The existing AdLib route remains default. |
-| Hash-keyed asset mods | `--mods mods` or `mods=mods` | Local replacements in `mods/` are looked up by lowercase SHA-256 of the original asset. No replacement is active unless explicitly configured; files in the directory are ignored by Git. |
+| Hash-keyed asset mods | `--mods mods` or `mods=mods` | Local replacements are looked up by lowercase SHA-256 of the original asset. Sound and other non-graphics files retain existing mods behavior; graphics and fonts have separate opt-ins. Files in the directory are ignored by Git. |
+| Replacement graphics | `--mods mods --replacement-graphics` or `mods=mods` plus `replacement_graphics=true` | Allows hash-keyed `.PIC` and `.RGN` art replacements from the local mods directory. Both switches are required; retail art remains active by default. Replacement files are user supplied and must retain the game's expected format and dimensions. |
 | Replacement fonts | `--mods mods --replacement-fonts` or `mods=mods` plus `replacement_fonts=true` | Allows hash-keyed `.FNT` files to be replaced from the local mods directory. Both switches are required; fonts retain their retail files by default. After the game rasterizes a font into VGA pixels, SDL filters cannot change it, so this option replaces the user-supplied font asset before the guest loads it. |
 
 Config files are simple `key=value` text. For example:
@@ -49,6 +50,7 @@ volume_sfx=110
 volume_voice=120
 # mods=mods
 # replacement_fonts=false
+# replacement_graphics=false
 # soundfont=/path/to/user.sf2
 ```
 
@@ -100,6 +102,14 @@ for the remaining DOSBox comparison work.
 Focused Linux checks on 2026-09-29 compared default graphics with both the
 `--enhanced-graphics` preset and `enhanced_graphics=true`; all opening BMPs had
 SHA-256 `f92193b1c9673df2e6e812e00cff51caf703afbfd81eef6d0921b7b936920df3`.
+The separate hash-keyed graphics replacement gate was also checked for 120
+opening frames using identical user-side copies of `XANTH_00.PIC` and
+`XANTH_98.PIC`: default, `--mods` alone, and `--mods ...
+--replacement-graphics` all produced that same BMP hash with `fault=ok`.
+Tracing showed zero replacement-path PIC opens with `--mods` alone and two
+with the graphics opt-in. A config-only `mods=...` plus
+`replacement_graphics=true` run also resolved both files from the local hash
+directory and ended without a VM fault.
 The `walkthrough_01_mundania.xit` opening also produced identical values for
 all nine pinned checkpoints with the font toggle off and with it on using
 hash-identical copies of `XANTH_13.FNT`, `XANTH_10.FNT`, and `XANTH_01.FNT`.
