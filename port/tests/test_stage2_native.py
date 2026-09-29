@@ -65,6 +65,8 @@ class NativeStage2ParityTests(unittest.TestCase):
                 far_idx_hit = re.search(r"\[native\] get_far_idx hits: (\d+)", output)
                 reset_hit = re.search(r"\[native\] exe_37625 hits: (\d+)", output)
                 table_state_hit = re.search(r"\[native\] exe_99679 hits: (\d+)", output)
+                getter_hit = re.search(r"\[native\] exe_86810 hits: (\d+)", output)
+                far_getter_hit = re.search(r"\[native\] exe_84866 hits: (\d+)", output)
                 metrics = {
                     "frame": frame.group(1),
                     "set_int_and_zero_hits": hit.group(1) if hit else None,
@@ -76,6 +78,8 @@ class NativeStage2ParityTests(unittest.TestCase):
                     "get_far_idx_hits": far_idx_hit.group(1) if far_idx_hit else None,
                     "exe_37625_hits": reset_hit.group(1) if reset_hit else None,
                     "exe_99679_hits": table_state_hit.group(1) if table_state_hit else None,
+                    "exe_86810_hits": getter_hit.group(1) if getter_hit else None,
+                    "exe_84866_hits": far_getter_hit.group(1) if far_getter_hit else None,
                 }
                 for name, pattern in (
                     ("instructions", r"^instructions executed\s*:\s*(\d+)$"),
@@ -114,6 +118,85 @@ class NativeStage2ParityTests(unittest.TestCase):
             self.assertGreater(int(outputs["native"]["exe_37625_hits"]), 0)
             self.assertIsNone(outputs["vm"]["exe_99679_hits"])
             self.assertGreater(int(outputs["native"]["exe_99679_hits"]), 0)
+
+    def test_recovered_getters_match_during_interaction(self) -> None:
+        tool = Path(os.environ["XANTH_VMBOOT"])
+        interaction = ROOT / "tests" / "traces" / "interact_room.xit"
+        if not EXE.is_file() or not DATA.is_dir() or not interaction.is_file():
+            self.skipTest("retail files or interaction trace are not installed")
+
+        expected_hashes = {
+            "room_idle": "ace8f1a3d6b858f2",
+            "verb_take": "0c26affc320f0d17",
+            "took_computer": "e8ae412501bc4d7c",
+        }
+        source = "\n".join(
+            line for line in interaction.read_text(encoding="ascii").splitlines()
+            if not line.startswith("shot ")
+        ) + "\n"
+
+        with tempfile.TemporaryDirectory(prefix="xanth-stage2-interaction-") as tmp:
+            base = Path(tmp)
+            trace = base / "interaction_no_shot.xit"
+            trace.write_text(source, encoding="ascii")
+            outputs: dict[str, dict[str, object]] = {}
+
+            for mode, flags in (("vm", ["--vm-only"]), ("native", [])):
+                saves = base / f"saves-{mode}"
+                saves.mkdir()
+                proc = subprocess.run(
+                    [
+                        str(tool), "--exe", str(EXE), "--data", str(DATA),
+                        "--saves", str(saves), "--script", str(trace),
+                        "--insns", "2000000000", *flags,
+                    ],
+                    cwd=ROOT,
+                    env={
+                        **os.environ,
+                        "SDL_VIDEODRIVER": "dummy",
+                        "SDL_AUDIODRIVER": "dummy",
+                    },
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=180,
+                )
+                output = proc.stdout + proc.stderr
+                self.assertEqual(proc.returncode, 0, output[-3000:])
+                self.assertIn("fault                 : ok", output)
+                self.assertIn("MCB chain valid       : yes", output)
+                hashes = dict(re.findall(
+                    r"\[script\] hash (\S+) = ([0-9a-f]+)", output
+                ))
+                metrics: dict[str, object] = {"hashes": hashes}
+                for name, pattern in (
+                    ("instructions", r"^instructions executed\s*:\s*(\d+)$"),
+                    ("timer_ticks", r"^timer ticks delivered\s*:\s*(\d+)$"),
+                    ("dac_writes", r"^DAC writes\s*:\s*(\d+)$"),
+                    ("opl_writes", r"^OPL register writes\s*:\s*(\d+)$"),
+                    ("input_waits", r"^input waits\s*:\s*(\d+)$"),
+                    ("opened_files", r"^files opened\s*:(.*)$"),
+                ):
+                    value = re.search(pattern, output, re.MULTILINE)
+                    self.assertIsNotNone(value, output[-3000:])
+                    metrics[name] = value.group(1)
+                if mode == "native":
+                    for name in ("exe_86810", "exe_84866"):
+                        hit = re.search(rf"\[native\] {name} hits: (\d+)", output)
+                        self.assertIsNotNone(hit, output[-3000:])
+                        metrics[f"{name}_hits"] = hit.group(1)
+                outputs[mode] = metrics
+
+            self.assertEqual(outputs["vm"]["hashes"], expected_hashes)
+            self.assertEqual(outputs["native"]["hashes"], expected_hashes)
+            self.assertEqual(
+                {key: value for key, value in outputs["vm"].items()
+                 if not key.endswith("_hits")},
+                {key: value for key, value in outputs["native"].items()
+                 if not key.endswith("_hits")},
+            )
+            self.assertEqual(outputs["native"]["exe_86810_hits"], "517")
+            self.assertEqual(outputs["native"]["exe_84866_hits"], "17")
 
 
 if __name__ == "__main__":
