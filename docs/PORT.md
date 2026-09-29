@@ -60,14 +60,14 @@ are installed at verified EXE offsets 17,806, 17,820, 28,365, 29,169, 30,199, 31
 far pointer. `src/swap_int.c` replaces and returns a guest DS word; `src/exe_115346.c` stores -1 in its indexed DS table; the nonzero branch of `src/arr_set_one.c` stores 1; and the nonnegative branch of `src/exe_114942.c` copies two indexed table values to guest far pointers. Six `set_byte_one` entries write 1 to distinct guest DS bytes. Their partial branches stay interpreted. Two `src/set_int_pair.c` entries store two arguments into guest DS,
 and `src/set_int.c` entries at 85,206 and 112,665 store one argument. `src/exe_136552.c` returns -1 via verified `MOV AX,FFFF / RETF` bytes at offset 136,552. `src/exe_52710.c` returns the previous DS:0106 word and clears that word. `src/exe_52674.c` sets DS:0106 to one and DS:0102 to zero. `src/exe_112795.c` sets bit 7 on a bounds-checked far-table record.
 The counter/table update in
-`src/exe_99679.c` is lowered with guest DS reads, writes and 8086 flag rules. `src/exe_112711.c` now runs through a byte-guarded far-table adapter; its opening-route dispatches preserve the retail VM state.
+`src/exe_99679.c` is lowered with guest DS reads, writes and 8086 flag rules. `src/exe_112711.c` now runs through a byte-guarded far-table adapter; its opening-route dispatches preserve the retail VM state. The byte-matched `src/exe_34775.asm` data setter is also lowered with MZ segment relocation and `RETF 2` cleanup preserved.
 Adapters map the far-call
 stack, DS globals, result registers, far returns, flags, and guest instruction/cycle
-budgets. The interaction trace covers the earlier entries; `walkthrough_01_mundania.xit` dispatches `exe_52674` once, `exe_52710` eight times, `exe_112795` eighteen times, and `exe_112711` seven times, with all nine VM/native hashes, instructions, timer ticks, DAC/OPL writes, input waits, and opened-file lists matching. The constant-return `exe_136552` hook is byte-guarded but was not hit by these profiles; setter hooks retain
+budgets. The interaction trace covers the earlier entries; `walkthrough_01_mundania.xit` dispatches `exe_52674` once, `exe_52710` eight times, `exe_112795` eighteen times, and `exe_112711` seven times, with the `exe_34775` adapter also active; all nine VM/native hashes, instructions, timer ticks, DAC/OPL writes, input waits, and opened-file lists matching. The constant-return `exe_136552` hook is byte-guarded but was not hit by these profiles; setter hooks retain
 interpreter fallback at timer/DMA boundaries. A 100-frame production run calls
 `exe_94712` 18,880 times and takes the native fast return 90 times. The boot
 checkpoint hash and guest instruction, timer, audio and file-open metrics
-match with hooks disabled or enabled. This is 39/2,844 indexed units (1.37%),
+match with hooks disabled or enabled. This is 40/2,844 indexed units (1.41%),
 including one partial-path dispatch, not proof of whole-route source coverage.
 The full renderer/audio/input/files/timing interface boundary is also not yet
 complete. Further units need the same per-path byte evidence and VM/native
