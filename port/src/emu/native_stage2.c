@@ -114,6 +114,9 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define EXE_52674_G0_DS_OFFSET        0x0106u
 #define EXE_52674_G1_DS_OFFSET        0x0102u
 #define EXE_112711_OFFSET            112711u
+#define EXE_34775_OFFSET              34775u
+#define EXE_34775_DATA_SEGMENT        0x38afu
+#define EXE_34775_DATA_OFFSET         0x52b2u
 
 typedef struct {
     uint16_t exe_offset;
@@ -160,6 +163,7 @@ static uint64_t g_exe_52710_hits;
 static uint64_t g_exe_112795_hits;
 static uint64_t g_exe_52674_hits;
 static uint64_t g_exe_112711_hits;
+static uint64_t g_exe_34775_hits;
 static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
@@ -1167,6 +1171,45 @@ static hook_result_t native_exe_112711(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Lower the byte-verified assembly data setter, retaining its far return cleanup. */
+static hook_result_t native_exe_34775(cpu86 *cpu, void *user) {
+    const uint16_t entry_sp = cpu->r[CPU_SP];
+    const uint16_t arg = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    const uint16_t return_ip = seg_r16(cpu->s[CPU_SS], entry_sp);
+    const uint16_t return_cs = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 2u));
+    const uint16_t old_bp = cpu->r[CPU_BP];
+    vm *machine = (vm *)cpu->vm;
+    const uint16_t instruction_count = 21u;
+    const uint64_t cycles = (uint64_t)instruction_count * 4u;
+
+    if (cpu->step_budget_remaining < instruction_count) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    /* Recovered code writes DS=38AF:52B2 from arg and returns AX=0.
+     * Its SUB SP,2 is the only flags-changing instruction; RETF 2 cleans
+     * the argument after the two far-return words. */
+    (void)alu_op(cpu, ALU_SUB, (uint16_t)(entry_sp - 2u), 2u, 16);
+    seg_w16((uint16_t)(machine->img.load_seg + EXE_34775_DATA_SEGMENT),
+            EXE_34775_DATA_OFFSET, arg);
+    cpu->r[CPU_AX] = 0;
+    cpu->r[CPU_BP] = old_bp;
+    cpu->ip = return_ip;
+    cpu->s[CPU_CS] = return_cs;
+    cpu->r[CPU_SP] = (uint16_t)(entry_sp + 6u);
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = (uint8_t)instruction_count;
+    g_exe_34775_hits++;
+    return HOOK_DID_SETIP;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -1310,6 +1353,14 @@ bool xanth_native_stage2_install(vm *machine) {
         0x03, 0xdb, 0x39, 0x87, 0xe2, 0x67, 0x7f, 0xcd, 0x8b,
         0xe5, 0x5d, 0xcb
     };
+    static const uint8_t verified_exe_34775_body[] = {
+        0x55, 0x8b, 0xec, 0x83, 0xec, 0x02, 0x1e, 0x06,
+        0x56, 0x57, 0xb8, 0xaf, 0x38, 0x8e, 0xd8, 0xbe,
+        0xa6, 0x52, 0x8b, 0x46, 0x06, 0x89, 0x44, 0x0c,
+        0xc7, 0x46, 0xfe, 0x00, 0x00, 0x8b, 0x46, 0xfe,
+        0x5f, 0x5e, 0x07, 0x1f, 0x8b, 0xe5, 0x5d, 0xca,
+        0x02, 0x00
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1338,6 +1389,22 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            EXE_112711_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_exe_112711_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_34775_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_34775_OFFSET + (uint32_t)i;
+        /* The immediate segment at bytes 11-12 carries an MZ relocation. */
+        if (i == 11u || i == 12u) continue;
+        if (mem_r8(address) != verified_exe_34775_body[i]) return false;
+    }
+    {
+        uint32_t segment_word = (uint32_t)machine->img.load_seg * 16u +
+                                EXE_34775_OFFSET + 11u;
+        uint16_t expected_segment =
+            (uint16_t)(machine->img.load_seg + EXE_34775_DATA_SEGMENT);
+        if (mem_r8(segment_word) != (uint8_t)expected_segment ||
+            mem_r8(segment_word + 1u) != (uint8_t)(expected_segment >> 8))
+            return false;
     }
 
     for (size_t i = 0; i < sizeof(verified_body); i++) {
@@ -1675,6 +1742,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_112711_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_112711, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_34775_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_34775_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_exe_34775, NULL)) return false;
     return true;
 }
 
@@ -1796,4 +1868,8 @@ uint64_t xanth_native_exe_52674_hits(void) {
 
 uint64_t xanth_native_exe_112711_hits(void) {
     return g_exe_112711_hits;
+}
+
+uint64_t xanth_native_exe_34775_hits(void) {
+    return g_exe_34775_hits;
 }

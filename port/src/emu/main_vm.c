@@ -439,6 +439,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_52674_hits());
     fprintf(stderr, "[native] exe_112711 hits: %llu\n",
             (unsigned long long)xanth_native_exe_112711_hits());
+    fprintf(stderr, "[native] exe_34775 hits: %llu\n",
+            (unsigned long long)xanth_native_exe_34775_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();

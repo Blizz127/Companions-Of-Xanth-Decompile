@@ -78,17 +78,24 @@ class OpeningNativeParityTests(unittest.TestCase):
                     if re.search(pattern, output, re.MULTILINE) else None
                     for name, pattern in METRIC_PATTERNS.items()
                 }
-                hits = re.search(r"\[native\] exe_112711 hits: (\d+)", output)
+                hits = {
+                    name: re.search(rf"\[native\] {name} hits: (\d+)", output)
+                    for name in ("exe_112711", "exe_34775")
+                }
                 outputs[mode] = {
                     "hashes": hashes,
                     "metrics": metrics,
-                    "hits": hits.group(1) if hits else None,
+                    "hits": {
+                        name: result.group(1) if result else None
+                        for name, result in hits.items()
+                    },
                 }
 
         self.assertEqual(outputs["vm"]["hashes"], EXPECTED_HASHES)
         self.assertEqual(outputs["native"]["hashes"], EXPECTED_HASHES)
         self.assertEqual(outputs["vm"]["metrics"], outputs["native"]["metrics"])
-        self.assertGreater(int(outputs["native"]["hits"] or 0), 0)
+        for name in ("exe_112711", "exe_34775"):
+            self.assertGreater(int(outputs["native"]["hits"][name] or 0), 0)
 
 
 if __name__ == "__main__":

@@ -38,5 +38,6 @@ uint64_t xanth_native_exe_52710_hits(void);
 uint64_t xanth_native_exe_112795_hits(void);
 uint64_t xanth_native_exe_52674_hits(void);
 uint64_t xanth_native_exe_112711_hits(void);
+uint64_t xanth_native_exe_34775_hits(void);
 
 #endif
