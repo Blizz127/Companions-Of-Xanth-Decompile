@@ -528,6 +528,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] arr_set_one hits: %llu\n",
                 (unsigned long long)xanth_native_arr_set_one_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_114942 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_114942_hits());
 
     vm_report(&machine, stderr);
 

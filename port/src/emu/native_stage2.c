@@ -61,6 +61,7 @@
 #define ARR_SET_ONE_OFFSET          115161u
 #define ARR_SET_ONE_INDEX_DS_OFFSET 0x51e0u
 #define ARR_SET_ONE_ARRAY_DS_OFFSET 0x68d0u
+#define EXE_114942_OFFSET            114942u
 
 typedef struct {
     uint16_t offset;
@@ -86,6 +87,7 @@ static uint64_t g_clear_byte_hits;
 static uint64_t g_swap_int_hits;
 static uint64_t g_exe_115346_hits;
 static uint64_t g_arr_set_one_hits;
+static uint64_t g_exe_114942_hits;
 static xanth_guest_far_pointer g_far_ptr_scratch;
 
 static hook_result_t native_set_int_and_zero(cpu86 *cpu, void *user) {
@@ -611,7 +613,7 @@ static hook_result_t native_exe_115346(cpu86 *cpu, void *user) {
     }
 
     cpu->r[CPU_BX] = index;
-    (void)alu_op(cpu, ALU_ADD, cpu->r[CPU_BX], cpu->r[CPU_BX], 16);
+    cpu->r[CPU_BX] = alu_op(cpu, ALU_ADD, cpu->r[CPU_BX], cpu->r[CPU_BX], 16);
     bx = cpu->r[CPU_BX];
     seg_w16(cpu->s[CPU_DS], (uint16_t)(EXE_115346_ARRAY_DS_OFFSET + bx), 0xffffu);
     cpu->cycles += 4u * 4u;
@@ -636,12 +638,56 @@ static hook_result_t native_arr_set_one(cpu86 *cpu, void *user) {
     }
 
     cpu->r[CPU_BX] = seg_r16(cpu->s[CPU_DS], ARR_SET_ONE_INDEX_DS_OFFSET);
-    (void)alu_op(cpu, ALU_ADD, cpu->r[CPU_BX], cpu->r[CPU_BX], 16);
+    cpu->r[CPU_BX] = alu_op(cpu, ALU_ADD, cpu->r[CPU_BX], cpu->r[CPU_BX], 16);
     seg_w16(cpu->s[CPU_DS],
             (uint16_t)(ARR_SET_ONE_ARRAY_DS_OFFSET + cpu->r[CPU_BX]), 1u);
     cpu->cycles += 9u * 4u;
     cpu->step_guest_insns = 9;
     g_arr_set_one_hits++;
+    return HOOK_DID_RETF;
+}
+
+/* Lower exe_114942's nonnegative table-to-far-output path; negative stays VM. */
+static hook_result_t native_exe_114942(cpu86 *cpu, void *user) {
+    uint16_t entry_sp = cpu->r[CPU_SP];
+    uint16_t saved_bp = cpu->r[CPU_BP];
+    uint16_t saved_si = cpu->r[CPU_SI];
+    uint16_t index = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    uint16_t out_a = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 6u));
+    uint16_t seg_a = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 8u));
+    uint16_t out_b = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 10u));
+    uint16_t seg_b = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 12u));
+    vm *machine = (vm *)cpu->vm;
+    uint16_t bx, value;
+    const uint32_t cycles = 68u;
+
+    if ((int16_t)index < 0 || cpu->step_budget_remaining < 17u)
+        return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    bx = index;
+    bx = alu_op(cpu, ALU_ADD, bx, bx, 16);
+    value = seg_r16(cpu->s[CPU_DS], (uint16_t)(bx + 0x6840u));
+    cpu->r[CPU_SI] = saved_si;
+    cpu->s[CPU_ES] = seg_a;
+    seg_w16(seg_a, out_a, value);
+    cpu->r[CPU_AX] = seg_r16(cpu->s[CPU_DS], (uint16_t)(bx + 0x6850u));
+    cpu->r[CPU_BX] = out_b;
+    cpu->s[CPU_ES] = seg_b;
+    seg_w16(seg_b, out_b, cpu->r[CPU_AX]);
+    cpu->r[CPU_BP] = saved_bp;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = 17;
+    g_exe_114942_hits++;
     return HOOK_DID_RETF;
 }
 
@@ -729,6 +775,13 @@ bool xanth_native_stage2_install(vm *machine) {
         0x55, 0x8b, 0xec, 0x83, 0x7e, 0x06, 0x00, 0x74, 0x0c,
         0x8b, 0x1e, 0xe0, 0x51, 0x03, 0xdb, 0xc7, 0x87, 0xd0,
         0x68, 0x01, 0x00, 0x5d, 0xcb
+    };
+    static const uint8_t verified_exe_114942_body[] = {
+        0x55, 0x8b, 0xec, 0x56, 0x83, 0x7e, 0x06, 0x00, 0x7d, 0x0a,
+        0x33, 0xc0, 0xc4, 0x5e, 0x08, 0x26, 0x89, 0x07, 0xeb, 0x13,
+        0x8b, 0x5e, 0x06, 0x03, 0xdb, 0x8b, 0x87, 0x40, 0x68, 0xc4,
+        0x76, 0x08, 0x26, 0x89, 0x04, 0x8b, 0x87, 0x50, 0x68, 0xc4,
+        0x5e, 0x0c, 0x26, 0x89, 0x07, 0x5e, 0x8b, 0xe5, 0x5d, 0xcb
     };
     uint32_t linear;
     uint16_t segment, offset;
@@ -841,6 +894,11 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            ARR_SET_ONE_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_arr_set_one_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_114942_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_114942_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_exe_114942_body[i]) return false;
     }
 
     linear = (uint32_t)machine->img.load_seg * 16u + SET_INT_AND_ZERO_EXE_OFFSET;
@@ -961,7 +1019,13 @@ bool xanth_native_stage2_install(vm *machine) {
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
     g_arr_set_one_hits = 0;
-    return cpu86_hook_install(segment, offset, native_arr_set_one, NULL);
+    if (!cpu86_hook_install(segment, offset, native_arr_set_one, NULL)) return false;
+
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_114942_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_114942_hits = 0;
+    return cpu86_hook_install(segment, offset, native_exe_114942, NULL);
 }
 
 uint64_t xanth_native_set_int_and_zero_hits(void) {
@@ -1038,4 +1102,8 @@ uint64_t xanth_native_exe_115346_hits(void) {
 
 uint64_t xanth_native_arr_set_one_hits(void) {
     return g_arr_set_one_hits;
+}
+
+uint64_t xanth_native_exe_114942_hits(void) {
+    return g_exe_114942_hits;
 }

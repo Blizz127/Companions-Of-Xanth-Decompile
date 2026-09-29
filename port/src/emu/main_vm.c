@@ -401,6 +401,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_115346_hits());
     fprintf(stderr, "[native] arr_set_one hits: %llu\n",
             (unsigned long long)xanth_native_arr_set_one_hits());
+    fprintf(stderr, "[native] exe_114942 hits: %llu\n",
+            (unsigned long long)xanth_native_exe_114942_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();
