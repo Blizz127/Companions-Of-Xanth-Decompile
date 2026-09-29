@@ -549,100 +549,52 @@ key 32 57
 run 50
 checkpoint wt13_in_dungeon
 shot build/frames/draft_in_dungeon.bmp
-# 7. In dungeon: talk to manacles
-# Type: talk to manacles
-key 116 0
-run 2
-key 97 0
-run 2
-key 108 0
-run 2
-key 107 0
-run 2
-key 32 0
-run 2
-key 116 0
-run 2
-key 111 0
-run 2
-key 32 0
-run 2
-key 109 0
-run 2
-key 97 0
-run 2
-key 110 0
-run 2
-key 97 0
-run 2
-key 99 0
-run 2
-key 108 0
-run 2
-key 101 0
-run 2
-key 115 0
-run 2
+# 7. Talk to the manacles using the verb list and hotspot.
+move 14 57
+run 5
+click left
+run 15
+move 213 23
+run 5
+click left
+run 60
 key 13 28
 run 40
+key 32 57
+run 50
 checkpoint wt13_free_nada
 shot build/frames/draft_after_free_nada.bmp
-# 8. In dungeon: open jar
-# Type: open jar
-key 111 0
-run 2
-key 112 0
-run 2
-key 101 0
-run 2
-key 110 0
-run 2
-key 32 0
-run 2
-key 106 0
-run 2
-key 97 0
-run 2
-key 114 0
-run 2
-key 13 28
+# 8. Try Open on the inventory jar.
+move 14 37
+run 5
+click left
+run 15
+move 119 164
+run 5
+click left
 run 40
 checkpoint wt13_open_jar
 shot build/frames/draft_after_open_jar.bmp
-# 9. In dungeon: take moss
-# Type: take moss
-key 116 0
-run 2
-key 97 0
-run 2
-key 107 0
-run 2
-key 101 0
-run 2
-key 32 0
-run 2
-key 109 0
-run 2
-key 111 0
-run 2
-key 115 0
-run 2
-key 115 0
-run 2
-key 13 28
-run 40
+# 9. Try Take on the agony moss hotspot.
+move 14 7
+run 5
+click left
+run 15
+move 148 45
+run 5
+click left
+run 45
 checkpoint wt13_take_moss
 shot build/frames/draft_after_take_moss.bmp
-# 10. In dungeon: climb stairs up
-# Type: up
-key 117 0
-run 2
-key 112 0
-run 2
-key 13 28
+# 10. Try the north compass arrow; the screenshot records the resulting state.
+move 24 135
+run 5
+click left
 run 40
-checkpoint wt13_up
-shot build/frames/draft_after_up.bmp
+move 305 196
+run 5
+checkpoint wt13_after_north_arrow
+shot build/frames/draft_after_ascended.bmp
 
 # Read the live score panel.
 move 35 174

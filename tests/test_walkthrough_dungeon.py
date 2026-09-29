@@ -1,4 +1,4 @@
-"""Long retail-VM route through the barrow dungeon artifacts and stairs."""
+"""Long retail-VM route through the barrow dungeon and its current frontier."""
 
 from __future__ import annotations
 
@@ -29,11 +29,11 @@ GOLDEN = {
     "wt13_button_clicked": "c573cf635e857cbc",
     "wt13_push_button": "3d5c73bddbaee114",
     "wt13_in_dungeon": "c5ccc8e0e6b13de0",
-    "wt13_free_nada": "57a1f703f5995008",
-    "wt13_open_jar": "c3f7023676af0474",
-    "wt13_take_moss": "dd25a0da45bf1845",
-    "wt13_up": "149fd83d54bea148",
-    "wt13_score": "532834cd9e30428d",
+    "wt13_free_nada": "0725a127c7c9091f",
+    "wt13_open_jar": "16dcfe2d060c3467",
+    "wt13_take_moss": "d3353741cd1df6cb",
+    "wt13_after_north_arrow": "3a90d780eb171827",
+    "wt13_score": "07be068d04aaba77",
 }
 
 
@@ -70,9 +70,9 @@ class DungeonRouteTests(unittest.TestCase):
         for name, expected in GOLDEN.items():
             self.assertEqual(self.marks.get(name), expected, name)
 
-    def test_live_score_reaches_230(self) -> None:
+    def test_live_score_reaches_242(self) -> None:
         text = read_game_font_text(SCORE, DATA / "XANTH_10.FNT", 30, 110)
-        self.assertIn("230 of 1000 points", text)
+        self.assertIn("242 of 1000 points", text)
 
 
 if __name__ == "__main__":
