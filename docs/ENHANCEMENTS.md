@@ -97,6 +97,16 @@ asset set. No broad claim of visual/audio/timing parity should be based only on
 matching hashes within the VM; see [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md)
 for the remaining DOSBox comparison work.
 
+Focused Linux checks on 2026-09-29 compared default graphics with both the
+`--enhanced-graphics` preset and `enhanced_graphics=true`; all opening BMPs had
+SHA-256 `f92193b1c9673df2e6e812e00cff51caf703afbfd81eef6d0921b7b936920df3`.
+The `walkthrough_01_mundania.xit` opening also produced identical values for
+all nine pinned checkpoints with the font toggle off and with it on using
+hash-identical copies of `XANTH_13.FNT`, `XANTH_10.FNT`, and `XANTH_01.FNT`.
+The DOS trace showed those three files resolving to the local mod hashes only
+when `--replacement-fonts` was enabled. Both font runs ended `fault=ok` with a
+valid MCB chain. This check covers that opening route only.
+
 As of 2026-09-29, a fresh Linux Release build succeeds and all 15 registered
 CTest cases pass, including the retail walkthrough/hash suite and VM soak
 case. A one-frame BMP from default startup is byte-identical to one captured
