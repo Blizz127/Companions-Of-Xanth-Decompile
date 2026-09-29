@@ -393,6 +393,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_set_int_a_hits());
     fprintf(stderr, "[native] set_int B hits: %llu\n",
             (unsigned long long)xanth_native_set_int_b_hits());
+    fprintf(stderr, "[native] clear_byte hits: %llu\n",
+            (unsigned long long)xanth_native_clear_byte_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();
