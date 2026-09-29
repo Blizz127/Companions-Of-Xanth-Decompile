@@ -385,6 +385,10 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_86810_hits());
     fprintf(stderr, "[native] exe_84866 hits: %llu\n",
             (unsigned long long)xanth_native_exe_84866_hits());
+    fprintf(stderr, "[native] set_int_pair A hits: %llu\n",
+            (unsigned long long)xanth_native_set_int_pair_a_hits());
+    fprintf(stderr, "[native] set_int_pair B hits: %llu\n",
+            (unsigned long long)xanth_native_set_int_pair_b_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();

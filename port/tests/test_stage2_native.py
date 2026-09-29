@@ -181,8 +181,13 @@ class NativeStage2ParityTests(unittest.TestCase):
                     self.assertIsNotNone(value, output[-3000:])
                     metrics[name] = value.group(1)
                 if mode == "native":
-                    for name in ("exe_86810", "exe_84866"):
-                        hit = re.search(rf"\[native\] {name} hits: (\d+)", output)
+                    for name, label in (
+                        ("exe_86810", "exe_86810"),
+                        ("exe_84866", "exe_84866"),
+                        ("set_int_pair_a", "set_int_pair A"),
+                        ("set_int_pair_b", "set_int_pair B"),
+                    ):
+                        hit = re.search(rf"\[native\] {label} hits: (\d+)", output)
                         self.assertIsNotNone(hit, output[-3000:])
                         metrics[f"{name}_hits"] = hit.group(1)
                 outputs[mode] = metrics
@@ -197,6 +202,13 @@ class NativeStage2ParityTests(unittest.TestCase):
             )
             self.assertEqual(outputs["native"]["exe_86810_hits"], "517")
             self.assertEqual(outputs["native"]["exe_84866_hits"], "17")
+            pair_a_hits = int(outputs["native"]["set_int_pair_a_hits"])
+            pair_b_hits = int(outputs["native"]["set_int_pair_b_hits"])
+            # These hooks intentionally fall back to the interpreter at timer/DMA edges.
+            self.assertGreater(pair_a_hits, 0)
+            self.assertLessEqual(pair_a_hits, 988)
+            self.assertGreater(pair_b_hits, 0)
+            self.assertLessEqual(pair_b_hits, 66)
 
 
 if __name__ == "__main__":
