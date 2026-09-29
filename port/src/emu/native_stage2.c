@@ -26,6 +26,8 @@
 #define EXE_94712_EXE_OFFSET        94712u
 #define IF0_HELPER_INC_EXE_OFFSET   16216u
 #define IF0_HELPER_INC_G_DS_OFFSET  0x69bau
+#define EXE_14360_EXE_OFFSET        14360u
+#define EXE_14360_TBL_DS_OFFSET     0x56a5u
 
 typedef struct {
     uint16_t offset;
@@ -36,6 +38,7 @@ static uint64_t g_set_int_and_zero_hits;
 static uint64_t g_set_far_ptr_hits;
 static uint64_t g_exe_94712_hits;
 static uint64_t g_if0_helper_inc_hits;
+static uint64_t g_exe_14360_hits;
 static xanth_guest_far_pointer g_far_ptr_scratch;
 
 static hook_result_t native_set_int_and_zero(cpu86 *cpu, void *user) {
@@ -189,6 +192,36 @@ static hook_result_t native_if0_helper_inc_nonzero(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Portable lowering of recovered src/exe_14360.c. */
+static hook_result_t native_exe_14360(cpu86 *cpu, void *user) {
+    uint16_t arg = seg_r16(cpu->s[CPU_SS], (uint16_t)(cpu->r[CPU_SP] + 4));
+    uint16_t table_offset = (uint16_t)(EXE_14360_TBL_DS_OFFSET + arg);
+    uint8_t bit = seg_r8(cpu->s[CPU_DS], table_offset);
+    uint16_t instruction_count = (bit & 1u) ? 9u : 8u;
+    vm *machine = (vm *)cpu->vm;
+
+    if (cpu->step_budget_remaining < instruction_count) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t edge_cycles = (uint64_t)instruction_count * 4u;
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= edge_cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= edge_cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    /* TEST r/m8,1; JZ; then LEA or MOV sets only the return value. */
+    (void)alu_op(cpu, ALU_AND, bit, 1u, 8);
+    cpu->r[CPU_BX] = arg;
+    cpu->r[CPU_AX] = (uint16_t)(arg + ((bit & 1u) ? 0x20u : 0u));
+    cpu->cycles += (uint64_t)instruction_count * 4u;
+    cpu->step_guest_insns = (uint8_t)instruction_count;
+    g_exe_14360_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -206,6 +239,11 @@ bool xanth_native_stage2_install(vm *machine) {
     };
     static const uint8_t verified_if0_helper_inc_fast_prefix[] = {
         0x83, 0x3e, 0xba, 0x69, 0x00, 0x75, 0x09
+    };
+    static const uint8_t verified_exe_14360_body[] = {
+        0x55, 0x8b, 0xec, 0x8b, 0x5e, 0x06, 0xf6, 0x87, 0xa5, 0x56,
+        0x01, 0x74, 0x05, 0x8d, 0x47, 0x20, 0xeb, 0x02, 0x8b, 0xc3,
+        0x5d, 0xcb
     };
     uint32_t linear;
     uint16_t segment, offset;
@@ -241,6 +279,12 @@ bool xanth_native_stage2_install(vm *machine) {
     if (mem_r8((uint32_t)machine->img.load_seg * 16u +
                IF0_HELPER_INC_EXE_OFFSET + 16u) != 0xcb) return false;
 
+    for (size_t i = 0; i < sizeof(verified_exe_14360_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_14360_EXE_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_exe_14360_body[i]) return false;
+    }
+
     linear = (uint32_t)machine->img.load_seg * 16u + SET_INT_AND_ZERO_EXE_OFFSET;
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
@@ -263,7 +307,13 @@ bool xanth_native_stage2_install(vm *machine) {
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
     g_if0_helper_inc_hits = 0;
-    return cpu86_hook_install(segment, offset, native_if0_helper_inc_nonzero, NULL);
+    if (!cpu86_hook_install(segment, offset, native_if0_helper_inc_nonzero, NULL)) return false;
+
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_14360_EXE_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_14360_hits = 0;
+    return cpu86_hook_install(segment, offset, native_exe_14360, NULL);
 }
 
 uint64_t xanth_native_set_int_and_zero_hits(void) {
@@ -280,4 +330,8 @@ uint64_t xanth_native_exe_94712_hits(void) {
 
 uint64_t xanth_native_if0_helper_inc_hits(void) {
     return g_if0_helper_inc_hits;
+}
+
+uint64_t xanth_native_exe_14360_hits(void) {
+    return g_exe_14360_hits;
 }

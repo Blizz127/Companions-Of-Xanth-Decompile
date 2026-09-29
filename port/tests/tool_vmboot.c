@@ -483,6 +483,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] if0_helper_inc fast-return hits: %llu\n",
                 (unsigned long long)xanth_native_if0_helper_inc_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_14360 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_14360_hits());
 
     vm_report(&machine, stderr);
 

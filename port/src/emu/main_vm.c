@@ -371,6 +371,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_94712_hits());
     fprintf(stderr, "[native] if0_helper_inc fast-return hits: %llu\n",
             (unsigned long long)xanth_native_if0_helper_inc_hits());
+    fprintf(stderr, "[native] exe_14360 hits: %llu\n",
+            (unsigned long long)xanth_native_exe_14360_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();
