@@ -1,0 +1,83 @@
+# Walkthrough, segment 7: escaping the dimly lit cavern into Xanth (9 points).
+#
+# SAVE-ANCHORED: Boots and restores the anchor produced by anchor_in_xanth.xit
+# (the dimly lit cavern, Nada as Companion). That is NOT the post-opening
+# anchor resume_after_opening.xit restores -- a segment-6 save left in slot 1
+# is the wrong room, and every click below would land in Mundania.
+#
+# Route, measured:
+# - Wear the 3D glasses in inventory slot 1 (92,162). The context verb is
+#   Wear at (14,87): "You slide the way-cool shades on."
+# - WAIT is F1 (key 0 59). Three waits, and no fourth: Nada searches the
+#   cavern, shifts to the second door, then "it slowly slides open" and the
+#   North compass exit lights. A fourth wait starts a different speech.
+# - North (24,135). Space advances her greeting to the disbelief question.
+#   Option rows on THAT page are lower than the phone/Grundy menus, because
+#   the question sits above them. "No. This can't be real." is the yellow
+#   row at (100,124).
+# - The checkmark at (105,128) pages her explanation; Space extricates Dug.
+#   "[9 points] Nada has successfully extricated you from the cavern.
+#   You're finally in Xanth." (40 points total.)
+
+include lib/resume_in_xanth.xit
+checkpoint wt7_resumed
+
+# --- Wear 3D glasses ---
+move 92 162
+run 5
+click left
+run 30
+move 14 87
+run 5
+click left
+run 60
+move 305 196
+run 20
+checkpoint wt7_glasses_worn
+shot build/frames/wt7_glasses_worn.bmp
+
+# --- Three waits: Nada finds the second door and opens it ---
+key 0 59
+run 40
+key 0 59
+run 40
+key 0 59
+run 40
+move 305 196
+run 15
+checkpoint wt7_door_opened
+shot build/frames/wt7_door_opened.bmp
+
+# --- North through the doorway. Space reveals the disbelief question. ---
+move 24 135
+run 10
+click left
+run 100
+key 32
+run 60
+move 305 196
+run 15
+checkpoint wt7_nada_speaks
+shot build/frames/wt7_nada_speaks.bmp
+
+# --- "No. This can't be real." ---
+move 100 124
+run 10
+click left
+run 60
+move 305 196
+run 15
+checkpoint wt7_option1_chosen
+shot build/frames/wt7_option1_chosen.bmp
+
+# --- Page her explanation, then the clearing outside ---
+move 105 128
+run 10
+click left
+run 60
+key 32
+run 60
+move 305 196
+run 20
+checkpoint wt7_cavern_escaped
+shot build/frames/wt7_cavern_escaped.bmp

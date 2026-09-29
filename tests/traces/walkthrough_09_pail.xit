@@ -1,0 +1,198 @@
+# Walkthrough segment 9: the trapped pail through Fairy Nuff's recipe.
+#
+# Continues walkthrough_08_from_village.xit. That trace leaves the score
+# panel up on the meadow (102 points) with the bucket still on the path.
+# Do not kick the bucket. Take it, then the published Nada route: the
+# Eye Screen, the fairway tee, the green's egg, and Fairy Nuff's recipe.
+#
+# Clicks are move-then-click. The click holds the button across several
+# polls, which is enough for a verb to register before the noun.
+
+include walkthrough_08_from_village.xit
+
+# Dismiss the 102-point panel. Checkmark measured on wt8_score.bmp.
+move 165 123
+click left
+run 24
+
+# Take the pail. A bare click kicks it, and it runs.
+move 14 7
+click left
+move 226 96
+click left
+# Moving the cursor clears this line, so the checkpoint is taken
+# on the pail. It reads the handle, the rock, and [7 points].
+checkpoint wt9_pail
+shot build/frames/wt9_pail.bmp
+move 305 196
+run 4
+
+# Northeast, northeast: the cliff path, then the Eye Screen.
+move 37 135
+click left
+run 48
+move 37 135
+click left
+run 48
+move 305 196
+run 8
+checkpoint wt9_eye
+shot build/frames/wt9_eye.bmp
+
+# Open the mailbox and take the envelope inside it.
+move 14 37
+click left
+move 258 58
+click left
+run 12
+move 14 7
+click left
+move 262 60
+click left
+run 14
+
+# Open the envelope, then Read the letter (context verb, y=87).
+move 14 37
+click left
+move 92 162
+click left
+run 14
+move 92 162
+click left
+move 14 87
+click left
+run 8
+checkpoint wt9_letter
+shot build/frames/wt9_letter.bmp
+
+# Fold the letter back into the envelope and return that to the mailbox.
+# The letter itself is refused ("doesn't seem to belong inside").
+move 19 91
+click left
+run 14
+move 14 17
+click left
+move 92 162
+click left
+move 132 162
+click left
+run 12
+move 14 17
+click left
+move 92 162
+click left
+move 258 58
+click left
+run 14
+
+# Talk to the eye. Threaten to poke it, then ask the way to Fairy Nuff.
+move 14 57
+click left
+move 181 28
+click left
+run 10
+move 184 32
+click left
+run 10
+move 120 150
+click left
+run 10
+move 110 102
+click left
+run 10
+move 130 110
+click left
+run 10
+move 150 118
+click left
+run 10
+move 80 112
+click left
+run 10
+move 90 116
+click left
+run 16
+
+# Open the screen, then the wooden door.
+move 14 37
+click left
+move 165 60
+click left
+run 12
+move 14 37
+click left
+move 165 78
+click left
+run 14
+
+# North to the fairway. Take the tee.
+move 24 135
+click left
+run 42
+move 14 7
+click left
+move 162 87
+click left
+run 10
+move 305 196
+run 4
+checkpoint wt9_tee
+shot build/frames/wt9_tee.bmp
+
+# North to the green. Take the egg. Northeast to the booth.
+move 24 135
+click left
+run 42
+move 14 7
+click left
+move 119 115
+click left
+run 12
+move 37 135
+click left
+run 42
+move 305 196
+run 6
+checkpoint wt9_booth
+shot build/frames/wt9_booth.bmp
+
+# Ask him to help with the censor-ship. Two censers. Read the recipe.
+move 14 57
+click left
+move 130 45
+click left
+run 10
+move 140 105
+click left
+run 10
+move 160 121
+click left
+run 10
+move 60 121
+click left
+run 12
+move 70 125
+click left
+run 14
+move 92 162
+click left
+move 14 87
+click left
+run 8
+move 305 196
+run 4
+checkpoint wt9_recipe
+shot build/frames/wt9_recipe.bmp
+
+# Dismiss the recipe, then the status panel.
+move 19 91
+click left
+run 14
+move 35 174
+click left
+run 14
+move 160 120
+click left
+run 18
+checkpoint wt9_score
+shot build/frames/wt9_score.bmp

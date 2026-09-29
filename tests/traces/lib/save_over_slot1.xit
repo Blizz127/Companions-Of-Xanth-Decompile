@@ -1,0 +1,35 @@
+# Save over the existing slot 1, so the save directory keeps exactly one
+# save. Creating a second one would make lib/restore_slot1.xit ambiguous
+# (both rows would read "ZZZZ"), and renaming files behind the game's back
+# is the kind of shortcut that works until it silently does not.
+#
+# Same menu geometry as save_as_ZZZZ.xit; the difference is clicking the
+# existing row at (100,78) instead of typing a fresh name.
+
+move 35 174
+run 10
+click left
+run 40
+move 160 56
+run 10
+click left
+run 50
+move 100 78
+run 10
+click left
+run 30
+move 65 168
+run 10
+click left
+run 70
+
+# "Overwrite the saved game?" -- Yes at (157,95), No at (157,111), measured
+# from the rendered box. Without this the dialogue stays up and the save is
+# never written, which is visible only as a save file whose mtime never
+# changed.
+move 157 95
+run 10
+click left
+run 70
+move 305 196
+run 15

@@ -1,0 +1,20 @@
+# Boot and restore the anchor produced by anchor_in_xanth.xit: the dimly
+# lit cavern, with Nada as Companion. Same boot-time restore path as
+# resume_after_opening.xit -- see that file for why it differs from the
+# mid-game system-menu route.
+include boot.xit
+
+move 160 95
+run 10
+click left
+run 60
+move 100 78
+run 10
+click left
+run 30
+move 65 168
+run 10
+click left
+run 90
+move 305 196
+run 20

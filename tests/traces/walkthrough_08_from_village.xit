@@ -1,0 +1,405 @@
+# Walkthrough segment 8, from the Isthmus Village anchor (45 points).
+#
+# Boots and restores build/anchor_isthmus (slot 1): the village center,
+# cherry bomb and buttercup already taken. The steps below are the same
+# village-onward list as walkthrough_08_isthmus.xit.
+#
+# - Agree to rid the village of the censor-ship; receive the rusty key.
+# - Take the Town Rock and both streetlight lamp covers.
+# - Unlock and open the gate; north to the pier.
+# - Take the sailcloth. Nada retrieves the rope and anchor.
+# - Tie the rope to the anchor. Throw the hook at the log jam.
+# - The headman planes the log into a board.
+# - East, on the barren road: board then rock on the boulder.
+# - Nada whacks the catapult; the rock traps the bucket in the meadow.
+
+include lib/boot.xit
+
+move 160 95
+run 10
+click left
+run 60
+move 100 78
+run 10
+click left
+run 30
+move 65 168
+run 10
+click left
+run 90
+move 305 196
+run 20
+checkpoint wt8_resumed
+shot build/frames/wt8_resumed.bmp
+
+# --- Headman: agree, take the key ---
+move 14 57
+run 5
+click left
+run 12
+move 78 60
+run 5
+click left
+run 40
+# "I wish I had some business here. What's yours?"
+move 80 157
+run 4
+click left
+run 40
+# "You would?"
+move 60 142
+run 4
+click left
+run 40
+# "Tell me what's happening around these parts, headman."
+move 80 149
+run 4
+click left
+run 40
+# "Tell me more, headman."
+move 70 142
+run 4
+click left
+run 40
+# "<Bleep> <bleep>, this <bleep>."
+move 70 149
+run 4
+click left
+run 40
+# "Yes, I guess. But how can I do it if you cannot?"
+move 70 142
+run 4
+click left
+run 40
+# "What solution?"
+move 70 142
+run 4
+click left
+run 40
+# "Thank you for your advice, headman. I bid you farewell."
+move 80 165
+run 4
+click left
+run 40
+move 95 153
+run 4
+click left
+run 30
+move 305 196
+run 10
+checkpoint wt8_key
+shot build/frames/wt8_key.bmp
+
+# --- Unlock the gate with the key (still in slot 1), then open it ---
+move 180 50
+run 5
+click left
+run 12
+move 14 97
+run 4
+click left
+run 10
+move 92 162
+run 4
+click left
+run 35
+move 180 50
+run 5
+click left
+run 10
+move 14 37
+run 4
+click left
+run 35
+move 305 196
+run 8
+checkpoint wt8_gate
+shot build/frames/wt8_gate.bmp
+
+# --- Town Rock, then both lamp covers ---
+move 101 111
+run 5
+click left
+run 10
+move 14 7
+run 4
+click left
+run 30
+move 305 196
+run 8
+checkpoint wt8_rock
+shot build/frames/wt8_rock.bmp
+
+move 104 16
+run 5
+click left
+run 10
+move 14 7
+run 4
+click left
+run 25
+move 260 16
+run 5
+click left
+run 10
+move 14 7
+run 4
+click left
+run 25
+move 305 196
+run 8
+checkpoint wt8_covers
+shot build/frames/wt8_covers.bmp
+
+# --- North onto the pier ---
+move 24 135
+run 6
+click left
+run 50
+move 305 196
+run 10
+checkpoint wt8_pier
+shot build/frames/wt8_pier.bmp
+
+# --- Sailcloth ---
+move 156 86
+run 5
+click left
+run 10
+move 14 7
+run 4
+click left
+run 25
+move 305 196
+run 8
+checkpoint wt8_sail
+shot build/frames/wt8_sail.bmp
+
+# --- Nada fetches the rope and anchor ---
+move 14 57
+run 4
+click left
+run 8
+move 72 160
+run 4
+click left
+run 35
+# "I wonder why this rope is tied here, Nada."
+move 100 133
+run 4
+click left
+run 35
+# "Go to it, princess."
+move 100 134
+run 4
+click left
+run 40
+move 105 137
+run 4
+click left
+run 40
+# "Thanks. I'm sure I will."
+move 100 126
+run 4
+click left
+run 35
+# "Okay, I'm not looking."
+move 100 127
+run 4
+click left
+run 35
+key 32
+run 25
+move 305 196
+run 8
+checkpoint wt8_anchor
+shot build/frames/wt8_anchor.bmp
+
+# --- Tie the rope onto the anchor ---
+move 112 162
+run 5
+click left
+run 10
+move 14 87
+run 4
+click left
+run 10
+move 132 162
+run 4
+click left
+run 30
+move 305 196
+run 8
+checkpoint wt8_hook
+shot build/frames/wt8_hook.bmp
+
+# --- Pier, south; forest, northwest; crossroads, west ---
+move 24 161
+run 6
+click left
+run 45
+move 11 135
+run 6
+click left
+run 45
+move 11 148
+run 6
+click left
+run 45
+move 305 196
+run 8
+checkpoint wt8_crossroads
+shot build/frames/wt8_crossroads.bmp
+
+# --- Pry a log out of the jam ---
+move 112 162
+run 5
+click left
+run 10
+move 14 87
+run 4
+click left
+run 8
+move 66 76
+run 4
+click left
+run 35
+move 305 196
+run 8
+checkpoint wt8_log
+shot build/frames/wt8_log.bmp
+
+# --- Back to the village; the headman planes a board ---
+move 37 148
+run 6
+click left
+run 40
+move 37 161
+run 6
+click left
+run 40
+move 14 57
+run 4
+click left
+run 10
+move 78 60
+run 4
+click left
+run 35
+# "I could use a thin flat board. Can you help?"
+move 90 157
+run 4
+click left
+run 35
+# "Yes. Please help."
+move 90 142
+run 4
+click left
+run 35
+move 95 145
+run 4
+click left
+run 20
+key 0 59
+run 40
+move 95 145
+run 4
+click left
+run 25
+move 305 196
+run 8
+checkpoint wt8_board
+shot build/frames/wt8_board.bmp
+
+# --- East, barren road. Board, then rock, on the boulder ---
+move 37 148
+run 6
+click left
+run 45
+move 305 196
+run 8
+checkpoint wt8_cliffs
+shot build/frames/wt8_cliffs.bmp
+
+move 92 162
+run 5
+click left
+run 8
+move 14 17
+run 4
+click left
+run 8
+move 136 100
+run 4
+click left
+run 30
+key 32
+run 15
+move 305 196
+run 6
+checkpoint wt8_board_set
+shot build/frames/wt8_board_set.bmp
+
+move 212 162
+run 5
+click left
+run 8
+move 14 17
+run 4
+click left
+run 8
+move 136 100
+run 4
+click left
+run 30
+key 32
+run 15
+move 305 196
+run 6
+checkpoint wt8_rock_set
+shot build/frames/wt8_rock_set.bmp
+
+# --- Nada whacks the catapult ---
+move 14 57
+run 4
+click left
+run 8
+move 72 160
+run 4
+click left
+run 30
+# "Nada, would you please whack my catapult with your Naga tail?"
+move 100 134
+run 4
+click left
+run 25
+move 105 137
+run 4
+click left
+run 40
+move 305 196
+run 10
+checkpoint wt8_sprung
+shot build/frames/wt8_sprung.bmp
+
+# --- The bucket is trapped in the meadow ---
+move 37 135
+run 6
+click left
+run 50
+move 305 196
+run 10
+checkpoint wt8_bucket
+shot build/frames/wt8_bucket.bmp
+
+# Score, so the frame can be read: 102 points.
+move 35 174
+run 6
+click left
+run 20
+move 160 120
+run 4
+click left
+run 25
+checkpoint wt8_score
+shot build/frames/wt8_score.bmp

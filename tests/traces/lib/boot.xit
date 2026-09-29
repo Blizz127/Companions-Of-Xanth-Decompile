@@ -1,0 +1,19 @@
+# Boot into the game and park the cursor out of the way.
+#
+# Three space bars: Legend logo, demon cutscene, title screen. Each is a
+# "press any key" gate, and the run counts between them are the animation
+# lengths -- pressing too early is swallowed rather than skipping ahead.
+#
+# The cursor is parked at (305,196), outside the picture window and clear of
+# every hotspot, so that a checkpoint hash taken afterwards records the room
+# rather than whatever the mouse happened to be hovering over.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15

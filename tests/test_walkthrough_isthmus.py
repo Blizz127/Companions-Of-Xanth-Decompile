@@ -12,11 +12,14 @@ Requires the retail disc, so it skips cleanly in asset-free CI.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import shutil
 import subprocess
 import unittest
 from pathlib import Path
+
+from tests.font_ocr import read_game_font_text
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 EXE = PROJECT_ROOT / "original" / "XANTH.EXE"
@@ -32,6 +35,35 @@ SCORE = PROJECT_ROOT / "build" / "frames" / "wt8_score.bmp"
 # Measured: the trace executes 6.972e9 instructions. A short budget
 # truncates silently and the later checkpoints never appear.
 BUDGET = 9_000_000_000
+ANCHOR_BUDGET = 6_000_000_000
+ANCHOR_SLOT_SHA256 = "1f20f6245a1336a8d9cc7e1c1a29cd43ea019c30084e3ccebaf8ccb40433eedb"
+
+
+def prepare_village_anchor() -> Path:
+    """Build the 45-point village save once, separate from the Void fixture."""
+    slot = ANCHOR / "XANTH000.SAV"
+    if slot.is_file() and hashlib.sha256(slot.read_bytes()).hexdigest() == ANCHOR_SLOT_SHA256:
+        return ANCHOR
+    if not (ANCHOR_SOURCE / "XANTH000.SAV").is_file():
+        raise unittest.SkipTest(f"40-point Xanth anchor not present: {ANCHOR_SOURCE}")
+    if ANCHOR.exists():
+        shutil.rmtree(ANCHOR)
+    shutil.copytree(ANCHOR_SOURCE, ANCHOR)
+    proc = subprocess.run(
+        [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
+         "--saves", str(ANCHOR), "--script", str(ANCHOR_TRACE),
+         "--insns", str(ANCHOR_BUDGET)],
+        capture_output=True, text=True, timeout=900,
+    )
+    out = proc.stdout + proc.stderr
+    if (proc.returncode != 0
+            or "fault                 : ok" not in out
+            or "MCB chain valid       : yes" not in out
+            or "wt8_village_anchor" not in out
+            or not slot.is_file()
+            or hashlib.sha256(slot.read_bytes()).hexdigest() != ANCHOR_SLOT_SHA256):
+        raise AssertionError(f"could not build 45-point village anchor:\n{out[-2000:]}")
+    return ANCHOR
 
 # Checkpoint order is the order the trace reaches them. Two consecutive
 # runs produced these hashes; they are pinned, not guessed.
@@ -80,78 +112,7 @@ GOLDEN = {
 
 def _score_text(path: Path) -> str:
     """Read the status panel with the game's own UI font (XANTH_10.FNT)."""
-    import struct
-
-    bitmap = path.read_bytes()
-    if bitmap[:2] != b"BM":
-        raise ValueError(f"not a BMP: {path}")
-    pixels_offset = struct.unpack_from("<I", bitmap, 10)[0]
-    width, signed_height = struct.unpack_from("<ii", bitmap, 18)
-    bits_per_pixel = struct.unpack_from("<H", bitmap, 28)[0]
-    if width <= 0 or signed_height <= 0 or bits_per_pixel != 24:
-        raise ValueError(f"unsupported score BMP format: {path}")
-    height = signed_height
-    stride = (width * 3 + 3) & ~3
-    mask = [[0] * width for _ in range(height)]
-    for y in range(height):
-        row = pixels_offset + (height - 1 - y) * stride
-        for x in range(width):
-            blue, green, red = bitmap[row + x * 3:row + x * 3 + 3]
-            mask[y][x] = int(red > 210 and green > 210 and blue > 210)
-
-    data = (DATA / "XANTH_10.FNT").read_bytes()
-    widths = list(data[43:43 + 95])
-    glyphs = {}
-    for ch in range(0x21, 0x7F):
-        off = 138 + (ch - 0x21) * 8
-        raw = data[off:off + 8]
-        glyphs[chr(ch)] = ([[(b >> (7 - k)) & 1 for k in range(8)]
-                            for b in raw], widths[ch - 0x21])
-
-    def line(y: int) -> str:
-        x = 40
-        out: list[str] = []
-        guard = 0
-        while x < 300 and guard < 400:
-            guard += 1
-            if sum(sum(mask[yy][x:x + 2]) for yy in range(y, y + 6)) == 0:
-                n = 0
-                while x < 300 and sum(mask[yy][x] for yy in range(y, y + 6)) == 0:
-                    x += 1
-                    n += 1
-                    if n > 30:
-                        break
-                if n >= 2 and (not out or out[-1] != " "):
-                    out.append(" ")
-                continue
-            best, bests = None, -999
-            for ch, (rows, gw) in glyphs.items():
-                gw = max(gw, 1)
-                if x + gw > width or y + 8 > height:
-                    continue
-                score = 0
-                for yy in range(8):
-                    for xx in range(gw):
-                        bit = rows[yy][xx]
-                        pixel = mask[y + yy][x + xx]
-                        score += bit * pixel * 2 - bit * (1 - pixel) * 3
-                        score -= (1 - bit) * pixel * 2
-                if score > bests:
-                    best, bests = (ch, gw), score
-            if best is None or bests < 4:
-                x += 1
-                continue
-            out.append(best[0])
-            x += best[1]
-        return "".join(out)
-
-    lines = []
-    for y in range(40, 90):
-        if sum(mask[y][40:280]) > 12:
-            text = line(y).strip()
-            if len(text) > 8:
-                lines.append(text)
-    return " ".join(lines)
+    return read_game_font_text(path, DATA / "XANTH_10.FNT", 40, 90)
 
 
 class IsthmusVillageTests(unittest.TestCase):
@@ -160,33 +121,13 @@ class IsthmusVillageTests(unittest.TestCase):
         for path, what in ((EXE, "retail executable"),
                            (DATA, "retail asset directory"),
                            (TRACE, "walkthrough trace"),
-                           (ANCHOR_TRACE, "village anchor trace"),
-                           (ANCHOR_SOURCE / "XANTH000.SAV", "cavern anchor save")):
+                           (ANCHOR_TRACE, "village anchor trace")):
             if not path.exists():
                 raise unittest.SkipTest(f"{what} not present: {path}")
         if not TOOL.exists():
             raise unittest.SkipTest(f"{TOOL} not built")
 
-        # The similarly named local anchor_isthmus is also used by a later
-        # segment and is the 193-point Void save. Build this test's village
-        # anchor independently from the 40-point cavern seed so the fixtures
-        # cannot overwrite or silently reuse one another.
-        if ANCHOR.exists():
-            shutil.rmtree(ANCHOR)
-        shutil.copytree(ANCHOR_SOURCE, ANCHOR)
-        anchor_proc = subprocess.run(
-            [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
-             "--saves", str(ANCHOR), "--script", str(ANCHOR_TRACE),
-             "--insns", "6000000000"],
-            capture_output=True, text=True, timeout=900,
-        )
-        anchor_out = anchor_proc.stdout + anchor_proc.stderr
-        if (anchor_proc.returncode != 0
-                or "fault                 : ok" not in anchor_out
-                or "MCB chain valid       : yes" not in anchor_out
-                or "wt8_village_anchor" not in anchor_out):
-            raise AssertionError(
-                f"could not build 45-point village anchor:\n{anchor_out[-2000:]}")
+        prepare_village_anchor()
 
         if SAVES.exists():
             shutil.rmtree(SAVES)
