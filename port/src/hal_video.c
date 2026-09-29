@@ -66,6 +66,32 @@ typedef struct {
 
 static hal_video_ctx_t g_video;
 
+hal_video_viewport hal_video_compute_viewport(int win_w, int win_h,
+                                               hal_video_present_mode mode) {
+    hal_video_viewport viewport = {0, 0, 0, 0};
+    if (win_w <= 0 || win_h <= 0) return viewport;
+
+    if (mode == HAL_VIDEO_PRESENT_PIXEL_INTEGER) {
+        int factor_w = win_w / HAL_VIDEO_WIDTH;
+        int factor_h = win_h / HAL_VIDEO_HEIGHT;
+        int factor = factor_w < factor_h ? factor_w : factor_h;
+        if (factor < 1) factor = 1;
+        viewport.width = HAL_VIDEO_WIDTH * factor;
+        viewport.height = HAL_VIDEO_HEIGHT * factor;
+    } else {
+        if (win_w * 3 > win_h * 4) {
+            viewport.height = win_h;
+            viewport.width = (win_h * 4) / 3;
+        } else {
+            viewport.width = win_w;
+            viewport.height = (win_w * 3) / 4;
+        }
+    }
+    viewport.x = (win_w - viewport.width) / 2;
+    viewport.y = (win_h - viewport.height) / 2;
+    return viewport;
+}
+
 bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycling) {
     memset(&g_video, 0, sizeof(g_video));
 
@@ -367,25 +393,10 @@ void hal_video_flip(void) {
         SDL_GetRendererOutputSize(g_video.renderer, &win_w, &win_h);
         if (win_w > 0 && win_h > 0) {
             /* 4:3 pixel-aspect correction, or square-pixel integer scaling. */
-            int target_w, target_h;
-            if (g_video.present_mode == HAL_VIDEO_PRESENT_PIXEL_INTEGER) {
-                int factor_w = win_w / HAL_VIDEO_WIDTH;
-                int factor_h = win_h / HAL_VIDEO_HEIGHT;
-                int factor = factor_w < factor_h ? factor_w : factor_h;
-                if (factor < 1) factor = 1;
-                target_w = HAL_VIDEO_WIDTH * factor;
-                target_h = HAL_VIDEO_HEIGHT * factor;
-            } else {
-                if (win_w * 3 > win_h * 4) {
-                    target_h = win_h;
-                    target_w = (win_h * 4) / 3;
-                } else {
-                    target_w = win_w;
-                    target_h = (win_w * 3) / 4;
-                }
-            }
-            int off_x = (win_w - target_w) / 2;
-            int off_y = (win_h - target_h) / 2;
+            hal_video_viewport viewport = hal_video_compute_viewport(
+                win_w, win_h, g_video.present_mode);
+            int target_w = viewport.width, target_h = viewport.height;
+            int off_x = viewport.x, off_y = viewport.y;
 
             g_video.viewport_x = off_x;
             g_video.viewport_y = off_y;

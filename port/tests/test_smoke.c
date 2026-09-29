@@ -123,6 +123,29 @@ static void test_vga_and_palette(void) {
     hal_video_shutdown();
 }
 
+static void test_video_viewport_geometry(void) {
+    printf("[TEST] Running test_video_viewport_geometry...\n");
+    hal_video_viewport v = hal_video_compute_viewport(1280, 800,
+                                                       HAL_VIDEO_PRESENT_ASPECT_4_3);
+    TEST_ASSERT(v.x == 107 && v.y == 0 && v.width == 1066 && v.height == 800,
+                "1280x800 aspect-correct viewport must be centered 4:3");
+    v = hal_video_compute_viewport(1280, 800, HAL_VIDEO_PRESENT_PIXEL_INTEGER);
+    TEST_ASSERT(v.x == 0 && v.y == 0 && v.width == 1280 && v.height == 800,
+                "1280x800 pixel-integer viewport must use a 4x square-pixel scale");
+    v = hal_video_compute_viewport(960, 600, HAL_VIDEO_PRESENT_PIXEL_INTEGER);
+    TEST_ASSERT(v.x == 0 && v.y == 0 && v.width == 960 && v.height == 600,
+                "960x600 pixel-integer viewport must use a 3x scale");
+    v = hal_video_compute_viewport(1920, 1080, HAL_VIDEO_PRESENT_ASPECT_4_3);
+    TEST_ASSERT(v.x == 240 && v.y == 0 && v.width == 1440 && v.height == 1080,
+                "wide display must pillarbox the 4:3 image");
+    v = hal_video_compute_viewport(800, 1280, HAL_VIDEO_PRESENT_ASPECT_4_3);
+    TEST_ASSERT(v.x == 0 && v.y == 340 && v.width == 800 && v.height == 600,
+                "tall display must letterbox the 4:3 image");
+    v = hal_video_compute_viewport(0, 800, HAL_VIDEO_PRESENT_ASPECT_4_3);
+    TEST_ASSERT(v.x == 0 && v.y == 0 && v.width == 0 && v.height == 0,
+                "invalid output dimensions must produce an empty viewport");
+}
+
 /* -------------------------------------------------------------------------
  * Test 3: INT 33h Mouse & INT 16h Keyboard
  * ------------------------------------------------------------------------- */
@@ -384,6 +407,7 @@ int main(void) {
 
     test_portable_types_and_memory();
     test_vga_and_palette();
+    test_video_viewport_geometry();
     test_input_subsystem();
     test_filesystem_and_ini();
     test_audio_subsystem();

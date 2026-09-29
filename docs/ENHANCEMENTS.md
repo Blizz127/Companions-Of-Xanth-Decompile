@@ -131,3 +131,10 @@ cover reset acknowledgements, channel messages, running status, pitch bend,
 and GM reset delivery to a backend; a temporary local FluidSynth API stub
 also validated dynamic loading/startup, but no real FluidSynth/SF2 has been
 tested.
+
+The HAL viewport calculation is shared by rendering and an asset-free unit
+check. On Linux Release, its assertions passed for 1280×800 4:3 fit
+(1066×800 centered), 1280×800 integer scale (1280×800), 960×600 integer scale
+(960×600), wide 1920×1080 pillarboxing, tall 800×1280 letterboxing, and
+invalid zero-width output. This checks host composition geometry only; it does
+not alter or establish parity for the guest-rendered scene.

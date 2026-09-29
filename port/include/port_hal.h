@@ -20,6 +20,12 @@ typedef enum {
     HAL_VIDEO_PRESENT_ASPECT_4_3 = 0, /* DOS pixel aspect correction */
     HAL_VIDEO_PRESENT_PIXEL_INTEGER = 1 /* square pixels, integer scale */
 } hal_video_present_mode;
+typedef struct {
+    int x, y, width, height;
+} hal_video_viewport;
+/* Pure geometry shared by the renderer and asset-free HAL checks. */
+hal_video_viewport hal_video_compute_viewport(int window_width, int window_height,
+                                               hal_video_present_mode mode);
 void hal_video_set_present_mode(hal_video_present_mode mode);
 void hal_video_set_filter(bool crt_scanlines, bool linear_filter);
 void hal_video_set_window_size(int width, int height);
