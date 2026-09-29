@@ -35,6 +35,17 @@
 #define EXE_37625_A_OFFSET           99835u
 #define EXE_37625_B_OFFSET           99897u
 #define EXE_37625_GLOBAL_DS_OFFSET   0x4ea0u
+
+typedef struct {
+    uint32_t exe_offset;
+    uint16_t global_ds_offset;
+} word_clear_unit;
+
+static const word_clear_unit g_exe_37625_units[] = {
+    {37625u, 0x0064u}, {52680u, 0x0102u}, {52713u, 0x0106u},
+    {EXE_37625_A_OFFSET, EXE_37625_GLOBAL_DS_OFFSET},
+    {EXE_37625_B_OFFSET, EXE_37625_GLOBAL_DS_OFFSET}
+};
 #define EXE_99679_EXE_OFFSET         99679u
 #define EXE_99679_COUNTER_DS_OFFSET  0x4f28u
 #define EXE_99679_TABLE_DS_OFFSET    0x4f2au
@@ -370,8 +381,9 @@ static hook_result_t native_get_far_idx(cpu86 *cpu, void *user) {
 
 /* Recovered src/exe_37625.c is a DS word clear followed by a far return. */
 static hook_result_t native_exe_37625(cpu86 *cpu, void *user) {
+    const word_clear_unit *unit = (const word_clear_unit *)user;
     vm *machine = (vm *)cpu->vm;
-    if (cpu->step_budget_remaining < 2u) return HOOK_CONTINUE;
+    if (!unit || cpu->step_budget_remaining < 2u) return HOOK_CONTINUE;
     if (machine) {
         uint64_t next_tick = machine->next_tick_cycles;
         uint64_t dma_end = machine->sb.dma_end_cycles;
@@ -382,7 +394,7 @@ static hook_result_t native_exe_37625(cpu86 *cpu, void *user) {
             return HOOK_CONTINUE;
     }
 
-    seg_w16(cpu->s[CPU_DS], EXE_37625_GLOBAL_DS_OFFSET, 0);
+    seg_w16(cpu->s[CPU_DS], unit->global_ds_offset, 0);
     cpu->cycles += 2u * 4u;
     cpu->step_guest_insns = 2;
     g_exe_37625_hits++;
@@ -911,9 +923,6 @@ bool xanth_native_stage2_install(vm *machine) {
         0x8b, 0x00, 0x26, 0x8b, 0x50, 0x02, 0x5e, 0x8b, 0xe5,
         0x5d, 0xcb
     };
-    static const uint8_t verified_exe_37625_body[] = {
-        0xc7, 0x06, 0xa0, 0x4e, 0x00, 0x00, 0xcb
-    };
     static const uint8_t verified_exe_99679_body[] = {
         0x55, 0x8b, 0xec, 0xa0, 0x28, 0x4f, 0x25, 0x01, 0x00,
         0x3b, 0x46, 0x06, 0x75, 0x0a, 0x8b, 0x1e, 0x28, 0x4f,
@@ -1041,13 +1050,18 @@ bool xanth_native_stage2_install(vm *machine) {
                            GET_FAR_IDX_EXE_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_get_far_idx_body[i]) return false;
     }
-    for (size_t i = 0; i < sizeof(verified_exe_37625_body); i++) {
-        uint32_t a = (uint32_t)machine->img.load_seg * 16u +
-                     EXE_37625_A_OFFSET + (uint32_t)i;
-        uint32_t b = (uint32_t)machine->img.load_seg * 16u +
-                     EXE_37625_B_OFFSET + (uint32_t)i;
-        if (mem_r8(a) != verified_exe_37625_body[i] ||
-            mem_r8(b) != verified_exe_37625_body[i]) return false;
+    for (size_t u = 0; u < sizeof(g_exe_37625_units) / sizeof(g_exe_37625_units[0]); u++) {
+        const uint8_t signature[] = {
+            0xc7, 0x06,
+            (uint8_t)g_exe_37625_units[u].global_ds_offset,
+            (uint8_t)(g_exe_37625_units[u].global_ds_offset >> 8),
+            0x00, 0x00, 0xcb
+        };
+        for (size_t i = 0; i < sizeof(signature); i++) {
+            uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                               g_exe_37625_units[u].exe_offset + (uint32_t)i;
+            if (mem_r8(address) != signature[i]) return false;
+        }
     }
     for (size_t i = 0; i < sizeof(verified_exe_99679_body); i++) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
@@ -1183,14 +1197,15 @@ bool xanth_native_stage2_install(vm *machine) {
     if (!cpu86_hook_install(segment, offset, native_get_far_idx, NULL)) return false;
 
     g_exe_37625_hits = 0;
-    linear = (uint32_t)machine->img.load_seg * 16u + EXE_37625_A_OFFSET;
-    segment = (uint16_t)(linear >> 4);
-    offset = (uint16_t)(linear & 0x0fu);
-    if (!cpu86_hook_install(segment, offset, native_exe_37625, NULL)) return false;
-    linear = (uint32_t)machine->img.load_seg * 16u + EXE_37625_B_OFFSET;
-    segment = (uint16_t)(linear >> 4);
-    offset = (uint16_t)(linear & 0x0fu);
-    if (!cpu86_hook_install(segment, offset, native_exe_37625, NULL)) return false;
+    for (size_t u = 0; u < sizeof(g_exe_37625_units) / sizeof(g_exe_37625_units[0]); u++) {
+        linear = (uint32_t)machine->img.load_seg * 16u +
+                 g_exe_37625_units[u].exe_offset;
+        segment = (uint16_t)(linear >> 4);
+        offset = (uint16_t)(linear & 0x0fu);
+        if (!cpu86_hook_install(segment, offset, native_exe_37625,
+                                (void *)&g_exe_37625_units[u]))
+            return false;
+    }
 
     linear = (uint32_t)machine->img.load_seg * 16u + EXE_99679_EXE_OFFSET;
     segment = (uint16_t)(linear >> 4);

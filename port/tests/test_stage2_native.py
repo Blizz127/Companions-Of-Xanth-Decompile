@@ -198,6 +198,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                         ("iabs", "iabs"),
                         ("set_far_arr_chk", "set_far_arr_chk"),
                         ("set_byte_one", "set_byte_one"),
+                        ("exe_37625", "exe_37625"),
                     ):
                         hit = re.search(rf"\[native\] {label} hits: (\d+)", output)
                         self.assertIsNotNone(hit, output[-3000:])
@@ -257,6 +258,11 @@ class NativeStage2ParityTests(unittest.TestCase):
             set_byte_one_hits = int(outputs["native"]["set_byte_one_hits"])
             self.assertGreater(set_byte_one_hits, 0)
             self.assertLessEqual(set_byte_one_hits, 6)
+            exe_37625_hits = int(outputs["native"]["exe_37625_hits"])
+            self.assertGreater(exe_37625_hits, 0)
+            # The five source-backed entries hit 4,609 times in this VM profile.
+            # Native hooks can fall back near timer/DMA boundaries.
+            self.assertLessEqual(exe_37625_hits, 4609)
 
 
 if __name__ == "__main__":
