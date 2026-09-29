@@ -491,7 +491,11 @@ reads and returns the mailbox letter, gets past the eye, picks up the tee
 and the egg, and reads Fairy Nuff's recipe. The panel at his booth reads
 **122 of 1000**. The published 12 points for passing the eye did not appear
 on the panel. Next is two dashes of eye scream into the pail, then the rest
-of the recipe, then the censor-ship. Scene II's published end is 200.
+of the recipe, then the censor-ship. The experimental continuation through
+Crossroads (two eye screams and Nada's cough drops) was exercised in the retail
+VM, but its score panel still read 122/1000. The trace's old “200 pts” label
+is therefore not evidence of Scene II completion; the missing 78 points and
+published endpoint remain under investigation.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is

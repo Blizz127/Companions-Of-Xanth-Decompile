@@ -1,0 +1,16 @@
+# Run the current Isthmus-to-Crossroads route, then read its live retail score.
+include test_crossroads_save.xit
+
+# The previous trace leaves the player at Crossroads after saving.
+run 20
+move 35 174
+run 6
+click left
+run 20
+move 160 120
+run 4
+click left
+run 25
+move 305 196
+checkpoint wt10_score
+shot build/frames/wt10_score.bmp

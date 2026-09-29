@@ -1,0 +1,331 @@
+# Experimental Scene II continuation: recipe follow-up through Crossroads.
+include walkthrough_09_pail.xit
+
+
+# Dismiss the score panel
+move 165 123
+run 10
+click left
+run 30
+
+# Close system menu (Cancel button at 160, 152)
+move 160 152
+run 10
+click left
+run 30
+
+move 305 196
+run 10
+
+
+# Put egg in pail:
+# Egg is at (132, 162)
+move 132 162
+run 5
+click left
+run 10
+move 14 17
+run 5
+click left
+run 10
+move 212 162
+run 5
+click left
+run 30
+
+move 305 196
+run 10
+
+# Put sailcloth in pail:
+# Sailcloth is now at (252, 162)
+move 252 162
+run 5
+click left
+run 10
+move 14 17
+run 5
+click left
+run 10
+# Pail is at (192, 162)
+move 192 162
+run 5
+click left
+run 30
+
+move 305 196
+run 10
+
+# Click buttercup at (132, 185)
+move 132 185
+run 5
+click left
+run 15
+
+# Click Empty at (14, 97)
+move 14 97
+run 5
+click left
+run 30
+
+move 305 196
+run 10
+
+# Put butter in pail
+move 100 162
+run 5
+click left
+run 10
+move 14 17
+run 5
+click left
+run 10
+move 222 162
+run 5
+click left
+run 30
+
+move 305 196
+run 10
+
+# Southwest to Golf Green
+move 11 161
+run 5
+click left
+run 40
+
+# South to Fairway
+move 24 161
+run 5
+click left
+run 40
+
+# South to Eye Screen Door
+move 24 161
+run 5
+click left
+run 40
+
+move 305 196
+run 10
+
+# 1. Take piece of eye scream 1
+move 14 7
+run 5
+click left
+run 10
+move 276 116
+run 5
+click left
+run 25
+move 305 196
+run 5
+
+# 2. Put eye scream 1 into pail
+move 100 162
+run 5
+click left
+run 10
+move 14 17
+run 5
+click left
+run 10
+move 222 162
+run 5
+click left
+run 25
+move 305 196
+run 5
+
+# 3. Take piece of eye scream 2
+move 14 7
+run 5
+click left
+run 10
+move 276 116
+run 5
+click left
+run 25
+move 305 196
+run 5
+
+# 4. Put eye scream 2 into pail
+move 100 162
+run 5
+click left
+run 10
+move 14 17
+run 5
+click left
+run 10
+move 222 162
+run 5
+click left
+run 25
+move 305 196
+run 5
+
+# Move SW 1
+move 11 161
+run 5
+click left
+run 40
+move 305 196
+run 5
+
+# Move SW 2
+move 11 161
+run 5
+click left
+run 40
+move 305 196
+run 5
+
+# Move SW 3
+move 11 161
+run 5
+click left
+run 40
+move 305 196
+run 5
+
+# We are at nav_sw2 (Barren Road). Now try West (11, 148)
+move 11 148
+run 5
+click left
+run 40
+move 305 196
+run 5
+
+# We are at Isthmus Village Center.
+# Northwest (11 135) to Dark Misty Forest!
+move 11 135
+run 5
+click left
+run 40
+move 305 196
+run 5
+
+# Talk to Nada
+move 14 57
+run 5
+click left
+run 10
+move 60 165
+run 5
+click left
+run 25
+
+# 1. "What gives with this strange bush, Nada?" at (80, 149)
+move 80 149
+run 5
+click left
+run 35
+
+# 2. "Gee. That's fascinating." at (80, 136)
+move 80 136
+run 5
+click left
+run 35
+
+# 3. Click "Could you get one of those cough drops?" at (80, 140)
+move 80 140
+run 5
+click left
+run 10
+click left
+run 35
+
+move 305 196
+run 5
+
+# Dismiss dialogue: Space or Enter
+key 32
+run 25
+
+# Now wait: F1 (Wait)
+key 0 59
+run 40
+
+move 305 196
+run 5
+
+# Put cough drop 1 in pail:
+move 95 162
+run 5
+click left
+run 10
+move 14 17
+run 5
+click left
+run 10
+move 212 162
+run 5
+click left
+run 25
+
+# Talk to Nada again:
+move 14 57
+run 5
+click left
+run 10
+move 60 165
+run 5
+click left
+run 30
+
+move 305 196
+run 5
+
+# Click "Would you get me another cough drop, princess?" at (80, 140)
+move 80 140
+run 5
+click left
+run 10
+click left
+run 35
+
+# Dismiss dialogue:
+key 32
+run 25
+
+# Wait for cough drop 2:
+key 0 59
+run 40
+
+# Put drop 2 in pail:
+move 95 162
+run 5
+click left
+run 10
+move 14 17
+run 5
+click left
+run 10
+move 212 162
+run 5
+click left
+run 25
+
+move 305 196
+run 5
+
+# Dismiss drop 2 text box:
+key 32
+run 20
+
+# Move West to Crossroads:
+move 11 148
+run 6
+click left
+run 50
+
+move 305 196
+run 5
+
+move 305 196
+run 10
+checkpoint wt10_at_crossroads
+shot build/frames/wt10_crossroads.bmp
+
+# Save anchor at crossroads for rapid testing of brook & firefly
+include lib/save_over_slot1.xit
