@@ -54,6 +54,21 @@ static void normalize_separators(char *path) {
     }
 }
 
+static bool canonicalize_path(const char *path, char *out, size_t out_size) {
+    if (!path || !out || out_size == 0) return false;
+#if defined(_WIN32) || defined(_MSC_VER)
+    return _fullpath(out, path, out_size) != NULL;
+#else
+    /* realpath(path, fixed_buffer) is fortify-checked against PATH_MAX, not
+     * the actual short result. Use its allocating form, then bound our copy. */
+    char *resolved = realpath(path, NULL);
+    if (!resolved) return false;
+    int n = snprintf(out, out_size, "%s", resolved);
+    free(resolved);
+    return n >= 0 && (size_t)n < out_size;
+#endif
+}
+
 static void make_dir_recursive(const char *dir_path) {
     char tmp[512];
     snprintf(tmp, sizeof(tmp), "%s", dir_path);
@@ -101,15 +116,9 @@ bool hal_fs_find_file(const char *base_dir, const char *rel_path, char *out_path
     }
 
     char base_canonical[512];
-#if defined(_WIN32) || defined(_MSC_VER)
-    if (_fullpath(base_canonical, current_dir, sizeof(base_canonical)) == NULL) {
+    if (!canonicalize_path(current_dir, base_canonical, sizeof(base_canonical))) {
         snprintf(base_canonical, sizeof(base_canonical), "%s", current_dir);
     }
-#else
-    if (realpath(current_dir, base_canonical) == NULL) {
-        snprintf(base_canonical, sizeof(base_canonical), "%s", current_dir);
-    }
-#endif
     normalize_separators(base_canonical);
 
     /* Canonicalize current_dir to base_canonical to guarantee leading path delimiters */
@@ -133,15 +142,9 @@ bool hal_fs_find_file(const char *base_dir, const char *rel_path, char *out_path
             }
 
             char check_canonical[512];
-#if defined(_WIN32) || defined(_MSC_VER)
-            if (_fullpath(check_canonical, current_dir, sizeof(check_canonical)) == NULL) {
+            if (!canonicalize_path(current_dir, check_canonical, sizeof(check_canonical))) {
                 snprintf(check_canonical, sizeof(check_canonical), "%s", current_dir);
             }
-#else
-            if (realpath(current_dir, check_canonical) == NULL) {
-                snprintf(check_canonical, sizeof(check_canonical), "%s", current_dir);
-            }
-#endif
             normalize_separators(check_canonical);
 
             /* Check if check_canonical is within base_canonical */
