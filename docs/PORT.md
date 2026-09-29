@@ -43,12 +43,14 @@ configuration has no mods or cheats active and must preserve retail behavior.
 **Current implementation status:** Stage 1 runs the supplied retail EXE and
 OVL in the custom 8086/DOS VM. VM services reach host facilities through the
 HAL and DOS shims. Stage 2 has started: the exact recovered bodies in
-`src/set_int_and_zero.c` and `src/set_far_ptr.c` are compiled into the port and
-installed at verified EXE offsets 17,820 and 83,182. Their adapters map the
-16-bit far-call stack, DS globals, result registers, far returns, and guest
-instruction/cycle budgets. Each unit is called once on the boot path. The boot
+`src/set_int_and_zero.c` and `src/set_far_ptr.c` are compiled into the port;
+the 16-bit arithmetic in `src/exe_94712.c` is lowered through the VM's
+8086 flag-accurate ALU. They are installed at verified EXE offsets 17,820, 83,182, and
+94,712. Adapters map the far-call stack, DS globals, result registers, far
+returns, flags, and guest instruction/cycle budgets. All three execute on the
+boot path; a 100-frame production run calls `exe_94712` 18,880 times. The boot
 checkpoint hash and guest instruction, timer, audio and file-open metrics
-match with hooks disabled or enabled. This is 2/2,844 indexed units (0.07%),
+match with hooks disabled or enabled. This is 3/2,844 indexed units (0.11%),
 not proof of whole-route source coverage.
 The full renderer/audio/input/files/timing interface boundary is also not yet
 complete. Further units need the same per-path byte evidence and VM/native
@@ -99,7 +101,7 @@ The DOS kernel has therefore only ever grown to fit what this game actually call
 ordinary 8086 code in the EXE's 43,193-byte appended tail. The core executes it and it
 pages its own sections via ordinary `INT 21h` reads.
 
-### Stage 2 — static recompilation (two units active)
+### Stage 2 — static recompilation (three units active)
 
 Decode the retail bytes to portable C against the same HAL, function by function, each
 validated by co-simulation against the interpreter, until the interpreter is no longer
@@ -753,7 +755,7 @@ Both Python tests skip cleanly without the retail disc, so they are safe in publ
   remains open.
 - Verify the Windows job on a real runner. The workflow exists and executes the
   conformance suite and CTest; it has not yet been observed passing.
-- Expand Stage 2 from the first two source-backed units: generate address/extent/ABI
+- Expand Stage 2 from the first three source-backed units: generate address/extent/ABI
   metadata for recovered functions, prioritize units measured on real routes,
   and keep VM/native frame, save, audio and timing comparisons as gates. The
   first hook is at EXE code offset 17,820; `tests/test_stage2_native.py` checks

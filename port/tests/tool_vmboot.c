@@ -462,6 +462,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] set_far_ptr hits: %llu\n",
                 (unsigned long long)xanth_native_set_far_ptr_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_94712 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_94712_hits());
 
     vm_report(&machine, stderr);
 
