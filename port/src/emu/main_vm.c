@@ -83,7 +83,7 @@ static bool config_bool(const char *value) {
     return !strcmp(value,"1") || !strcmp(value,"true") || !strcmp(value,"yes") || !strcmp(value,"on");
 }
 
-static void load_port_config(const char *path, int *scale, bool *fullscreen,
+static bool load_port_config(const char *path, int *scale, bool *fullscreen,
                              bool *headless, bool *pixel_perfect, bool *crt,
                              bool *linear, bool *handheld, bool *gamepad,
                              bool *hotkeys,
@@ -92,7 +92,7 @@ static void load_port_config(const char *path, int *scale, bool *fullscreen,
                              char *soundfont, size_t soundfont_size) {
     FILE *f=fopen(path,"r");
     char line[512];
-    if (!f) return;
+    if (!f) return false;
     while (fgets(line,sizeof(line),f)) {
         char *key=line, *eq, *value;
         while (isspace((unsigned char)*key)) ++key;
@@ -122,6 +122,7 @@ static void load_port_config(const char *path, int *scale, bool *fullscreen,
         else if (!strcmp(key,"soundfont") && soundfont_size) snprintf(soundfont,soundfont_size,"%s",value);
     }
     fclose(f);
+    return true;
 }
 
 int main(int argc, char **argv) {
@@ -147,12 +148,15 @@ int main(int argc, char **argv) {
     for (int i=1;i<argc;++i)
         if (!strcmp(argv[i],"--config") && i+1<argc)
             snprintf(config_path,sizeof(config_path),"%s",argv[i+1]);
-    if (config_path[0])
-        load_port_config(config_path,&scale,&fullscreen,&headless,&pixel_perfect,
+    if (config_path[0] &&
+        !load_port_config(config_path,&scale,&fullscreen,&headless,&pixel_perfect,
                          &crt,&linear,&handheld,&gamepad,&hotkeys,
                          &volume_master,
                          &volume_music,&volume_sfx,&volume_voice,cfg.mods_dir,
-                         sizeof(cfg.mods_dir),soundfont_path,sizeof(soundfont_path));
+                         sizeof(cfg.mods_dir),soundfont_path,sizeof(soundfont_path))) {
+        fprintf(stderr,"[FATAL] cannot read config file: %s\n",config_path);
+        return 2;
+    }
 
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--data") && i + 1 < argc)

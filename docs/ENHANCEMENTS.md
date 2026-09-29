@@ -43,7 +43,8 @@ volume_voice=120
 ```
 
 The config is only read when supplied with `--config`; command-line options
-are applied afterward and override it. There is no in-game settings menu yet.
+are applied afterward and override it. An explicitly requested config that
+cannot be opened is a startup error. There is no in-game settings menu yet.
 `--scale`, `--fullscreen`, `--headless`, and the opt-in switches are also
 available on the command line.
 
