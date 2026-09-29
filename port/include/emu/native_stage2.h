@@ -25,5 +25,6 @@ uint64_t xanth_native_set_int_a_hits(void);
 uint64_t xanth_native_set_int_b_hits(void);
 uint64_t xanth_native_clear_byte_hits(void);
 uint64_t xanth_native_swap_int_hits(void);
+uint64_t xanth_native_exe_115346_hits(void);
 
 #endif

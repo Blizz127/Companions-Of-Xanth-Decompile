@@ -522,6 +522,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] swap_int hits: %llu\n",
                 (unsigned long long)xanth_native_swap_int_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_115346 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_115346_hits());
 
     vm_report(&machine, stderr);
 

@@ -190,6 +190,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                         ("set_int_b", "set_int B"),
                         ("clear_byte", "clear_byte"),
                         ("swap_int", "swap_int"),
+                        ("exe_115346", "exe_115346"),
                     ):
                         hit = re.search(rf"\[native\] {label} hits: (\d+)", output)
                         self.assertIsNotNone(hit, output[-3000:])
@@ -225,6 +226,9 @@ class NativeStage2ParityTests(unittest.TestCase):
             swap_int_hits = int(outputs["native"]["swap_int_hits"])
             self.assertGreater(swap_int_hits, 0)
             self.assertLessEqual(swap_int_hits, 14)
+            exe_115346_hits = int(outputs["native"]["exe_115346_hits"])
+            self.assertGreater(exe_115346_hits, 0)
+            self.assertLessEqual(exe_115346_hits, 12)
 
 
 if __name__ == "__main__":
