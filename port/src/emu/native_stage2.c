@@ -28,6 +28,13 @@
 #define far
 #include "../../../src/exe_112795.c"
 #undef far
+#define far
+#define g0 exe_52674_g0
+#define g1 exe_52674_g1
+#include "../../../src/exe_52674.c"
+#undef g1
+#undef g0
+#undef far
 
 /* Host scratch backing for the source C body invoked by its guest adapter. */
 unsigned g_idx;
@@ -100,6 +107,9 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define EXE_112795_INDEX_DS_OFFSET   0x67c0u
 #define EXE_112795_COUNT_DS_OFFSET   0x67e2u
 #define EXE_112795_TABLE_DS_OFFSET   0x67c2u
+#define EXE_52674_OFFSET              52674u
+#define EXE_52674_G0_DS_OFFSET        0x0106u
+#define EXE_52674_G1_DS_OFFSET        0x0102u
 
 typedef struct {
     uint16_t exe_offset;
@@ -144,6 +154,7 @@ static uint64_t g_set_byte_one_hits;
 static uint64_t g_exe_136552_hits;
 static uint64_t g_exe_52710_hits;
 static uint64_t g_exe_112795_hits;
+static uint64_t g_exe_52674_hits;
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
 
@@ -1040,6 +1051,32 @@ static hook_result_t native_exe_112795(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Recovered startup initializer: set DS:0106 to one and DS:0102 to zero. */
+static hook_result_t native_exe_52674(cpu86 *cpu, void *user) {
+    vm *machine = (vm *)cpu->vm;
+    const uint32_t cycles = 12u;
+    if (cpu->step_budget_remaining < 3u) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    exe_52674();
+    seg_w16(cpu->s[CPU_DS], EXE_52674_G0_DS_OFFSET,
+            (uint16_t)exe_52674_g0);
+    seg_w16(cpu->s[CPU_DS], EXE_52674_G1_DS_OFFSET,
+            (uint16_t)exe_52674_g1);
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = 3;
+    g_exe_52674_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -1167,6 +1204,10 @@ bool xanth_native_stage2_install(vm *machine) {
         0x8b, 0xd9, 0x8e, 0xc2, 0x26, 0x80, 0x4f, 0x01, 0x80,
         0x8b, 0xe5, 0x5d, 0xcb
     };
+    static const uint8_t verified_exe_52674_body[] = {
+        0xc7, 0x06, 0x06, 0x01, 0x01, 0x00,
+        0xc7, 0x06, 0x02, 0x01, 0x00, 0x00, 0xcb
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1185,6 +1226,11 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            EXE_112795_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_exe_112795_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_52674_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_52674_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_exe_52674_body[i]) return false;
     }
 
     for (size_t i = 0; i < sizeof(verified_body); i++) {
@@ -1512,6 +1558,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_112795_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_112795, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_52674_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_52674_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_exe_52674, NULL)) return false;
     return true;
 }
 
@@ -1625,4 +1676,8 @@ uint64_t xanth_native_exe_52710_hits(void) {
 
 uint64_t xanth_native_exe_112795_hits(void) {
     return g_exe_112795_hits;
+}
+
+uint64_t xanth_native_exe_52674_hits(void) {
+    return g_exe_52674_hits;
 }
