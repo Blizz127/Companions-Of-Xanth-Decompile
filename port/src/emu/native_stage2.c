@@ -32,6 +32,9 @@
 #define SET_FAR_ARR_DS_OFFSET       0x4264u
 #define GET_FAR_IDX_EXE_OFFSET      102352u
 #define GET_FAR_IDX_GLOBAL_DS_OFFSET 0x67bau
+#define EXE_37625_A_OFFSET           99835u
+#define EXE_37625_B_OFFSET           99897u
+#define EXE_37625_GLOBAL_DS_OFFSET   0x4ea0u
 
 typedef struct {
     uint16_t offset;
@@ -45,6 +48,7 @@ static uint64_t g_if0_helper_inc_hits;
 static uint64_t g_exe_14360_hits;
 static uint64_t g_set_far_arr_hits;
 static uint64_t g_get_far_idx_hits;
+static uint64_t g_exe_37625_hits;
 static xanth_guest_far_pointer g_far_ptr_scratch;
 
 static hook_result_t native_set_int_and_zero(cpu86 *cpu, void *user) {
@@ -306,6 +310,27 @@ static hook_result_t native_get_far_idx(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Recovered src/exe_37625.c is a DS word clear followed by a far return. */
+static hook_result_t native_exe_37625(cpu86 *cpu, void *user) {
+    vm *machine = (vm *)cpu->vm;
+    if (cpu->step_budget_remaining < 2u) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= 8u ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= 8u)))
+            return HOOK_CONTINUE;
+    }
+
+    seg_w16(cpu->s[CPU_DS], EXE_37625_GLOBAL_DS_OFFSET, 0);
+    cpu->cycles += 2u * 4u;
+    cpu->step_guest_insns = 2;
+    g_exe_37625_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -339,6 +364,9 @@ bool xanth_native_stage2_install(vm *machine) {
         0x03, 0xdb, 0x03, 0xdb, 0xc4, 0x36, 0xba, 0x67, 0x26,
         0x8b, 0x00, 0x26, 0x8b, 0x50, 0x02, 0x5e, 0x8b, 0xe5,
         0x5d, 0xcb
+    };
+    static const uint8_t verified_exe_37625_body[] = {
+        0xc7, 0x06, 0xa0, 0x4e, 0x00, 0x00, 0xcb
     };
     uint32_t linear;
     uint16_t segment, offset;
@@ -389,6 +417,14 @@ bool xanth_native_stage2_install(vm *machine) {
                            GET_FAR_IDX_EXE_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_get_far_idx_body[i]) return false;
     }
+    for (size_t i = 0; i < sizeof(verified_exe_37625_body); i++) {
+        uint32_t a = (uint32_t)machine->img.load_seg * 16u +
+                     EXE_37625_A_OFFSET + (uint32_t)i;
+        uint32_t b = (uint32_t)machine->img.load_seg * 16u +
+                     EXE_37625_B_OFFSET + (uint32_t)i;
+        if (mem_r8(a) != verified_exe_37625_body[i] ||
+            mem_r8(b) != verified_exe_37625_body[i]) return false;
+    }
 
     linear = (uint32_t)machine->img.load_seg * 16u + SET_INT_AND_ZERO_EXE_OFFSET;
     segment = (uint16_t)(linear >> 4);
@@ -430,7 +466,17 @@ bool xanth_native_stage2_install(vm *machine) {
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
     g_get_far_idx_hits = 0;
-    return cpu86_hook_install(segment, offset, native_get_far_idx, NULL);
+    if (!cpu86_hook_install(segment, offset, native_get_far_idx, NULL)) return false;
+
+    g_exe_37625_hits = 0;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_37625_A_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    if (!cpu86_hook_install(segment, offset, native_exe_37625, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_37625_B_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    return cpu86_hook_install(segment, offset, native_exe_37625, NULL);
 }
 
 uint64_t xanth_native_set_int_and_zero_hits(void) {
@@ -459,4 +505,8 @@ uint64_t xanth_native_set_far_arr_hits(void) {
 
 uint64_t xanth_native_get_far_idx_hits(void) {
     return g_get_far_idx_hits;
+}
+
+uint64_t xanth_native_exe_37625_hits(void) {
+    return g_exe_37625_hits;
 }
