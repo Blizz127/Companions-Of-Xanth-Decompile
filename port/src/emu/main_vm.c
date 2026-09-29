@@ -452,6 +452,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_add_mod_hits());
     fprintf(stderr, "[native] set_fields hits: %llu\n",
             (unsigned long long)xanth_native_set_fields_hits());
+    fprintf(stderr, "[native] exe_112853 hits: %llu\n",
+            (unsigned long long)xanth_native_exe_112853_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();

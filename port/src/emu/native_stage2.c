@@ -117,6 +117,7 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define ADD_MOD_G0_DS_OFFSET        0x025eu
 #define ADD_MOD_G1_DS_OFFSET        0x0260u
 #define SET_FIELDS_EXE_OFFSET       105702u
+#define EXE_112853_OFFSET           112853u
 #define EXE_136552_OFFSET            136552u
 #define EXE_52710_OFFSET              52710u
 #define EXE_52710_GLOBAL_DS_OFFSET    0x0106u
@@ -180,6 +181,7 @@ static uint64_t g_exe_112711_hits;
 static uint64_t g_exe_34775_hits;
 static uint64_t g_add_mod_hits;
 static uint64_t g_set_fields_hits;
+static uint64_t g_exe_112853_hits;
 static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
@@ -1310,6 +1312,62 @@ static hook_result_t native_set_fields(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Lower exe_112853: index a far table, select a record, return its +10 word. */
+static hook_result_t native_exe_112853(cpu86 *cpu, void *user) {
+    const uint16_t entry_sp = cpu->r[CPU_SP];
+    const uint16_t index = seg_r16(cpu->s[CPU_SS],
+                                    (uint16_t)(entry_sp + 4u));
+    const uint16_t row = seg_r16(cpu->s[CPU_SS],
+                                  (uint16_t)(entry_sp + 6u));
+    const int32_t product = (int32_t)(int16_t)0x0014 * (int32_t)(int16_t)row;
+    const uint16_t product_lo = (uint16_t)product;
+    const uint16_t table_index = (uint16_t)(index * 4u);
+    const uint16_t table_offset = (uint16_t)(table_index + 0x67c2u);
+    const uint16_t record_offset = seg_r16(cpu->s[CPU_DS], table_offset);
+    const uint16_t record_segment = seg_r16(cpu->s[CPU_DS],
+                                             (uint16_t)(table_offset + 2u));
+    const uint16_t record = (uint16_t)(record_offset + product_lo);
+    const int8_t tag = (int8_t)seg_r8(record_segment, record);
+    const uint16_t count = (tag == 3) ? 18u : ((tag == 7) ? 20u : 21u);
+    const uint64_t cycles = (uint64_t)count * 4u;
+    const uint16_t old_bp = cpu->r[CPU_BP];
+    vm *machine = (vm *)cpu->vm;
+    (void)user;
+
+    if (cpu->step_budget_remaining < count) return HOOK_CONTINUE;
+    if (machine && (machine->cycles_per_second == 0 ||
+        machine->next_tick_cycles <= cpu->cycles ||
+        machine->next_tick_cycles - cpu->cycles <= cycles ||
+        (machine->sb.dma_active && (machine->sb.dma_end_cycles <= cpu->cycles ||
+         machine->sb.dma_end_cycles - cpu->cycles <= cycles))))
+        return HOOK_CONTINUE;
+
+    cpu->r[CPU_AX] = 0x0014u;
+    alu_imul16(cpu, row);
+    cpu->r[CPU_BX] = alu_op(cpu, ALU_ADD, index, index, 16);
+    cpu->r[CPU_BX] = alu_op(cpu, ALU_ADD, cpu->r[CPU_BX], cpu->r[CPU_BX], 16);
+    cpu->s[CPU_ES] = record_segment;
+    cpu->r[CPU_BX] = record_offset;
+    cpu->r[CPU_BX] = alu_op(cpu, ALU_ADD, cpu->r[CPU_BX], product_lo, 16);
+    cpu->r[CPU_AX] = (uint16_t)(int16_t)tag; /* mov al; cbw */
+    cpu->r[CPU_AX] = alu_op(cpu, ALU_SUB, cpu->r[CPU_AX], 3u, 16);
+    if (cpu->r[CPU_AX] == 0) {
+        cpu->r[CPU_AX] = seg_r16(record_segment, (uint16_t)(record + 10u));
+    } else {
+        cpu->r[CPU_AX] = alu_op(cpu, ALU_SUB, cpu->r[CPU_AX], 4u, 16);
+        if (cpu->r[CPU_AX] == 0) {
+            cpu->r[CPU_AX] = seg_r16(record_segment, (uint16_t)(record + 10u));
+        } else {
+            cpu->r[CPU_AX] = alu_op(cpu, ALU_XOR, 0, 0, 16);
+        }
+    }
+    cpu->r[CPU_BP] = old_bp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = (uint8_t)count;
+    g_exe_112853_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -1472,6 +1530,14 @@ bool xanth_native_stage2_install(vm *machine) {
         0x26, 0x89, 0x47, 0x02, 0x8b, 0x46, 0x0c, 0x26, 0x89,
         0x47, 0x04, 0x5d, 0xcb
     };
+    static const uint8_t verified_exe_112853_body[] = {
+        0x55, 0x8b, 0xec, 0x83, 0xec, 0x04, 0xb8, 0x14, 0x00,
+        0xf7, 0x6e, 0x08, 0x8b, 0x5e, 0x06, 0x03, 0xdb, 0x03,
+        0xdb, 0xc4, 0x9f, 0xc2, 0x67, 0x03, 0xd8, 0x26, 0x8a,
+        0x07, 0x98, 0x2d, 0x03, 0x00, 0x74, 0x0a, 0x2d, 0x04,
+        0x00, 0x74, 0x05, 0x33, 0xc0, 0xeb, 0x05, 0x90, 0x26,
+        0x8b, 0x47, 0x0a, 0x8b, 0xe5, 0x5d, 0xcb
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1526,6 +1592,11 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            SET_FIELDS_EXE_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_set_fields_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_112853_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_112853_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_exe_112853_body[i]) return false;
     }
 
     for (size_t i = 0; i < sizeof(verified_body); i++) {
@@ -1878,6 +1949,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_set_fields_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_set_fields, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_112853_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_112853_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_exe_112853, NULL)) return false;
     return true;
 }
 
@@ -2010,3 +2086,4 @@ uint64_t xanth_native_add_mod_hits(void) {
 }
 
 uint64_t xanth_native_set_fields_hits(void) { return g_set_fields_hits; }
+uint64_t xanth_native_exe_112853_hits(void) { return g_exe_112853_hits; }

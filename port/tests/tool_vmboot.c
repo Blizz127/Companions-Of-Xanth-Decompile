@@ -534,6 +534,9 @@ int main(int argc, char **argv) {
         fprintf(stderr, "[native] set_fields hits: %llu\n",
                 (unsigned long long)xanth_native_set_fields_hits());
     if (!vm_only)
+        fprintf(stderr, "[native] exe_112853 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_112853_hits());
+    if (!vm_only)
         fprintf(stderr, "[native] exe_86810 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_86810_hits());
     if (!vm_only)

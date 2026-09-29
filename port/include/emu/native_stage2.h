@@ -41,5 +41,6 @@ uint64_t xanth_native_exe_112711_hits(void);
 uint64_t xanth_native_exe_34775_hits(void);
 uint64_t xanth_native_add_mod_hits(void);
 uint64_t xanth_native_set_fields_hits(void);
+uint64_t xanth_native_exe_112853_hits(void);
 
 #endif
