@@ -7,10 +7,6 @@ run 60
 move 37 148
 run 5
 click left
-run 60
-move 37 161
-run 5
-click left
 run 90
 move 305 196
 checkpoint wt16_fire_lake

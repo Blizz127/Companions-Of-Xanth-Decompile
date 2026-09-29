@@ -1,0 +1,97 @@
+# Continue from the 275-point slot produced by walkthrough_14_dungeon_items.xit.
+# Enter the lava lake, help Nada with the bun and hot dog, then learn Mack's
+# firewall story from the Fireman.
+include lib/resume_barrow_unmasked.xit
+key 13 28
+run 60
+move 37 148
+run 5
+click left
+run 60
+move 37 161
+run 5
+click left
+run 90
+move 305 196
+checkpoint wt17_fireman_scene
+shot build/frames/wt17_fireman_scene.bmp
+
+# Talk to Nada about why she looks uncomfortable, then ask her to put up her hair.
+move 60 165
+run 5
+click left
+run 10
+move 14 57
+run 5
+click left
+run 40
+move 100 135
+run 5
+click left
+run 60
+key 13 28
+run 60
+move 100 135
+run 5
+click left
+run 60
+move 20 124
+run 5
+click left
+run 60
+key 13 28
+run 60
+key 13 28
+run 60
+
+# Open the mustard jar and put it on the bun Nada gives you.
+move 273 184
+run 5
+click left
+run 10
+move 14 37
+run 5
+click left
+run 10
+move 273 184
+run 5
+click left
+run 90
+move 14 17
+run 5
+click left
+run 10
+move 104 162
+run 5
+click left
+run 90
+move 305 196
+checkpoint wt17_hotdog
+shot build/frames/wt17_hotdog.bmp
+
+# Ask the Fireman about anything interesting, then ask how Mack escaped.
+key 13 28
+run 60
+move 175 65
+run 5
+click left
+run 10
+move 14 57
+run 5
+click left
+run 60
+move 100 125
+run 5
+click left
+run 60
+move 100 106
+run 5
+click left
+run 60
+move 100 130
+run 5
+click left
+run 90
+move 305 196
+checkpoint wt17_mack_escape
+shot build/frames/wt17_mack_escape.bmp

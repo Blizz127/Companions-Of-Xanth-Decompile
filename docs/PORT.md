@@ -509,11 +509,13 @@ save routine captures a 275-point state after the dialogue is dismissed. A
 follow-up retail-VM replay restores that save, moves south twice, and reaches a
 second Barrow chamber whose description says flapping wings are audible nearby;
 the replay pins framebuffer hash `8083725b37faaaa2` and preserves the save. A
-separate continuation travels east then southeast into the Region of Fire lava
-lake; OCR reads “You stand before a bubbling lake of lava” and its southeast
-path prompt at frame hash `c22b2662b3ab3f89`. The save is preserved there too.
-The remaining Region of Fire puzzles, Gap, and 1,000-point ending remain
-unverified.
+separate continuation travels east into the lava-lake entry, where OCR reads
+“You stand before a bubbling lake of lava” and the southeast-path prompt at
+frame hash `5d6d67ae69300dd3`. Southeast reaches the Fireman and hot dog at hash
+`c22b2662b3ab3f89`. The bun/mustard interaction makes the dog melt into the lake
+for **15 points**; the subsequent Fireman dialogue records Mack’s explosive
+device cracking the firewall. Those replays preserve the 275-point save. The
+remaining Region of Fire puzzles, Gap, and 1,000-point ending remain unverified.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is
