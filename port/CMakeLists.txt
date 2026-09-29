@@ -392,6 +392,9 @@ if(XANTH_BUILD_TESTS)
     add_test(NAME Native103774NegativeFixture
         COMMAND tool_vmboot --test-native-exe103774-negative)
     set_tests_properties(Native103774NegativeFixture PROPERTIES TIMEOUT 10)
+    add_test(NAME Native100203PrefixFixture
+        COMMAND tool_vmboot --test-native-exe100203-prefix)
+    set_tests_properties(Native100203PrefixFixture PROPERTIES TIMEOUT 10)
 
     add_test(NAME NativeHalStressTests COMMAND xanth_hal_stress)
     set_tests_properties(NativeHalStressTests PROPERTIES

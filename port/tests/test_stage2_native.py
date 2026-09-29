@@ -195,6 +195,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                         ("exe_114942", "exe_114942"),
                         ("exe_114942_negative", "exe_114942 negative"),
                         ("exe_100016_fast", "exe_100016 fast-return"),
+                        ("exe_100203_prefix", "exe_100203 prefix"),
                         ("store_two_globals", "store_two_globals"),
                         ("set_int_if_ge0", "set_int_if_ge0"),
                         ("iabs", "iabs"),
@@ -249,6 +250,7 @@ class NativeStage2ParityTests(unittest.TestCase):
             # verifies parity for that route but does not exercise this branch.
             self.assertEqual(int(outputs["native"]["exe_114942_negative_hits"]), 0)
             self.assertGreater(int(outputs["native"]["exe_100016_fast_hits"]), 0)
+            self.assertGreater(int(outputs["native"]["exe_100203_prefix_hits"]), 0)
             store_two_globals_hits = int(outputs["native"]["store_two_globals_hits"])
             self.assertGreater(store_two_globals_hits, 0)
             self.assertLessEqual(store_two_globals_hits, 17)

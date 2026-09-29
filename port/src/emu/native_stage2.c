@@ -124,6 +124,7 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define EXE_103774_OFFSET           103774u
 #define EXE_103774_GLOBAL_A_DS      0x4f46u
 #define EXE_103774_GLOBAL_B_DS      0x4f48u
+#define EXE_100203_OFFSET           100203u
 #define EXE_136552_OFFSET            136552u
 #define EXE_52710_OFFSET              52710u
 #define EXE_52710_GLOBAL_DS_OFFSET    0x0106u
@@ -191,6 +192,7 @@ static uint64_t g_set_fields_hits;
 static uint64_t g_exe_112853_hits;
 static uint64_t g_exe_100016_fast_hits;
 static uint64_t g_exe_103774_negative_hits;
+static uint64_t g_exe_100203_prefix_hits;
 static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
@@ -1461,6 +1463,39 @@ static hook_result_t native_exe_103774(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Lower exe_100203's four PUSH AX instructions, then resume retail code at CALLF. */
+static hook_result_t native_exe_100203_prefix(cpu86 *cpu, void *user) {
+    vm *machine = (vm *)cpu->vm;
+    const uint32_t cycles = 4u * 4u;
+    (void)user;
+
+    if (cpu->step_budget_remaining < 4u) return HOOK_CONTINUE;
+    if (machine && (machine->cycles_per_second == 0 ||
+        machine->next_tick_cycles <= cpu->cycles ||
+        machine->next_tick_cycles - cpu->cycles <= cycles ||
+        (machine->sb.dma_active && (machine->sb.dma_end_cycles <= cpu->cycles ||
+         machine->sb.dma_end_cycles - cpu->cycles <= cycles))))
+        return HOOK_CONTINUE;
+    for (unsigned i = 0; i < 4u; i++)
+        if (mem_r8(cpu_lin(cpu->s[CPU_CS], (uint16_t)(cpu->ip + i))) != 0x50u)
+            return HOOK_CONTINUE;
+    if (mem_r8(cpu_lin(cpu->s[CPU_CS], (uint16_t)(cpu->ip + 4u))) != 0x9au)
+        return HOOK_CONTINUE;
+
+    for (unsigned i = 0; i < 4u; i++) cpu86_push16(cpu, cpu->r[CPU_AX]);
+    cpu->ip = (uint16_t)(cpu->ip + 4u);
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = 4u;
+    g_exe_100203_prefix_hits++;
+    return HOOK_DID_SETIP;
+}
+
+#ifdef XANTH_NATIVE_STAGE2_TESTING
+hook_result_t xanth_native_stage2_test_exe_100203_prefix(cpu86 *cpu) {
+    return native_exe_100203_prefix(cpu, NULL);
+}
+#endif
+
 #ifdef XANTH_NATIVE_STAGE2_TESTING
 hook_result_t xanth_native_stage2_test_exe_103774(cpu86 *cpu) {
     return native_exe_103774(cpu, NULL);
@@ -1654,6 +1689,9 @@ bool xanth_native_stage2_install(vm *machine) {
         0xfe, 0xa3, 0x46, 0x4f, 0x8b, 0x46, 0xfc, 0xa3, 0x48, 0x4f,
         0x8b, 0xe5, 0x5d, 0xcb
     };
+    static const uint8_t verified_exe_100203_head[] = {
+        0x50, 0x50, 0x50, 0x50, 0x9a
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1736,6 +1774,11 @@ bool xanth_native_stage2_install(vm *machine) {
         /* The near fast path skips this far helper, whose segment is relocated. */
         if (i == 36u || i == 37u) continue;
         if (mem_r8(address) != verified_exe_103774_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_100203_head); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_100203_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_exe_100203_head[i]) return false;
     }
     {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
@@ -2113,6 +2156,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_103774_negative_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_103774, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_100203_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_100203_prefix_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_exe_100203_prefix, NULL)) return false;
     return true;
 }
 
@@ -2252,3 +2300,4 @@ uint64_t xanth_native_set_fields_hits(void) { return g_set_fields_hits; }
 uint64_t xanth_native_exe_112853_hits(void) { return g_exe_112853_hits; }
 uint64_t xanth_native_exe_100016_fast_hits(void) { return g_exe_100016_fast_hits; }
 uint64_t xanth_native_exe_103774_negative_hits(void) { return g_exe_103774_negative_hits; }
+uint64_t xanth_native_exe_100203_prefix_hits(void) { return g_exe_100203_prefix_hits; }

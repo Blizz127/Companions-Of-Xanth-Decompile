@@ -170,6 +170,48 @@ fail:
     return 1;
 }
 
+static int test_native_exe_100203_prefix(void) {
+    static const uint8_t prefix[] = {0x50, 0x50, 0x50, 0x50, 0x9a};
+    cpu86 interpreted, native;
+    memset(g_dos_mem, 0, DOS_MEM_SIZE);
+    cpu86_reset(&interpreted);
+    interpreted.s[CPU_CS] = 0x1000u;
+    interpreted.s[CPU_SS] = 0x2000u;
+    interpreted.ip = 0x0100u;
+    interpreted.r[CPU_SP] = 0x1000u;
+    interpreted.r[CPU_AX] = 0xa55au;
+    interpreted.flags |= F_IF | F_DF | F_CF | F_AF | F_SF | F_OF;
+    interpreted.cycles = 100u;
+    interpreted.step_budget_remaining = 100u;
+    memcpy(g_dos_mem + cpu_lin(interpreted.s[CPU_CS], interpreted.ip),
+           prefix, sizeof(prefix));
+    for (unsigned i = 0; i < 4u; i++) cpu86_step(&interpreted);
+
+    native = interpreted;
+    native.ip = 0x0100u;
+    native.r[CPU_SP] = 0x1000u;
+    native.cycles = 100u;
+    /* Restore the stack region because interpreter already wrote its copy. */
+    memset(g_dos_mem + cpu_lin(native.s[CPU_SS], 0x0ff8u), 0, 8u);
+    if (xanth_native_stage2_test_exe_100203_prefix(&native) != HOOK_DID_SETIP)
+        goto fail;
+    if (native.ip != interpreted.ip ||
+        native.r[CPU_SP] != interpreted.r[CPU_SP] ||
+        native.r[CPU_AX] != interpreted.r[CPU_AX] ||
+        memcmp(native.s, interpreted.s, sizeof(native.s)) != 0 ||
+        native.flags != interpreted.flags || native.cycles != interpreted.cycles ||
+        seg_r16(native.s[CPU_SS], 0x0ff8u) != 0xa55au ||
+        seg_r16(native.s[CPU_SS], 0x0ffau) != 0xa55au ||
+        seg_r16(native.s[CPU_SS], 0x0ffcu) != 0xa55au ||
+        seg_r16(native.s[CPU_SS], 0x0ffeu) != 0xa55au)
+        goto fail;
+    puts("exe_100203 prefix interpreter/native state: exact (4 pushes, 16 cycles)");
+    return 0;
+fail:
+    fprintf(stderr, "exe_100203 prefix interpreter/native state mismatch\n");
+    return 1;
+}
+
 /*
  * Trace format: an ORDERED list of steps, not timestamped events.
  *
@@ -538,6 +580,7 @@ int main(int argc, char **argv) {
     bool replacement_graphics = false;
     bool test_native_114942_negative = false;
     bool test_native_103774_negative = false;
+    bool test_native_100203_prefix = false;
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
@@ -569,6 +612,8 @@ int main(int argc, char **argv) {
             test_native_114942_negative = true;
         else if (!strcmp(argv[i], "--test-native-exe103774-negative"))
             test_native_103774_negative = true;
+        else if (!strcmp(argv[i], "--test-native-exe100203-prefix"))
+            test_native_100203_prefix = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
         else if (!strcmp(argv[i], "--nonblocking-conin")) cfg.nonblocking_conin = true;
         else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc) {
@@ -588,6 +633,8 @@ int main(int argc, char **argv) {
         return test_native_exe_114942_negative();
     if (test_native_103774_negative)
         return test_native_exe_103774_negative();
+    if (test_native_100203_prefix)
+        return test_native_exe_100203_prefix();
 
     cfg.max_instructions = insns;
     cfg.replacement_fonts = replacement_fonts;
@@ -696,6 +743,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] exe_103774 negative hits: %llu\n",
                 (unsigned long long)xanth_native_exe_103774_negative_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_100203 prefix hits: %llu\n",
+                (unsigned long long)xanth_native_exe_100203_prefix_hits());
     if (!vm_only)
         fprintf(stderr, "[native] exe_86810 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_86810_hits());

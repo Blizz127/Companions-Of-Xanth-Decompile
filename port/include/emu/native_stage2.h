@@ -32,6 +32,7 @@ uint64_t xanth_native_exe_114942_negative_hits(void);
 #ifdef XANTH_NATIVE_STAGE2_TESTING
 hook_result_t xanth_native_stage2_test_exe_114942(cpu86 *cpu);
 hook_result_t xanth_native_stage2_test_exe_103774(cpu86 *cpu);
+hook_result_t xanth_native_stage2_test_exe_100203_prefix(cpu86 *cpu);
 #endif
 uint64_t xanth_native_store_two_globals_hits(void);
 uint64_t xanth_native_set_int_if_ge0_hits(void);
@@ -49,5 +50,6 @@ uint64_t xanth_native_set_fields_hits(void);
 uint64_t xanth_native_exe_112853_hits(void);
 uint64_t xanth_native_exe_100016_fast_hits(void);
 uint64_t xanth_native_exe_103774_negative_hits(void);
+uint64_t xanth_native_exe_100203_prefix_hits(void);
 
 #endif

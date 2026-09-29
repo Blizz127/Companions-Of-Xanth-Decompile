@@ -460,6 +460,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_100016_fast_hits());
     fprintf(stderr, "[native] exe_103774 negative hits: %llu\n",
             (unsigned long long)xanth_native_exe_103774_negative_hits());
+    fprintf(stderr, "[native] exe_100203 prefix hits: %llu\n",
+            (unsigned long long)xanth_native_exe_100203_prefix_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();
