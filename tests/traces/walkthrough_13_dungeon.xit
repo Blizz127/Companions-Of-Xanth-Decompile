@@ -1,0 +1,658 @@
+include lib/resume_barrow_unmasked.xit
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+# 1. Navigate (1, 4) -> (0, 0)
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+# Take door & jar
+# Type: take door
+key 116 0
+run 2
+key 97 0
+run 2
+key 107 0
+run 2
+key 101 0
+run 2
+key 32 0
+run 2
+key 100 0
+run 2
+key 111 0
+run 2
+key 111 0
+run 2
+key 114 0
+run 2
+key 13 28
+run 40
+# Type: take jar
+key 116 0
+run 2
+key 97 0
+run 2
+key 107 0
+run 2
+key 101 0
+run 2
+key 32 0
+run 2
+key 106 0
+run 2
+key 97 0
+run 2
+key 114 0
+run 2
+key 13 28
+run 40
+checkpoint wt13_jar
+shot build/frames/draft_after_jar.bmp
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+# 2. Navigate (0, 0) -> (7, 9)
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 77
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+# Take pestle
+move 14 7
+run 5
+click left
+run 15
+move 240 105
+run 5
+click left
+run 40
+checkpoint wt13_pestle
+shot build/frames/draft_after_pestle.bmp
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+# 3. Navigate (7, 9) -> (4, 1)
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+# 4. Solve switches
+# --- PASS 1: Flip all 16 switches up ---
+# Switch 0
+move 228 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 1
+move 237 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 2
+move 123 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 3
+move 132 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 4
+move 237 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 5
+move 141 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 6
+move 141 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 7
+move 246 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 8
+move 132 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 9
+move 228 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 10
+move 123 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 11
+move 246 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 12
+move 123 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 13
+move 246 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 14
+move 237 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 15
+move 132 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# --- PASS 2: Flip all 16 switches down ---
+# Switch 0 pass 2
+move 228 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 1 pass 2
+move 237 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 2 pass 2
+move 123 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 3 pass 2
+move 132 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 4 pass 2
+move 237 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 5 pass 2
+move 141 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 6 pass 2
+move 141 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 7 pass 2
+move 246 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 8 pass 2
+move 132 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 9 pass 2
+move 228 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 10 pass 2
+move 123 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 11 pass 2
+move 246 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 12 pass 2
+move 123 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 13 pass 2
+move 246 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 14 pass 2
+move 237 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 15 pass 2
+move 132 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+move 305 196
+run 5
+dump 0:02EE 4
+dump 0:029C 2
+# Move to glowing button at (231, 66)
+move 231 66
+run 5
+checkpoint wt13_button_hover
+shot build/frames/button_hover.bmp
+click left
+run 35
+checkpoint wt13_button_clicked
+shot build/frames/button_clicked.bmp
+# Click verb at (14, 87)
+move 14 87
+run 5
+click left
+run 100
+move 305 196
+run 5
+checkpoint wt13_push_button
+shot build/frames/after_push_button.bmp
+# 5. Enter door into dungeon
+move 184 67
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 50
+# 6. Nada dialogue
+key 0 80
+run 10
+key 13 28
+run 40
+key 0 80
+run 10
+key 0 80
+run 10
+key 0 80
+run 10
+key 0 80
+run 10
+key 13 28
+run 40
+key 0 80
+run 10
+key 0 80
+run 10
+key 0 80
+run 10
+key 13 28
+run 40
+key 13 28
+run 40
+key 32 57
+run 50
+checkpoint wt13_in_dungeon
+shot build/frames/draft_in_dungeon.bmp
+# 7. In dungeon: talk to manacles
+# Type: talk to manacles
+key 116 0
+run 2
+key 97 0
+run 2
+key 108 0
+run 2
+key 107 0
+run 2
+key 32 0
+run 2
+key 116 0
+run 2
+key 111 0
+run 2
+key 32 0
+run 2
+key 109 0
+run 2
+key 97 0
+run 2
+key 110 0
+run 2
+key 97 0
+run 2
+key 99 0
+run 2
+key 108 0
+run 2
+key 101 0
+run 2
+key 115 0
+run 2
+key 13 28
+run 40
+checkpoint wt13_free_nada
+shot build/frames/draft_after_free_nada.bmp
+# 8. In dungeon: open jar
+# Type: open jar
+key 111 0
+run 2
+key 112 0
+run 2
+key 101 0
+run 2
+key 110 0
+run 2
+key 32 0
+run 2
+key 106 0
+run 2
+key 97 0
+run 2
+key 114 0
+run 2
+key 13 28
+run 40
+checkpoint wt13_open_jar
+shot build/frames/draft_after_open_jar.bmp
+# 9. In dungeon: take moss
+# Type: take moss
+key 116 0
+run 2
+key 97 0
+run 2
+key 107 0
+run 2
+key 101 0
+run 2
+key 32 0
+run 2
+key 109 0
+run 2
+key 111 0
+run 2
+key 115 0
+run 2
+key 115 0
+run 2
+key 13 28
+run 40
+checkpoint wt13_take_moss
+shot build/frames/draft_after_take_moss.bmp
+# 10. In dungeon: climb stairs up
+# Type: up
+key 117 0
+run 2
+key 112 0
+run 2
+key 13 28
+run 40
+checkpoint wt13_up
+shot build/frames/draft_after_up.bmp
+
+# Read the live score panel.
+move 35 174
+run 6
+click left
+run 20
+move 160 120
+run 4
+click left
+run 25
+move 305 196
+checkpoint wt13_score
+shot build/frames/wt13_score.bmp
