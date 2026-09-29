@@ -6,6 +6,7 @@ import hashlib
 import os
 import re
 import shutil
+import struct
 import subprocess
 import unittest
 from pathlib import Path
@@ -23,6 +24,7 @@ MOSS_SCREEN = ROOT / "build" / "frames" / "wt14_moss_center_attempt.bmp"
 FIRE_SCREEN = ROOT / "build" / "frames" / "wt14_test_after_exit_north.bmp"
 DIALOGUE_SCREEN = ROOT / "build" / "frames" / "wt14_fire_dialogue_response.bmp"
 GAP_SCREEN = ROOT / "build" / "frames" / "wt14_gap_dialogue_next.bmp"
+GAP_ANSWER_SCREEN = ROOT / "build" / "frames" / "wt14_gap_dialogue_answer.bmp"
 BUDGET = 32_000_000_000
 ANCHOR_SLOT_SHA256 = "51b5ef6408a751c1d85cda264d83eefa6dc362f573931060c3f64dae9d36f6f1"
 GOLDEN = {
@@ -98,6 +100,15 @@ class DungeonRouteTests(unittest.TestCase):
     def test_gap_dialogue_advances_to_chasm_scene(self) -> None:
         text = read_game_font_text(GAP_SCREEN, DATA / "XANTH_10.FNT", 30, 110)
         self.assertIn("A gigantic chasm divides northern and southern Xanth", text)
+        self.assertIn("wt14_gap_dialogue_answer", self.marks)
+        answer = read_game_font_text(GAP_ANSWER_SCREEN, DATA / "XANTH_10.FNT", 30, 110)
+        self.assertIn("Water", answer)
+        self.assertIn("Air", answer)
+
+    def test_game_save_overwrites_the_anchor(self) -> None:
+        data = (SAVES / "XANTH000.SAV").read_bytes()
+        self.assertNotEqual(hashlib.sha256(data).hexdigest(), ANCHOR_SLOT_SHA256)
+        self.assertEqual(struct.unpack_from("<H", data, 0x347D)[0], 275)
 
 
 if __name__ == "__main__":

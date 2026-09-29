@@ -803,3 +803,14 @@ run 60
 move 305 196
 checkpoint wt14_gap_dialogue_next
 shot build/frames/wt14_gap_dialogue_next.bmp
+key 13 28
+run 60
+move 305 196
+checkpoint wt14_gap_dialogue_answer
+shot build/frames/wt14_gap_dialogue_answer.bmp
+key 13 28
+run 60
+move 305 196
+checkpoint wt14_gap_departure
+shot build/frames/wt14_gap_departure.bmp
+include lib/save_over_slot1.xit

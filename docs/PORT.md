@@ -504,8 +504,9 @@ map room, frees Nada, opens the jar by targeting its centered inventory icon,
 and collects agony moss for 7 points. It shows the upper room after choosing
 the stairs' context action, melts the ironwood tree, enters a dialogue
 identifying the Region of Fire, and advances to dialogue about heading south
-toward the Gap and the chasm dividing Xanth. The post-transition total score
-and route beyond this dialogue remain open.
+toward the Gap, the chasm dividing Xanth, and the Water/Air sequence. The game's
+save routine captures a 275-point state after the dialogue is dismissed; the
+route beyond that state remains open.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is
