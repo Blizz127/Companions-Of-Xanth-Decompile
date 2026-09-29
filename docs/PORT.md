@@ -4,7 +4,7 @@ The EXE and OVL have documented byte-exact rebuild results. This verifies the
 image reconstruction, not semantic recovery of every function or 1:1 behavior
 of the port. See [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md) for the open
 parity, completeness, platform and asset-validation gaps. The port currently
-executes the supplied retail binaries in an 8086/DOS VM, with seventeen verified
+executes the supplied retail binaries in an 8086/DOS VM, with twenty-one verified
 source-backed entries dispatched natively through guest-ABI adapters (one
 entry accelerates only a branch and leaves its helper-call path interpreted).
 
@@ -43,7 +43,7 @@ configuration has no mods or cheats active and must preserve retail behavior.
 
 **Current implementation status:** Stage 1 runs the supplied retail EXE and
 OVL in the custom 8086/DOS VM. VM services reach host facilities through the
-HAL and DOS shims. Stage 2 has seventeen active entries: the exact recovered bodies in
+HAL and DOS shims. Stage 2 has twenty-one active entries: the exact recovered bodies in
 `src/set_int_and_zero.c` and `src/set_far_ptr.c` are compiled into the port;
 the 16-bit arithmetic in `src/exe_94712.c` is lowered through the VM's
 8086 flag-accurate ALU. The nonzero fast-return branch from
@@ -57,18 +57,18 @@ offset 99,679. The short global getters `src/exe_86810.c` and
 `src/exe_84866.c` return a DS word and far pointer, respectively. These entries
 are installed at verified EXE offsets 17,820, 83,182, 94,712, 16,216, 14,360,
 83,200, 102,352, 99,835, 99,897, 99,679, 86,810, 84,866, 85,189, 103,757,
-85,206, 112,665 and 106,736. `src/clear_byte.c` clears a guest byte through its
-far pointer. Two `src/set_int_pair.c` entries store two arguments into guest DS,
+85,206, 112,665, 106,736, 108,184, 114,942 and 115,346; the nonzero `arr_set_one` branch is at 115,161. `src/clear_byte.c` clears a guest byte through its
+far pointer. `src/swap_int.c` replaces and returns a guest DS word; `src/exe_115346.c` stores -1 in its indexed DS table; the nonzero branch of `src/arr_set_one.c` stores 1; and the nonnegative branch of `src/exe_114942.c` copies two indexed table values to guest far pointers. Their other branches stay interpreted. Two `src/set_int_pair.c` entries store two arguments into guest DS,
 and `src/set_int.c` entries at 85,206 and 112,665 store one argument.
 The counter/table update in
 `src/exe_99679.c` is lowered with guest DS reads, writes and 8086 flag rules.
 Adapters map the far-call
 stack, DS globals, result registers, far returns, flags, and guest instruction/cycle
-budgets. The interaction trace exercises all seventeen; setter hooks retain
+budgets. The interaction trace exercises all twenty-one; setter hooks retain
 interpreter fallback at timer/DMA boundaries. A 100-frame production run calls
 `exe_94712` 18,880 times and takes the native fast return 90 times. The boot
 checkpoint hash and guest instruction, timer, audio and file-open metrics
-match with hooks disabled or enabled. This is 17/2,844 indexed units (0.60%),
+match with hooks disabled or enabled. This is 21/2,844 indexed units (0.74%),
 including one partial-path dispatch, not proof of whole-route source coverage.
 The full renderer/audio/input/files/timing interface boundary is also not yet
 complete. Further units need the same per-path byte evidence and VM/native
@@ -119,7 +119,7 @@ The DOS kernel has therefore only ever grown to fit what this game actually call
 ordinary 8086 code in the EXE's 43,193-byte appended tail. The core executes it and it
 pages its own sections via ordinary `INT 21h` reads.
 
-### Stage 2 — static recompilation (seventeen entries active)
+### Stage 2 — static recompilation (twenty-one entries active)
 
 Decode the retail bytes to portable C against the same HAL, function by function, each
 validated by co-simulation against the interpreter, until the interpreter is no longer
@@ -773,7 +773,7 @@ Both Python tests skip cleanly without the retail disc, so they are safe in publ
   remains open.
 - Verify the Windows job on a real runner. The workflow exists and executes the
   conformance suite and CTest; it has not yet been observed passing.
-- Expand Stage 2 from the first seventeen source-backed entries: generate address/extent/ABI
+- Expand Stage 2 from the first twenty-one source-backed entries: generate address/extent/ABI
   metadata for recovered functions, prioritize units measured on real routes,
   and keep VM/native frame, save, audio and timing comparisons as gates. The
   first hook is at EXE code offset 17,820; `tests/test_stage2_native.py` checks
