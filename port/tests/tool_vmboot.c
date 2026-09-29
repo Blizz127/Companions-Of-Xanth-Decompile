@@ -510,6 +510,12 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] set_int_pair B hits: %llu\n",
                 (unsigned long long)xanth_native_set_int_pair_b_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] set_int A hits: %llu\n",
+                (unsigned long long)xanth_native_set_int_a_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] set_int B hits: %llu\n",
+                (unsigned long long)xanth_native_set_int_b_hits());
 
     vm_report(&machine, stderr);
 
