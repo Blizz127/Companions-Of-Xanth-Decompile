@@ -162,6 +162,9 @@ run 5
 checkpoint wt10_door_solidified
 shot build/frames/wt10_door_solidified.bmp
 
+# Preserve the score boundary through the game's own save UI for audit.
+include lib/save_over_slot1.xit
+
 # Open the door (+3 points)
 move 14 37
 run 5

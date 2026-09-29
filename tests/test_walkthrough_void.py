@@ -10,6 +10,7 @@ import hashlib
 import os
 import re
 import shutil
+import struct
 import subprocess
 import unittest
 from pathlib import Path
@@ -30,7 +31,9 @@ GOLDEN = {
     "wt10_resumed": "2f4944d38827a0e9",
     "wt10_door_shimmer": "2164a99b53cc01ce",
     "wt10_door_solidified": "0aa59233336ba407",
-    "wt10_door_opened": "d847e0b47c389058",
+    # Saving at the preceding checkpoint is part of this instrumented route;
+    # it changes this one post-open frame's animation timing.
+    "wt10_door_opened": "2ddb9039cbdd757f",
     "wt10_stepped_through": "05f32e5dab0902a9",
     "wt10_earth_outskirts": "f347d468db3ae9ba",
     "wt10_earth_score": "560a0fd24a0b467a",
@@ -73,6 +76,10 @@ class VoidToEarthTests(unittest.TestCase):
     def test_earth_outskirts_score_is_208(self) -> None:
         text = read_game_font_text(SCORE, DATA / "XANTH_10.FNT", 30, 110)
         self.assertIn("208 of 1000 points", text)
+
+    def test_game_saved_203_before_opening_the_door(self) -> None:
+        data = (SAVES / "XANTH000.SAV").read_bytes()
+        self.assertEqual(struct.unpack_from("<H", data, 0x347D)[0], 203)
 
 
 if __name__ == "__main__":

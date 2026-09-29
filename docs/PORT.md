@@ -494,9 +494,10 @@ on the panel. Next is two dashes of eye scream into the pail, then the rest
 of the recipe, then the censor-ship. The experimental continuation through
 Crossroads (two eye screams and Nada's cough drops) was exercised in the retail
 VM, but its score panel still read 122/1000. From the existing 193-point Void
-save, the verified transition through the shimmering door reaches the Region
-of Earth outskirts at 208/1000. The exact point where the published 200-point
-Scene II endpoint is crossed remains unverified; the full ending is also open.
+save, the verified route saves 203 after the shimmering door solidifies, shows
+206 after opening it (+3), and reaches the Region of Earth outskirts at
+208/1000. This crosses the 200-point threshold; the exact action that crosses
+it remains unisolated, and the full ending is still open.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is
@@ -719,7 +720,7 @@ Both Python tests skip cleanly without the retail disc, so they are safe in publ
 
 ## Next
 
-- Pin the exact 200-point transition on the verified Void-to-Earth route, then
+- Isolate the action that crosses 200 on the verified Void-to-Earth route, then
   continue through the full 1,000-point finale. The whole-game completion gate
   remains open.
 - Verify the Windows job on a real runner. The workflow exists and executes the
