@@ -497,7 +497,8 @@ VM, but its score panel still read 122/1000. From the existing 193-point Void
 save, the verified route saves 203 after the shimmering door solidifies, shows
 206 after opening it (+3), and reaches the Region of Earth outskirts at
 208/1000. This crosses the 200-point threshold; the exact action that crosses
-it remains unisolated, and the full ending is still open.
+it remains unisolated. The next verified route reaches the unlocked barrow
+interior with the score still at 208. The full ending is still open.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is

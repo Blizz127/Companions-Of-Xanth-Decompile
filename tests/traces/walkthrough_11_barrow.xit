@@ -1,0 +1,180 @@
+include lib/resume_earth_start.xit
+
+# 1. Move SE to spring
+move 37 161
+run 5
+click left
+run 40
+move 305 196
+run 5
+checkpoint wt11_spring_arrived
+shot build/frames/c_1_spring.bmp
+
+# 2. Talk to Metria at (255, 60): Ask about barrow (Option 3 at (100, 114))
+move 14 57
+run 5
+click left
+run 10
+move 255 60
+run 5
+click left
+run 40
+move 100 114
+run 5
+click left
+run 10
+click left
+run 40
+
+# 3. Dug: "Why should I?" at (100, 98)
+move 100 98
+run 5
+click left
+run 10
+click left
+run 40
+
+# 4. Dismiss Nada's warning
+key 32 57
+run 30
+
+# 5. Talk to Nada on HUD (78, 161)
+move 14 57
+run 5
+click left
+run 10
+move 78 161
+run 5
+click left
+run 40
+
+# 6. Click Line 2: "What's with Metria and this spring, princess?" at (100, 134)
+move 100 134
+run 5
+click left
+run 10
+click left
+run 40
+
+# 7. Select "Like who?" at (50, 125)
+move 50 125
+run 5
+click left
+run 10
+click left
+run 40
+
+# 8. Select "Well, thanks for what you have told me..." at (50, 125)
+move 50 125
+run 5
+click left
+run 10
+click left
+run 40
+
+# 9. Talk to Metria at (255, 60)
+move 14 57
+run 5
+click left
+run 10
+move 255 60
+run 5
+click left
+run 40
+
+# 10. Metria: "Drink from the spring now..." Dismiss with space
+key 32 57
+run 30
+
+# 11. Move NW to trigger Metria interception
+move 18 134
+run 5
+click left
+run 40
+
+# 12. Metria: "You're not leaving here..."
+# Down 3 times to highlight Line 4: "I'm getting hungry. When do we eat?"
+key 0 80
+run 5
+key 0 80
+run 5
+key 0 80
+run 5
+key 13 28
+run 30
+
+# 13. Metria: "Drink from the spring lest my wrath..."
+# Down 2 times to Option 3: "You're trying to trick me into doing something, right?"
+key 0 80
+run 5
+key 0 80
+run 5
+shot build/frames/d_13_trick_high.bmp
+key 13 28
+run 30
+
+# 14. Metria: "Fool! The water in the spring can do you no harm..."
+# Option 1: "I am too foolish to drink." (already highlighted, press Enter)
+key 13 28
+run 30
+
+# 15. Dismiss speech 1 ("You'll never know...")
+key 32 57
+run 30
+
+# 16. Dismiss speech 2 (Metria unlocks barrow)
+key 32 57
+run 30
+checkpoint wt11_barrow_unlocked
+shot build/frames/d_16_unlocked.bmp
+
+# 17. Move NW back to outskirts!
+move 18 134
+run 5
+click left
+run 40
+checkpoint wt11_outskirts_returned
+shot build/frames/d_17_outskirts.bmp
+
+# 18. Move North to barrow exterior!
+move 24 135
+run 5
+click left
+run 40
+checkpoint wt11_barrow_exterior
+shot build/frames/d_18_barrow_ext.bmp
+
+# 19. Open barrow door (Open verb at (14, 37), door at (160, 80))
+move 14 37
+run 5
+click left
+run 10
+move 160 80
+run 5
+click left
+run 40
+checkpoint wt11_barrow_door_open
+shot build/frames/d_19_door_open.bmp
+
+# 20. Step through open door into barrow!
+move 160 80
+run 5
+click left
+run 40
+move 305 196
+run 20
+checkpoint wt11_inside_barrow
+shot build/frames/d_20_inside_barrow.bmp
+
+# Read the score after entering the barrow.
+move 35 174
+run 6
+click left
+run 20
+move 160 120
+run 4
+click left
+run 25
+move 305 196
+checkpoint wt11_barrow_score
+shot build/frames/wt11_barrow_score.bmp
