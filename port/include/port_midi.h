@@ -17,10 +17,16 @@ typedef struct {
     bool (*note_off)(void *user,uint8_t channel,uint8_t note);
     bool (*program_change)(void *user,uint8_t channel,uint8_t program);
     bool (*control_change)(void *user,uint8_t channel,uint8_t control,uint8_t value);
+    bool (*poly_pressure)(void *user,uint8_t channel,uint8_t note,uint8_t pressure);
+    bool (*channel_pressure)(void *user,uint8_t channel,uint8_t pressure);
+    bool (*pitch_bend)(void *user,uint8_t channel,uint16_t value);
     void (*all_notes_off)(void *user);
+    void (*system_reset)(void *user);
     void *user;
 } MidiExternalBackend;
 void midi_set_external_backend(const MidiExternalBackend *backend);
+void midi_send_external_message(uint8_t status,uint8_t data1,uint8_t data2);
+void midi_send_external_reset(void);
 
 typedef struct {
     const uint8_t *data;

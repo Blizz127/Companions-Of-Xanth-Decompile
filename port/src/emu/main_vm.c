@@ -254,6 +254,11 @@ int main(int argc, char **argv) {
     }
     vm_audio_opl_write = hal_audio_write_opl;
     vm_audio_dma_write = hal_audio_dma_submit_block;
+    vm_audio_mpu_read_data = hal_audio_mpu_read_data;
+    vm_audio_mpu_read_status = hal_audio_mpu_read_status;
+    vm_audio_mpu_write_data = hal_audio_mpu_write_data;
+    vm_audio_mpu_write_cmd = hal_audio_mpu_write_cmd;
+    cfg.use_general_midi = soundfont_path[0] != '\0';
 
     if (!vm_init(&machine, &cfg, err, sizeof(err))) {
         fprintf(stderr, "[FATAL] %s\n", err);

@@ -63,6 +63,7 @@ uint8_t hal_audio_dsp_read(uint16_t port);
 
 /* Roland MT-32 MPU-401 UART emulation */
 uint8_t hal_audio_mpu_read_status(void);
+uint8_t hal_audio_mpu_read_data(void);
 void hal_audio_mpu_write_cmd(uint8_t cmd);
 void hal_audio_mpu_write_data(uint8_t data);
 

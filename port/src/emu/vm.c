@@ -22,9 +22,11 @@
 
 #ifdef _WIN32
 #  include <direct.h>
+#  define vm_mkdir(path) _mkdir(path)
 #else
 #  include <dirent.h>
 #  include <sys/stat.h>
+#  define vm_mkdir(path) mkdir(path,0755)
 #endif
 
 static vm *g_vm;   /* the HLT callback has no user pointer to ride on */
@@ -43,6 +45,12 @@ static void audio_dma_write_noop(const uint8_t *samples, uint32_t count, uint32_
     (void)samples; (void)count; (void)sample_rate;
 }
 void (*vm_audio_dma_write)(const uint8_t *samples, uint32_t count, uint32_t sample_rate) = audio_dma_write_noop;
+static uint8_t audio_mpu_read_stub(void) { return 0xFF; }
+static void audio_mpu_write_stub(uint8_t value) { (void)value; }
+uint8_t (*vm_audio_mpu_read_data)(void) = audio_mpu_read_stub;
+uint8_t (*vm_audio_mpu_read_status)(void) = audio_mpu_read_stub;
+void (*vm_audio_mpu_write_data)(uint8_t data) = audio_mpu_write_stub;
+void (*vm_audio_mpu_write_cmd)(uint8_t cmd) = audio_mpu_write_stub;
 
 /* ------------------------------------------------------------------ */
 /* Small helpers                                                       */
@@ -183,27 +191,113 @@ static bool resolve_path(vm *v, const char *dos_path, char *out, size_t max,
  * until then a silent configuration is the difference between reaching the
  * title screen and blocking on a device that does not exist yet.
  */
-static void ensure_legend_ini(vm *v) {
+static bool ensure_save_directory(const char *path);
+
+static bool ensure_legend_ini(vm *v) {
     char path[600];
     FILE *f;
 
+    if (!ensure_save_directory(v->cfg.save_dir)) {
+        fprintf(stderr,"[vm] invalid or too-long save directory: %s\n",v->cfg.save_dir);
+        return !v->cfg.use_general_midi;
+    }
     snprintf(path, sizeof(path), "%s/LEGEND.INI", v->cfg.save_dir);
     f = fopen(path, "rb");
-    if (f) { fclose(f); return; }
+    if (f) {
+        if (!v->cfg.use_general_midi) { fclose(f); return true; }
+
+        /* The user explicitly selected the soundfont backend. Keep every
+         * other saved device setting, but route retail music through the
+         * game's MT-32 MPU-401 path so MIDI events reach that backend. */
+        char original[8192], updated[8192];
+        size_t n=fread(original,1,sizeof(original),f);
+        bool too_large=!feof(f);
+        fclose(f);
+        if (too_large) {
+            fprintf(stderr,"[vm] LEGEND.INI is too large to enable General MIDI\n");
+            return false;
+        }
+        size_t in=0,out=0;
+        bool replaced=false;
+        while (in<n) {
+            size_t end=in;
+            while (end<n && original[end]!='\n') ++end;
+            size_t line_len=end-in;
+            size_t text_len=line_len;
+            if (text_len && original[in+text_len-1]=='\r') --text_len;
+            size_t key=in;
+            while (key<in+text_len && (original[key]==' ' || original[key]=='\t')) ++key;
+            bool is_music=(in+text_len-key>=6 &&
+                toupper((unsigned char)original[key+0])=='M' &&
+                toupper((unsigned char)original[key+1])=='U' &&
+                toupper((unsigned char)original[key+2])=='S' &&
+                toupper((unsigned char)original[key+3])=='I' &&
+                toupper((unsigned char)original[key+4])=='C' && original[key+5]=='=');
+            const char *replacement="MUSIC=mt32 0 330\r\n";
+            if (is_music) {
+                if (!replaced) {
+                    size_t rlen=strlen(replacement);
+                    if (out+rlen>=sizeof(updated)) return false;
+                    memcpy(updated+out,replacement,rlen); out+=rlen;
+                    replaced=true;
+                }
+            } else {
+                size_t raw_len=end-in+(end<n ? 1u : 0u);
+                if (out+raw_len>=sizeof(updated)) return false;
+                memcpy(updated+out,original+in,raw_len); out+=raw_len;
+            }
+            in=end+(end<n ? 1u : 0u);
+        }
+        if (!replaced) {
+            static const char replacement[]="MUSIC=mt32 0 330\r\n";
+            if (out && updated[out-1]!='\n') {
+                if (out+2>=sizeof(updated)) return false;
+                updated[out++]='\r'; updated[out++]='\n';
+            }
+            if (out+sizeof(replacement)>sizeof(updated)) return false;
+            memcpy(updated+out,replacement,sizeof(replacement)-1);
+            out+=sizeof(replacement)-1;
+        }
+        f=fopen(path,"wb");
+        if (!f) {
+            fprintf(stderr,"[vm] cannot configure MUSIC=mt32 in %s\n",path);
+            return false;
+        }
+        bool write_ok=fwrite(updated,1,out,f)==out;
+        if (fclose(f)!=0) write_ok=false;
+        if (!write_ok) {
+            fprintf(stderr,"[vm] cannot configure MUSIC=mt32 in %s\n",path);
+            return false;
+        }
+        fprintf(stderr,"[vm] soundfont selected; LEGEND.INI uses MUSIC=mt32\n");
+        return true;
+    }
 
     f = fopen(path, "wb");
     if (!f) {
         fprintf(stderr, "[vm] warning: cannot write %s\n", path);
-        return;
+        return !v->cfg.use_general_midi;
     }
-    fprintf(f,
-            "MOUSE=mouse\r\n"
-            "GAMEDATA=C:\\XANTH\\\r\n"
-            "SAVEDATA=C:\\XANTH\\\r\n"
-            "MUSIC=adlib 0 388\r\n"
-            "SOUND=blaster 7 220\r\n");
-    fclose(f);
+    if (v->cfg.use_general_midi)
+        fprintf(f,
+                "MOUSE=mouse\r\n"
+                "GAMEDATA=C:\\XANTH\\\r\n"
+                "SAVEDATA=C:\\XANTH\\\r\n"
+                "MUSIC=mt32 0 330\r\n"
+                "SOUND=blaster 7 220\r\n");
+    else
+        fprintf(f,
+                "MOUSE=mouse\r\n"
+                "GAMEDATA=C:\\XANTH\\\r\n"
+                "SAVEDATA=C:\\XANTH\\\r\n"
+                "MUSIC=adlib 0 388\r\n"
+                "SOUND=blaster 7 220\r\n");
+    if (ferror(f) || fclose(f)!=0) {
+        fprintf(stderr,"[vm] failed writing %s\n",path);
+        return !v->cfg.use_general_midi;
+    }
     fprintf(stderr, "[vm] authored %s\n", path);
+    return true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1911,6 +2005,11 @@ static uint8_t vm_in8(cpu86 *c, uint16_t port) {
         v->pic.irr &= (uint8_t)~(1 << v->sb.irq);
         return 0x00;
 
+    case 0x330:
+        return v->cfg.use_general_midi ? vm_audio_mpu_read_data() : 0xFF;
+    case 0x331:
+        return v->cfg.use_general_midi ? vm_audio_mpu_read_status() : 0xFF;
+
     case 0x388:
         return v->opl_status;
 
@@ -2025,6 +2124,13 @@ static void vm_out8(cpu86 *c, uint16_t port, uint8_t val) {
     case 0x22C:   /* DSP command / data */
         v->sb.accesses++;
         sb_command(v, val);
+        break;
+
+    case 0x330:
+        if (v->cfg.use_general_midi) vm_audio_mpu_write_data(val);
+        break;
+    case 0x331:
+        if (v->cfg.use_general_midi) vm_audio_mpu_write_cmd(val);
         break;
 
     case 0x43: {  /* PIT mode / command */
@@ -2184,6 +2290,25 @@ static uint16_t build_environment(uint16_t seg, const char *exe_dos_path) {
     return off;
 }
 
+static bool ensure_save_directory(const char *path) {
+    char tmp[512];
+    size_t n;
+    if (!path || !*path) return false;
+    n=(size_t)snprintf(tmp,sizeof(tmp),"%s",path);
+    if (n>=sizeof(tmp)) return false;
+    for (char *p=tmp+1;*p;++p) {
+        if (*p=='/' || *p=='\\') {
+            char sep=*p;
+            if (p==tmp+2 && tmp[1]==':') continue; /* Windows drive root */
+            *p='\0';
+            if (*tmp) (void)vm_mkdir(tmp);
+            *p=sep;
+        }
+    }
+    (void)vm_mkdir(tmp);
+    return true;
+}
+
 static void build_psp(vm *v, uint16_t psp, uint16_t env, uint16_t top_seg) {
     for (int i = 0; i < 256; i++) seg_w8(psp, (uint16_t)i, 0);
 
@@ -2254,7 +2379,10 @@ bool vm_init(vm *v, const vm_config *cfg, char *err, size_t errlen) {
     build_trampoline();
     build_bda();
     init_std_handles(v);
-    ensure_legend_ini(v);
+    if (!ensure_legend_ini(v)) {
+        snprintf(err,errlen,"cannot configure LEGEND.INI for the selected General MIDI backend");
+        return false;
+    }
 
     mcb_init(&v->arena, VM_SEG_ARENA, VM_SEG_ARENA_END);
 

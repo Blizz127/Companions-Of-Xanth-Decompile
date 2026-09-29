@@ -51,6 +51,7 @@ typedef struct {
     char     data_dir[512];
     char     save_dir[512];
     char     mods_dir[512]; /* empty unless hash-keyed replacements are opted in */
+    bool     use_general_midi; /* opt-in MPU-401 path for the configured soundfont */
     bool     trace_int;
     bool     trace_dos;
     bool     trace_cpu;
@@ -295,6 +296,10 @@ void vm_post_mouse_button(vm *v, int button, bool pressed);
 /* Audio sink, injected by the front end so the core stays SDL-free. */
 extern void (*vm_audio_opl_write)(uint16_t reg, uint8_t val);
 extern void (*vm_audio_dma_write)(const uint8_t *samples, uint32_t count, uint32_t sample_rate);
+extern uint8_t (*vm_audio_mpu_read_data)(void);
+extern uint8_t (*vm_audio_mpu_read_status)(void);
+extern void (*vm_audio_mpu_write_data)(uint8_t data);
+extern void (*vm_audio_mpu_write_cmd)(uint8_t cmd);
 
 /* Guest clock, derived from the virtual timer (never the host clock). */
 void vm_clock_time(const vm *v, int *hh, int *mm, int *ss, int *cs);

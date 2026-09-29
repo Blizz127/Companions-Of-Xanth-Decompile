@@ -25,7 +25,7 @@ runtime-selected music backend; the current OPL/AdLib path remains the default.
 | Gamepad | `--controller` or `controller=true` | SDL GameController: left stick moves the pointer, A clicks, X right-clicks, D-pad moves with guest arrow keys, Start presses Enter. Off by default. |
 | Host hotkeys | `--hotkeys` or `hotkeys=true` | Opt-in F11 fullscreen toggle and F10 scanline toggle. These host shortcuts are not sent to the guest when enabled. |
 | Per-channel volume | `--volume-master`, `--volume-music`, `--volume-sfx`, `--volume-voice` | Each accepts 0–128. Existing defaults are retained when omitted. |
-| General MIDI soundfont | `--soundfont <user.sf2>` or `soundfont=<user.sf2>` | Opt-in FluidSynth runtime backend; requires a system FluidSynth library and user-supplied SF2. No library, ROM, or soundfont is bundled. The existing AdLib route remains default. |
+| General MIDI soundfont | `--soundfont <user.sf2>` or `soundfont=<user.sf2>` | Opt-in FluidSynth runtime backend over the emulated MPU-401 path; selects `MUSIC=mt32` in the save-side LEGEND.INI. Requires a system FluidSynth library and user-supplied SF2. No library, ROM, or soundfont is bundled. The existing AdLib route remains default. |
 | Hash-keyed asset mods | `--mods mods` or `mods=mods` | Local replacements in `mods/` are looked up by lowercase SHA-256 of the original asset. No replacement is active unless explicitly configured; files in the directory are ignored by Git. |
 
 Config files are simple `key=value` text. For example:
@@ -62,7 +62,9 @@ available on the command line.
   are available as narrower opt-in effects.
 - **MT-32/Munt emulation:** not implemented. It requires user-supplied ROMs,
   compatible runtime integration, correct MPU-401 message delivery, and
-  timing/audio comparison. FluidSynth General MIDI does not reproduce an
+  timing/audio comparison. The current FluidSynth path accepts channel MIDI
+  messages over the emulated MPU-401 UART; MT-32 SysEx tone maps and device
+  quirks are not reproduced. FluidSynth General MIDI does not reproduce an
   MT-32's patches or quirks.
 - **Text-speed control, more save slots, quicksave, and hotkeys:** these need
   hooks into guest timing, save selection, or input behavior. They must be
@@ -95,4 +97,7 @@ As of 2026-09-29, the Release build and five asset-free CTest gates pass; the
 first-room VM trace passes 9/9 tests and the asset-gated route suite passes
 60/60, including its pinned framebuffer-plus-palette hashes. These establish
 repeatability and regression coverage within this VM. No controlled DOSBox
-side-by-side comparison has been recorded yet.
+side-by-side comparison has been recorded yet. The native MPU tests cover
+reset acknowledgements, channel messages, running status, pitch bend, and GM
+reset delivery to a backend; a temporary local FluidSynth API stub also
+validated dynamic loading/startup, but no real FluidSynth/SF2 has been tested.

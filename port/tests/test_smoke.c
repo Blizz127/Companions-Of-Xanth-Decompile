@@ -11,6 +11,38 @@
 static int g_tests_run = 0;
 static int g_tests_passed = 0;
 
+typedef struct {
+    int note_on, note_off, programs, controls, poly_pressure;
+    int channel_pressure, pitch_bends, resets;
+    uint8_t last_channel, last_value;
+    uint8_t last_note_velocity, last_program_channel;
+    uint16_t last_bend;
+} mpu_capture_t;
+static mpu_capture_t g_mpu_capture;
+
+static bool capture_note_on(void *u,uint8_t ch,uint8_t note,uint8_t vel) {
+    mpu_capture_t *c=u; (void)note; c->note_on++; c->last_channel=ch; c->last_note_velocity=vel; return true;
+}
+static bool capture_note_off(void *u,uint8_t ch,uint8_t note) {
+    mpu_capture_t *c=u; (void)note; c->note_off++; c->last_channel=ch; return true;
+}
+static bool capture_program(void *u,uint8_t ch,uint8_t pgm) {
+    mpu_capture_t *c=u; c->programs++; c->last_program_channel=ch; c->last_value=pgm; return true;
+}
+static bool capture_control(void *u,uint8_t ch,uint8_t cc,uint8_t val) {
+    mpu_capture_t *c=u; (void)cc; c->controls++; c->last_channel=ch; c->last_value=val; return true;
+}
+static bool capture_poly_pressure(void *u,uint8_t ch,uint8_t note,uint8_t val) {
+    mpu_capture_t *c=u; (void)note; c->poly_pressure++; c->last_channel=ch; c->last_value=val; return true;
+}
+static bool capture_channel_pressure(void *u,uint8_t ch,uint8_t val) {
+    mpu_capture_t *c=u; c->channel_pressure++; c->last_channel=ch; c->last_value=val; return true;
+}
+static bool capture_pitch_bend(void *u,uint8_t ch,uint16_t val) {
+    mpu_capture_t *c=u; c->pitch_bends++; c->last_channel=ch; c->last_bend=val; return true;
+}
+static void capture_reset(void *u) { ((mpu_capture_t *)u)->resets++; }
+
 #define TEST_ASSERT(cond, msg) do { \
     g_tests_run++; \
     if (!(cond)) { \
@@ -167,6 +199,48 @@ static void test_audio_subsystem(void) {
     printf("[TEST] Running test_audio_subsystem...\n");
 
     hal_audio_init();
+
+    /* The opt-in MPU UART must preserve channel messages and running status. */
+    memset(&g_mpu_capture,0,sizeof(g_mpu_capture));
+    MidiExternalBackend backend={0};
+    backend.note_on=capture_note_on;
+    backend.note_off=capture_note_off;
+    backend.program_change=capture_program;
+    backend.control_change=capture_control;
+    backend.poly_pressure=capture_poly_pressure;
+    backend.channel_pressure=capture_channel_pressure;
+    backend.pitch_bend=capture_pitch_bend;
+    backend.system_reset=capture_reset;
+    backend.user=&g_mpu_capture;
+    midi_set_external_backend(&backend);
+    hal_audio_mpu_write_cmd(0xFF);
+    TEST_ASSERT((hal_audio_mpu_read_status()&0x80)==0 && hal_audio_mpu_read_data()==0xFE,
+                "MPU reset must return its ready ACK");
+    TEST_ASSERT((hal_audio_mpu_read_status()&0x80)!=0,"MPU ACK must be consumed once");
+    hal_audio_mpu_write_cmd(0x3F);
+    TEST_ASSERT(hal_audio_mpu_read_data()==0xFE,"MPU UART command must return ACK");
+    hal_audio_mpu_write_data(0x90); hal_audio_mpu_write_data(60); hal_audio_mpu_write_data(100);
+    hal_audio_mpu_write_data(61); hal_audio_mpu_write_data(80);
+    hal_audio_mpu_write_data(0x80); hal_audio_mpu_write_data(60); hal_audio_mpu_write_data(64);
+    hal_audio_mpu_write_data(0xC1); hal_audio_mpu_write_data(5);
+    hal_audio_mpu_write_data(0xB0); hal_audio_mpu_write_data(7); hal_audio_mpu_write_data(90);
+    hal_audio_mpu_write_data(0xA0); hal_audio_mpu_write_data(60); hal_audio_mpu_write_data(45);
+    hal_audio_mpu_write_data(0xD0); hal_audio_mpu_write_data(64);
+    hal_audio_mpu_write_data(0xE2); hal_audio_mpu_write_data(0); hal_audio_mpu_write_data(64);
+    hal_audio_mpu_write_data(0xF0); hal_audio_mpu_write_data(0x7E);
+    hal_audio_mpu_write_data(0x7F); hal_audio_mpu_write_data(0x09);
+    hal_audio_mpu_write_data(0x01); hal_audio_mpu_write_data(0xF7);
+    TEST_ASSERT(g_mpu_capture.note_on==2 && g_mpu_capture.last_note_velocity==80,
+                "MPU note-on and running status must reach the backend");
+    TEST_ASSERT(g_mpu_capture.note_off==1,"MPU note-off must reach the backend");
+    TEST_ASSERT(g_mpu_capture.programs==1 && g_mpu_capture.last_program_channel==1,
+                "MPU program change must preserve its channel");
+    TEST_ASSERT(g_mpu_capture.controls==1 && g_mpu_capture.poly_pressure==1 &&
+                g_mpu_capture.channel_pressure==1,"MPU control and pressure messages must route");
+    TEST_ASSERT(g_mpu_capture.pitch_bends==1 && g_mpu_capture.last_bend==8192,
+                "MPU pitch bend must preserve its 14-bit value");
+    TEST_ASSERT(g_mpu_capture.resets==2,"MPU reset and GM reset SysEx must reset the backend");
+    midi_set_external_backend(NULL);
 
     /* Test SB DSP Reset & Echo Test (Command 0xE0) */
     hal_audio_dsp_reset();

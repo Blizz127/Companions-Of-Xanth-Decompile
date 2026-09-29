@@ -13,6 +13,53 @@ void midi_set_external_backend(const MidiExternalBackend *backend) {
     else memset(&g_external_backend,0,sizeof(g_external_backend));
 }
 
+void midi_send_external_message(uint8_t status,uint8_t data1,uint8_t data2) {
+    uint8_t channel=(uint8_t)(status&0x0F);
+    switch (status&0xF0) {
+    case 0x80:
+        if (g_external_backend.note_off)
+            (void)g_external_backend.note_off(g_external_backend.user,channel,data1);
+        break;
+    case 0x90:
+        if (data2==0) {
+            if (g_external_backend.note_off)
+                (void)g_external_backend.note_off(g_external_backend.user,channel,data1);
+        } else if (g_external_backend.note_on) {
+            (void)g_external_backend.note_on(g_external_backend.user,channel,data1,data2);
+        }
+        break;
+    case 0xA0:
+        if (g_external_backend.poly_pressure)
+            (void)g_external_backend.poly_pressure(g_external_backend.user,channel,data1,data2);
+        break;
+    case 0xB0:
+        if (g_external_backend.control_change)
+            (void)g_external_backend.control_change(g_external_backend.user,channel,data1,data2);
+        break;
+    case 0xC0:
+        if (g_external_backend.program_change)
+            (void)g_external_backend.program_change(g_external_backend.user,channel,data1);
+        break;
+    case 0xD0:
+        if (g_external_backend.channel_pressure)
+            (void)g_external_backend.channel_pressure(g_external_backend.user,channel,data1);
+        break;
+    case 0xE0:
+        if (g_external_backend.pitch_bend)
+            (void)g_external_backend.pitch_bend(g_external_backend.user,channel,
+                (uint16_t)((data1&0x7F)|((uint16_t)(data2&0x7F)<<7)));
+        break;
+    default: break;
+    }
+}
+
+void midi_send_external_reset(void) {
+    if (g_external_backend.system_reset)
+        g_external_backend.system_reset(g_external_backend.user);
+    else if (g_external_backend.all_notes_off)
+        g_external_backend.all_notes_off(g_external_backend.user);
+}
+
 /* Precomputed OPL (block, f_num) table for MIDI notes 0..127 */
 static uint8_t s_note_block[128];
 static uint16_t s_note_fnum[128];

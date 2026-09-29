@@ -144,8 +144,12 @@ typedef struct {
     int (*noteoff)(fluid_synth_t *,int,int);
     int (*program)(fluid_synth_t *,int,int);
     int (*cc)(fluid_synth_t *,int,int,int);
+    int (*key_pressure)(fluid_synth_t *,int,int,int);
+    int (*channel_pressure)(fluid_synth_t *,int,int);
+    int (*pitch_bend)(fluid_synth_t *,int,int);
     int (*write_float)(fluid_synth_t *,int,void *,int,int,void *,int,int);
     int (*all_sounds_off)(fluid_synth_t *,int);
+    int (*system_reset)(fluid_synth_t *);
     void (*delete_synth)(fluid_synth_t *);
     void (*delete_settings)(fluid_settings_t *);
 } fluidsynth_api_t;
@@ -173,10 +177,26 @@ static bool fluid_control_change(void *user,uint8_t ch,uint8_t cc,uint8_t value)
     fluidsynth_api_t *api=(fluidsynth_api_t *)user;
     return api && api->synth && api->cc(api->synth,ch,cc,value)>=0;
 }
+static bool fluid_poly_pressure(void *user,uint8_t ch,uint8_t note,uint8_t pressure) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    return api && api->synth && api->key_pressure(api->synth,ch,note,pressure)>=0;
+}
+static bool fluid_channel_pressure(void *user,uint8_t ch,uint8_t pressure) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    return api && api->synth && api->channel_pressure(api->synth,ch,pressure)>=0;
+}
+static bool fluid_pitch_bend(void *user,uint8_t ch,uint16_t value) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    return api && api->synth && api->pitch_bend(api->synth,ch,value)>=0;
+}
 static void fluid_all_notes_off(void *user) {
     fluidsynth_api_t *api=(fluidsynth_api_t *)user;
     if (api && api->synth)
         for (int ch=0;ch<16;++ch) (void)api->all_sounds_off(api->synth,ch);
+}
+static void fluid_system_reset(void *user) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    if (api && api->synth) (void)api->system_reset(api->synth);
 }
 #endif
 
@@ -510,6 +530,15 @@ uint8_t hal_audio_dsp_read(uint16_t port) {
  * ------------------------------------------------------------------------- */
 static uint8_t g_mpu_ack = 0;
 static bool g_mpu_has_ack = false;
+static struct {
+    uint8_t status;
+    uint8_t need;
+    uint8_t have;
+    uint8_t data[2];
+    uint8_t sysex_prefix[4];
+    uint8_t sysex_count;
+    bool in_sysex;
+} g_mpu_parser;
 
 uint8_t hal_audio_mpu_read_status(void) {
     /* Bit 6 = DRR (0 = ready to write data)
@@ -521,17 +550,85 @@ uint8_t hal_audio_mpu_read_status(void) {
     return status;
 }
 
+uint8_t hal_audio_mpu_read_data(void) {
+    if (!g_mpu_has_ack) return 0xFF;
+    g_mpu_has_ack=false;
+    return g_mpu_ack;
+}
+
 void hal_audio_mpu_write_cmd(uint8_t cmd) {
     if (cmd == 0xFF || cmd == 0x3F) {
         /* Reset (0xFF) or enter UART mode (0x3F): set ACK byte 0xFE */
         g_mpu_ack = 0xFE;
         g_mpu_has_ack = true;
+        memset(&g_mpu_parser,0,sizeof(g_mpu_parser));
+        if (cmd == 0xFF) {
+#ifndef XANTH_HEADLESS_STUB
+            if (g_mixer.device_id) SDL_LockAudioDevice(g_mixer.device_id);
+#endif
+            midi_send_external_reset();
+#ifndef XANTH_HEADLESS_STUB
+            if (g_mixer.device_id) SDL_UnlockAudioDevice(g_mixer.device_id);
+#endif
+        }
     }
 }
 
 void hal_audio_mpu_write_data(uint8_t data) {
-    /* In native port, data can be forwarded to ALSA/WinMM or discarded in headless mode */
-    (void)data;
+    uint8_t status;
+    if (g_mpu_parser.in_sysex) {
+        if (data == 0xF7) {
+            static const uint8_t gm_reset[4] = {0x7E,0x7F,0x09,0x01};
+            bool is_gm_reset = g_mpu_parser.sysex_count == sizeof(gm_reset) &&
+                memcmp(g_mpu_parser.sysex_prefix,gm_reset,sizeof(gm_reset)) == 0;
+            g_mpu_parser.in_sysex=false;
+            g_mpu_parser.sysex_count=0;
+            if (is_gm_reset) {
+#ifndef XANTH_HEADLESS_STUB
+                if (g_mixer.device_id) SDL_LockAudioDevice(g_mixer.device_id);
+#endif
+                midi_send_external_reset();
+#ifndef XANTH_HEADLESS_STUB
+                if (g_mixer.device_id) SDL_UnlockAudioDevice(g_mixer.device_id);
+#endif
+            }
+        } else if (data < 0x80 && g_mpu_parser.sysex_count < sizeof(g_mpu_parser.sysex_prefix)) {
+            g_mpu_parser.sysex_prefix[g_mpu_parser.sysex_count++]=data;
+        }
+        return;
+    }
+    if (data >= 0xF8) return; /* MIDI real-time bytes can occur between messages. */
+    if (data == 0xF0) {
+        g_mpu_parser.in_sysex=true;
+        g_mpu_parser.sysex_count=0;
+        g_mpu_parser.status=0;
+        g_mpu_parser.need=g_mpu_parser.have=0;
+        return;
+    }
+    if (data & 0x80) {
+        if (data >= 0xF0) {
+            g_mpu_parser.status=0;
+            g_mpu_parser.need=g_mpu_parser.have=0;
+            return;
+        }
+        g_mpu_parser.status=data;
+        g_mpu_parser.need=((data & 0xF0)==0xC0 || (data & 0xF0)==0xD0) ? 1 : 2;
+        g_mpu_parser.have=0;
+        return;
+    }
+    if (!g_mpu_parser.status || !g_mpu_parser.need) return;
+    g_mpu_parser.data[g_mpu_parser.have++]=data & 0x7F;
+    if (g_mpu_parser.have < g_mpu_parser.need) return;
+    status=g_mpu_parser.status;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id) SDL_LockAudioDevice(g_mixer.device_id);
+#endif
+    midi_send_external_message(status,g_mpu_parser.data[0],
+                               g_mpu_parser.need==2 ? g_mpu_parser.data[1] : 0);
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id) SDL_UnlockAudioDevice(g_mixer.device_id);
+#endif
+    g_mpu_parser.have=0; /* Channel status remains active for running status. */
 }
 
 /* -------------------------------------------------------------------------
@@ -963,8 +1060,12 @@ bool hal_audio_enable_fluidsynth(const char *soundfont_path) {
     FLUID_LOAD(noteoff,"fluid_synth_noteoff");
     FLUID_LOAD(program,"fluid_synth_program_change");
     FLUID_LOAD(cc,"fluid_synth_cc");
+    FLUID_LOAD(key_pressure,"fluid_synth_key_pressure");
+    FLUID_LOAD(channel_pressure,"fluid_synth_channel_pressure");
+    FLUID_LOAD(pitch_bend,"fluid_synth_pitch_bend");
     FLUID_LOAD(write_float,"fluid_synth_write_float");
     FLUID_LOAD(all_sounds_off,"fluid_synth_all_sounds_off");
+    FLUID_LOAD(system_reset,"fluid_synth_system_reset");
     FLUID_LOAD(delete_synth,"delete_fluid_synth");
     FLUID_LOAD(delete_settings,"delete_fluid_settings");
     g_fluid.settings=g_fluid.new_settings();
@@ -983,7 +1084,11 @@ bool hal_audio_enable_fluidsynth(const char *soundfont_path) {
     backend.note_off=fluid_note_off;
     backend.program_change=fluid_program_change;
     backend.control_change=fluid_control_change;
+    backend.poly_pressure=fluid_poly_pressure;
+    backend.channel_pressure=fluid_channel_pressure;
+    backend.pitch_bend=fluid_pitch_bend;
     backend.all_notes_off=fluid_all_notes_off;
+    backend.system_reset=fluid_system_reset;
     backend.user=&g_fluid;
     midi_set_external_backend(&backend);
     fprintf(stderr,"[HAL_AUDIO] FluidSynth enabled with user soundfont: %s\n",soundfont_path);
