@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import hashlib
 import re
+import struct
 import subprocess
 import tempfile
 import unittest
@@ -96,6 +98,91 @@ class OpeningNativeParityTests(unittest.TestCase):
         self.assertEqual(outputs["vm"]["metrics"], outputs["native"]["metrics"])
         for name in ("exe_112711", "exe_34775"):
             self.assertGreater(int(outputs["native"]["hits"][name] or 0), 0)
+
+    def test_picture_replacement_is_independent_and_opt_in(self) -> None:
+        """A local palette mod changes pixels only with the graphics switch."""
+        if not EXE.is_file() or not DATA.is_dir():
+            self.skipTest("matching retail game files are not installed")
+
+        tool = Path(os.environ["XANTH_VMBOOT"])
+        with tempfile.TemporaryDirectory(prefix="xanth-picture-mod-parity-") as tmp:
+            base = Path(tmp)
+            mods = base / "mods"
+            mods.mkdir()
+            replacements = 0
+            for source in sorted(DATA.glob("*.PIC")):
+                original = source.read_bytes()
+                changed = bytearray(original)
+                pos = 4
+                entry_offset = struct.unpack_from("<I", changed, 0)[0]
+                while entry_offset and pos + 8 <= len(changed):
+                    flags = struct.unpack_from("<H", changed, pos)[0]
+                    pos += 8
+                    next_offset = (
+                        struct.unpack_from("<I", changed, pos)[0]
+                        if pos + 4 <= len(changed) else 0
+                    )
+                    pos += 4
+                    if flags & 0x1000:
+                        palette = entry_offset + (4 if flags & 1 else 0)
+                        end = next_offset or len(changed)
+                        self.assertLessEqual(palette + 768, end, source.name)
+                        for index in range(palette, palette + 768):
+                            self.assertLessEqual(changed[index], 63, source.name)
+                            changed[index] = 63 - changed[index]
+                    entry_offset = next_offset
+                if changed != original:
+                    (mods / hashlib.sha256(original).hexdigest()).write_bytes(changed)
+                    replacements += 1
+            self.assertGreater(replacements, 0)
+
+            trace = base / "opening.xit"
+            trace_template = (
+                "run 60\nkey 32\nrun 40\nkey 32\nrun 40\nkey 32\n"
+                "run 60\nmove 305 196\nrun 15\n"
+                "checkpoint mod_opening\nshot {shot}\n"
+            )
+            outputs: dict[str, tuple[str, bytes]] = {}
+            modes = (
+                ("retail", []),
+                ("mods_disabled", ["--mods", str(mods)]),
+                ("graphics_enabled", ["--mods", str(mods), "--replacement-graphics"]),
+            )
+            for mode, flags in modes:
+                saves = base / f"saves-{mode}"
+                saves.mkdir()
+                shot = base / f"{mode}.bmp"
+                trace.write_text(trace_template.replace("{shot}", str(shot)), encoding="ascii")
+                proc = subprocess.run(
+                    [
+                        str(tool), "--exe", str(EXE), "--data", str(DATA),
+                        "--saves", str(saves), "--script", str(trace),
+                        "--insns", "2000000000", *flags,
+                    ],
+                    cwd=ROOT,
+                    env={
+                        **os.environ,
+                        "SDL_VIDEODRIVER": "dummy",
+                        "SDL_AUDIODRIVER": "dummy",
+                    },
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=180,
+                )
+                output = proc.stdout + proc.stderr
+                self.assertEqual(proc.returncode, 0, output[-3000:])
+                self.assertIn("fault                 : ok", output)
+                self.assertIn("MCB chain valid       : yes", output)
+                match = re.search(
+                    r"\[script\] hash mod_opening = ([0-9a-f]+)", output
+                )
+                self.assertIsNotNone(match, output[-3000:])
+                self.assertTrue(shot.is_file())
+                outputs[mode] = (match.group(1), shot.read_bytes())
+
+            self.assertEqual(outputs["retail"], outputs["mods_disabled"])
+            self.assertNotEqual(outputs["retail"], outputs["graphics_enabled"])
 
 
 if __name__ == "__main__":

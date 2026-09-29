@@ -117,6 +117,20 @@ The DOS trace showed those three files resolving to the local mod hashes only
 when `--replacement-fonts` was enabled. Both font runs ended `fault=ok` with a
 valid MCB chain. This check covers that opening route only.
 
+The opening picture replacement regression also exercises a visibly changed,
+format-preserving local art replacement. It creates temporary hash-keyed
+copies of the supplied `.PIC` files with each embedded 6-bit palette inverted,
+then replays the opening through the bedroom checkpoint. Retail and
+`--mods`-only runs both produce frame hash `ace8f1a3d6b858f2` and BMP SHA-256
+`719c68af9d67f6d1b8d146bde9d2877799cd4ef846943f1db72692f6e2bda96e`.
+With `--replacement-graphics`, the frame is `dc114d7e201b6081` and the BMP SHA-256
+is `e06c402a09f35dea3d1594b9621aaa248a53d61cde1428cdfe40972c2002bfd2`.
+All three runs ended `fault=ok` with a valid MCB chain; generated assets and
+screenshots stayed under the system temporary directory. The font opening
+route currently proves separate hash gating and unchanged output with
+retail-identical replacements; a visibly changed, valid font sample remains
+unverified.
+
 As of 2026-09-29, a fresh Linux Release build succeeds and all 15 registered
 CTest cases pass, including the retail walkthrough/hash suite and VM soak
 case. A one-frame BMP from default startup is byte-identical to one captured
