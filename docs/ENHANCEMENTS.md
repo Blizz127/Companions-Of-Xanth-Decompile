@@ -7,6 +7,12 @@ host-side and opt in through command-line options or an explicitly supplied
 state. With options omitted, the interpreter path and guest inputs are
 unchanged.
 
+The retail executable and overlay run in the 16-bit VM. Its DOS/BIOS shims use
+our HAL interfaces; SDL2 handles host window presentation, audio output and
+input. Display options affect composition in `hal_video`, while the guest
+framebuffer and palette remain the VM's source of truth. FluidSynth is a
+runtime-selected music backend; the current OPL/AdLib path remains the default.
+
 ## Available options
 
 | Enhancement | Opt in | State / limits |
@@ -84,3 +90,9 @@ filters. Each new option still needs an off/on route check on the same retail
 asset set. No broad claim of visual/audio/timing parity should be based only on
 matching hashes within the VM; see [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md)
 for the remaining DOSBox comparison work.
+
+As of 2026-09-29, the Release build and five asset-free CTest gates pass; the
+first-room VM trace passes 9/9 tests and the asset-gated route suite passes
+60/60, including its pinned framebuffer-plus-palette hashes. These establish
+repeatability and regression coverage within this VM. No controlled DOSBox
+side-by-side comparison has been recorded yet.
