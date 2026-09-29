@@ -53,6 +53,7 @@ typedef struct {
 } keyboard_state_t;
 
 static keyboard_state_t g_keyboard;
+static bool g_gamepad_enabled;
 static bool g_hotkeys_enabled;
 static int g_pending_hotkey;
 #ifndef XANTH_HEADLESS_STUB
@@ -72,12 +73,11 @@ void hal_input_init(void) {
     g_mouse.visible = true;
 
     memset(&g_keyboard, 0, sizeof(g_keyboard));
+    g_gamepad_enabled = false;
     g_hotkeys_enabled = false;
     g_pending_hotkey = 0;
 #ifndef XANTH_HEADLESS_STUB
     g_controller = NULL;
-    if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
-        (void)SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 #endif
 }
 
@@ -92,6 +92,7 @@ int hal_input_take_hotkey(void) {
 }
 
 void hal_input_enable_gamepad(bool enabled) {
+    g_gamepad_enabled = enabled;
 #ifndef XANTH_HEADLESS_STUB
     if (!enabled) {
         if (g_controller) SDL_GameControllerClose(g_controller);
@@ -359,6 +360,7 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
 
         case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP: {
+            if (!g_gamepad_enabled) break;
             bool down = event.type == SDL_CONTROLLERBUTTONDOWN;
             switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_A:
