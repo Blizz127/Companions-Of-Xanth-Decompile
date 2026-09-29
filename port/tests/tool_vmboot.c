@@ -361,21 +361,23 @@ typedef struct {
 
 static hook_probe g_hook_probes[256];
 static size_t g_hook_probe_count;
+static bool g_hook_log_all;
 
 static hook_result_t log_hook(cpu86 *c, void *user) {
     hook_probe *probe = (hook_probe *)user;
-    if (probe->hits == 0) {
+    if (probe->hits == 0 || g_hook_log_all) {
         fprintf(stderr,
             "[hook] exe-code %lu @%04X:%04X  called from %04X:%04X  "
             "AX=%04X DX=%04X DS=%04X  "
-            "args=%04X %04X %04X\n",
+            "args=%04X %04X %04X:%04X\n",
             probe->exe_offset, c->s[CPU_CS], c->ip,
             seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 2)),
             seg_r16(c->s[CPU_SS], c->r[CPU_SP]),
             c->r[CPU_AX], c->r[CPU_DX], c->s[CPU_DS],
             seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 4)),
             seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 6)),
-            seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 8)));
+            seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 8)),
+            seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 10)));
     }
     probe->hits++;
     return HOOK_CONTINUE;   /* observe only; let the guest code run */
@@ -413,6 +415,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--trace-int"))  cfg.trace_int = true;
         else if (!strcmp(argv[i], "--trace-dos"))  cfg.trace_dos = true;
         else if (!strcmp(argv[i], "--trace-cpu"))  cfg.trace_cpu = true;
+        else if (!strcmp(argv[i], "--hook-log-all")) g_hook_log_all = true;
         else if (!strcmp(argv[i], "--permissive")) cfg.permissive = true;
         else if (!strcmp(argv[i], "--vm-only")) vm_only = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
