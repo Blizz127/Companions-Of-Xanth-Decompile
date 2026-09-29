@@ -2,15 +2,16 @@
  * main_vm.c — the native port's entry point.
  *
  * Runs the real retail XANTH.EXE under the 16-bit VM, presenting through the
- * SDL HAL. There is no reimplemented game logic here and there must never be:
- * this file wires input, timing and presentation to a machine that executes
- * the matched source's own bytes.
+ * SDL HAL. Recovered units with verified native adapters are dispatched at
+ * their retail addresses; all other game instructions remain guest code.
+ * This file wires input, timing and presentation to the guest machine.
  *
  * The Mode 13h framebuffer is already aliased to g_dos_mem + 0xA0000, so the
  * guest's VGA writes need no copying; only the DAC palette has to be pushed
  * across each frame.
  */
 #include "vm.h"
+#include "native_stage2.h"
 #include "port_hal.h"
 #include "asset_check.h"
 
@@ -265,6 +266,14 @@ int main(int argc, char **argv) {
         hal_video_shutdown();
         return 1;
     }
+    if (!xanth_native_stage2_install(&machine)) {
+        fprintf(stderr, "[FATAL] could not install verified Stage-2 native units\n");
+        vm_shutdown(&machine);
+        hal_audio_shutdown();
+        hal_input_shutdown();
+        hal_video_shutdown();
+        return 1;
+    }
     machine.cycles_per_second = cpu_speed;
     machine.pit_period_cycles = cpu_speed * 10 / 182;
     machine.next_tick_cycles  = machine.cpu.cycles + machine.pit_period_cycles;
@@ -354,6 +363,8 @@ int main(int argc, char **argv) {
             fprintf(stderr, "wrote %s\n", shot_path);
     }
 
+    fprintf(stderr, "[native] set_int_and_zero hits: %llu\n",
+            (unsigned long long)xanth_native_stage2_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();

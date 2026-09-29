@@ -2581,8 +2581,13 @@ bool vm_run(vm *v, uint64_t max_insns) {
             v->prof_samples++;
         }
 
+        c->step_budget_remaining = max_insns - i;
         cpu86_step(c);
-        v->insn_count++;
+        {
+            uint64_t guest_insns = c->step_guest_insns ? c->step_guest_insns : 1u;
+            v->insn_count += guest_insns;
+            i += guest_insns - 1u;
+        }
     }
     return !(c->fault || c->halted || v->exited);
 }

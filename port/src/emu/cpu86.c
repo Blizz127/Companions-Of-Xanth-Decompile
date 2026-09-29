@@ -352,6 +352,7 @@ void cpu86_step(cpu86 *c) {
     int prefix_done = 0;
 
     c->insn_ip = c->ip;
+    c->step_guest_insns = 1;
     c->seg_override = -1;
     c->rep = 0;
     c->inhibit_irq = 0;

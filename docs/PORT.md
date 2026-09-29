@@ -4,8 +4,8 @@ The EXE and OVL have documented byte-exact rebuild results. This verifies the
 image reconstruction, not semantic recovery of every function or 1:1 behavior
 of the port. See [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md) for the open
 parity, completeness, platform and asset-validation gaps. The port currently
-executes the supplied retail binaries in an 8086/DOS VM; it does not dispatch
-into the indexed decompiled units.
+executes the supplied retail binaries in an 8086/DOS VM, with one verified
+decompiled C unit dispatched natively through a guest-ABI adapter.
 
 ## Why the port was restarted
 
@@ -42,12 +42,16 @@ configuration has no mods or cheats active and must preserve retail behavior.
 
 **Current implementation status:** Stage 1 runs the supplied retail EXE and
 OVL in the custom 8086/DOS VM. VM services reach host facilities through the
-HAL and DOS shims. The indexed recovered units are not yet linked or called by
-the game runtime; that is a known gap against the owner's source-first port
-standard. The full renderer/audio/input/files/timing interface boundary is
-also not yet complete. The longer-term source-driven path is Stage 2, with
-each unit diverted from the interpreter only after co-simulation proves it
-matches. See [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md) for evidence gates.
+HAL and DOS shims. Stage 2 has started: the exact recovered body in
+`src/set_int_and_zero.c` is compiled into the port and installed at verified
+EXE offset 17,820. Its adapter maps the 16-bit argument, DS globals, AX result,
+far return, and guest cycle cost. The boot checkpoint hash matches with the
+hook disabled and enabled; the native unit is reached once on that path. This
+is 1/2,844 indexed units (0.04%), not proof of whole-route source coverage.
+The full renderer/audio/input/files/timing interface boundary is also not yet
+complete. Further units need the same per-path byte evidence and VM/native
+co-simulation before they are dispatched. See
+[`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md) for open evidence gates.
 
 Hash-keyed replacements are available by explicitly passing `--mods mods`.
 Put a replacement file in that directory under the lowercase SHA-256 of the
@@ -93,7 +97,7 @@ The DOS kernel has therefore only ever grown to fit what this game actually call
 ordinary 8086 code in the EXE's 43,193-byte appended tail. The core executes it and it
 pages its own sections via ordinary `INT 21h` reads.
 
-### Stage 2 — static recompilation (not started)
+### Stage 2 — static recompilation (first unit active)
 
 Decode the retail bytes to portable C against the same HAL, function by function, each
 validated by co-simulation against the interpreter, until the interpreter is no longer
@@ -747,9 +751,11 @@ Both Python tests skip cleanly without the retail disc, so they are safe in publ
   remains open.
 - Verify the Windows job on a real runner. The workflow exists and executes the
   conformance suite and CTest; it has not yet been observed passing.
-- Begin Stage 2: the decoder and the address→unit symbol table, validated against
-  the 1,487 recovered listings. `cpu86_hook_install()` is already proven against
-  live retail code via `--hook-at`.
+- Expand Stage 2 from the first source-backed unit: generate address/extent/ABI
+  metadata for recovered functions, prioritize units measured on real routes,
+  and keep VM/native frame, save, audio and timing comparisons as gates. The
+  first hook is at EXE code offset 17,820; `tests/test_stage2_native.py` checks
+  its one observed call and boot-frame parity against VM-only execution.
 
 ## A note on how this was debugged
 

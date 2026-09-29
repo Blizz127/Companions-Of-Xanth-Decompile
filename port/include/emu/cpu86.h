@@ -99,6 +99,8 @@ typedef struct cpu86 {
 
     uint64_t cycles;    /* virtual cycle counter; the authority for timing */
     uint64_t budget;    /* cpu86_run stops once cycles >= budget */
+    uint64_t step_budget_remaining; /* vm_run budget available at this boundary */
+    uint8_t  step_guest_insns;      /* instruction-equivalents consumed by this step */
 
     /* Per-instruction decode state, reset at the top of each step. */
     uint16_t insn_ip;      /* IP at the first prefix byte (REP rewinds here) */

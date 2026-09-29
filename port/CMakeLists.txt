@@ -187,6 +187,7 @@ set(XANTH_COMMON_SOURCES
 # replacement implementation.
 set(XANTH_PORT_SOURCES
     src/emu/main_vm.c
+    src/emu/native_stage2.c
     src/dos_mem.c
     src/hal_video.c
     src/hal_audio.c
@@ -311,6 +312,7 @@ if(XANTH_BUILD_TESTS)
     # unimplemented service, so its output is the work queue.
     add_executable(tool_vmboot
         tests/tool_vmboot.c
+        src/emu/native_stage2.c
         src/dos_mem.c
         src/hal_audio.c
         src/midi_player.c
@@ -408,6 +410,20 @@ if(XANTH_BUILD_TESTS)
     # only registered when the assets are actually present -- an absent disc
     # must not look like a failure in asset-free CI.
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH/XANTH.EXE")
+        find_package(Python3 COMPONENTS Interpreter QUIET)
+        if(Python3_Interpreter_FOUND)
+            add_test(NAME Stage2NativeParityTest
+                COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_VMBOOT=$<TARGET_FILE:tool_vmboot>"
+                        ${Python3_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_stage2_native.py
+            )
+            set_tests_properties(Stage2NativeParityTest PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 180
+            )
+        endif()
+
         add_test(NAME HeadlessBootSmokeTest
             COMMAND xanth_port --headless --frames 600
                     --data ${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH

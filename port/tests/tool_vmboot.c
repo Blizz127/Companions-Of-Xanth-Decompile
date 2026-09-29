@@ -17,6 +17,7 @@
  * or tells you exactly what to write next.
  */
 #include "vm.h"
+#include "native_stage2.h"
 #include "port_hal.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -383,6 +384,7 @@ int main(int argc, char **argv) {
     char bmp_path[512] = {0};
     char script_path[512] = {0};
     unsigned long hook_exe_off = 0;   /* exe-code offset to breakpoint on */
+    bool vm_only = false;
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
@@ -404,6 +406,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--trace-dos"))  cfg.trace_dos = true;
         else if (!strcmp(argv[i], "--trace-cpu"))  cfg.trace_cpu = true;
         else if (!strcmp(argv[i], "--permissive")) cfg.permissive = true;
+        else if (!strcmp(argv[i], "--vm-only")) vm_only = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
         else if (!strcmp(argv[i], "--nonblocking-conin")) cfg.nonblocking_conin = true;
         else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc)
@@ -427,6 +430,13 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    if (!vm_only && !xanth_native_stage2_install(&machine)) {
+        fprintf(stderr, "[vm] could not install verified Stage-2 native units\n");
+        vm_shutdown(&machine);
+        hal_audio_shutdown();
+        return 1;
+    }
+
     if (hook_exe_off) {
         /* exe-code offsets are relative to the load segment. */
         uint32_t lin = (uint32_t)machine.img.load_seg * 16u + hook_exe_off;
@@ -446,6 +456,9 @@ int main(int argc, char **argv) {
 
     if (hook_exe_off)
         fprintf(stderr, "[hook] hit %u times\n", g_hook_hits);
+    if (!vm_only)
+        fprintf(stderr, "[native] set_int_and_zero hits: %llu\n",
+                (unsigned long long)xanth_native_stage2_hits());
 
     vm_report(&machine, stderr);
 
