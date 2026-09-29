@@ -93,11 +93,17 @@ asset set. No broad claim of visual/audio/timing parity should be based only on
 matching hashes within the VM; see [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md)
 for the remaining DOSBox comparison work.
 
-As of 2026-09-29, the Release build and five asset-free CTest gates pass; the
-first-room VM trace passes 9/9 tests and the asset-gated route suite passes
-60/60, including its pinned framebuffer-plus-palette hashes. These establish
-repeatability and regression coverage within this VM. No controlled DOSBox
-side-by-side comparison has been recorded yet. The native MPU tests cover
-reset acknowledgements, channel messages, running status, pitch bend, and GM
-reset delivery to a backend; a temporary local FluidSynth API stub also
-validated dynamic loading/startup, but no real FluidSynth/SF2 has been tested.
+As of 2026-09-29, a fresh Linux Release build succeeds and all 15 registered
+CTest cases pass, including the retail walkthrough/hash suite and VM soak
+case. A one-frame BMP from default startup is byte-identical to one captured
+with pixel-perfect scaling, CRT scanlines, linear filtering, the handheld
+window preset, controller and hotkeys enabled, and changed channel volumes
+(SHA-256 `f92193b1c9673df2e6e812e00cff51caf703afbfd81eef6d0921b7b936920df3`).
+This confirms those presentation/input/audio controls leave that guest frame
+unchanged; the full test suite separately checks established route hashes with
+options omitted. These are repeatability results within this VM. No controlled
+DOSBox side-by-side comparison has been recorded yet. The native MPU tests
+cover reset acknowledgements, channel messages, running status, pitch bend,
+and GM reset delivery to a backend; a temporary local FluidSynth API stub
+also validated dynamic loading/startup, but no real FluidSynth/SF2 has been
+tested.
