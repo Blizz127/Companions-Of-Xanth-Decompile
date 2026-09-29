@@ -788,3 +788,13 @@ run 5
 dump 0:02EA 8
 checkpoint wt14_region_fire
 shot build/frames/wt14_test_after_exit_north.bmp
+key 32 57
+run 60
+# Continue the Region of Fire conversation through its first choice.
+move 35 174
+run 5
+click left
+run 30
+move 305 196
+checkpoint wt14_fire_dialogue_response
+shot build/frames/wt14_fire_dialogue_response.bmp
