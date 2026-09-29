@@ -1,0 +1,71 @@
+include lib/resume_unmask.xit
+
+# Try to leave NW -> Metria in pink dress stops Dug
+move 11 135
+run 5
+click left
+run 40
+key 32 57
+run 35
+
+# Try to leave NW again -> Metria transforms to demoness!
+move 11 135
+run 5
+click left
+run 40
+
+# Select Option 1: "Hmm. I guess not."
+key 13 28
+run 35
+
+# Select Option 3: "Hey! What did you do with Nada?" (Down, Down, Enter)
+key 0 80
+run 5
+key 0 80
+run 5
+key 13 28
+run 35
+
+# Dismiss Metria's explanation -> +10 points
+key 32 57
+run 35
+checkpoint wt12_metria_defeated
+shot build/frames/wt12_metria_defeated.bmp
+
+# Walk NW to outskirts
+move 11 135
+run 5
+click left
+run 40
+
+# Walk North to barrow entrance
+move 24 135
+run 5
+click left
+run 40
+
+# Step North through doorway into barrow interior
+key 0 72
+run 40
+
+move 305 196
+run 5
+checkpoint wt12_inside_barrow
+shot build/frames/barrow_first_room.bmp
+
+# Save over slot 1 so we have instant resume inside barrow with Metria defeated!
+include lib/save_over_slot1.xit
+shot build/frames/barrow_first_room_saved.bmp
+
+# Read the score after saving the resulting barrow state.
+move 35 174
+run 6
+click left
+run 20
+move 160 120
+run 4
+click left
+run 25
+move 305 196
+checkpoint wt12_barrow_score
+shot build/frames/wt12_barrow_score.bmp

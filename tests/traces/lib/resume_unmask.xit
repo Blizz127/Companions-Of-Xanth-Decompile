@@ -1,0 +1,17 @@
+# Boot and restore anchor save in slot 1 (Desert spring, Metria unmasked, Nada finder acquired)
+include boot.xit
+
+move 160 95
+run 10
+click left
+run 60
+move 100 78
+run 10
+click left
+run 30
+move 65 168
+run 10
+click left
+run 90
+move 305 196
+run 20
