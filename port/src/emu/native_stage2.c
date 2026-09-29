@@ -116,6 +116,7 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define ADD_MOD_EXE_OFFSET          56247u
 #define ADD_MOD_G0_DS_OFFSET        0x025eu
 #define ADD_MOD_G1_DS_OFFSET        0x0260u
+#define SET_FIELDS_EXE_OFFSET       105702u
 #define EXE_136552_OFFSET            136552u
 #define EXE_52710_OFFSET              52710u
 #define EXE_52710_GLOBAL_DS_OFFSET    0x0106u
@@ -178,6 +179,7 @@ static uint64_t g_exe_52674_hits;
 static uint64_t g_exe_112711_hits;
 static uint64_t g_exe_34775_hits;
 static uint64_t g_add_mod_hits;
+static uint64_t g_set_fields_hits;
 static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
@@ -1271,6 +1273,43 @@ static hook_result_t native_add_mod(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Lower the exact src/set_fields.c far-pointer stores and visible ABI state. */
+static hook_result_t native_set_fields(cpu86 *cpu, void *user) {
+    const uint16_t entry_sp = cpu->r[CPU_SP];
+    const uint16_t pointer_offset = seg_r16(cpu->s[CPU_SS],
+                                             (uint16_t)(entry_sp + 4u));
+    const uint16_t pointer_segment = seg_r16(cpu->s[CPU_SS],
+                                              (uint16_t)(entry_sp + 6u));
+    const uint16_t value_a = seg_r16(cpu->s[CPU_SS],
+                                      (uint16_t)(entry_sp + 8u));
+    const uint16_t value_b = seg_r16(cpu->s[CPU_SS],
+                                      (uint16_t)(entry_sp + 10u));
+    const uint16_t old_bp = cpu->r[CPU_BP];
+    vm *machine = (vm *)cpu->vm;
+    const uint16_t count = 9u;
+    const uint64_t cycles = (uint64_t)count * 4u;
+    (void)user;
+
+    if (cpu->step_budget_remaining < count) return HOOK_CONTINUE;
+    if (machine && (machine->cycles_per_second == 0 ||
+        machine->next_tick_cycles <= cpu->cycles ||
+        machine->next_tick_cycles - cpu->cycles <= cycles ||
+        (machine->sb.dma_active && (machine->sb.dma_end_cycles <= cpu->cycles ||
+         machine->sb.dma_end_cycles - cpu->cycles <= cycles))))
+        return HOOK_CONTINUE;
+
+    seg_w16(pointer_segment, (uint16_t)(pointer_offset + 2u), value_a);
+    seg_w16(pointer_segment, (uint16_t)(pointer_offset + 4u), value_b);
+    cpu->r[CPU_AX] = value_b;
+    cpu->r[CPU_BX] = pointer_offset;
+    cpu->r[CPU_BP] = old_bp;
+    cpu->s[CPU_ES] = pointer_segment;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = (uint8_t)count;
+    g_set_fields_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -1428,6 +1467,11 @@ bool xanth_native_stage2_install(vm *machine) {
         0x01, 0x06, 0x60, 0x02, 0xa1, 0x5e, 0x02, 0x2b, 0xd2, 0xf7,
         0xf1, 0x89, 0x16, 0x5e, 0x02, 0x5d, 0xcb
     };
+    static const uint8_t verified_set_fields_body[] = {
+        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x0a, 0xc4, 0x5e, 0x06,
+        0x26, 0x89, 0x47, 0x02, 0x8b, 0x46, 0x0c, 0x26, 0x89,
+        0x47, 0x04, 0x5d, 0xcb
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1477,6 +1521,11 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            ADD_MOD_EXE_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_add_mod_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_set_fields_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           SET_FIELDS_EXE_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_set_fields_body[i]) return false;
     }
 
     for (size_t i = 0; i < sizeof(verified_body); i++) {
@@ -1824,6 +1873,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_add_mod_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_add_mod, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + SET_FIELDS_EXE_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_set_fields_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_set_fields, NULL)) return false;
     return true;
 }
 
@@ -1954,3 +2008,5 @@ uint64_t xanth_native_exe_34775_hits(void) {
 uint64_t xanth_native_add_mod_hits(void) {
     return g_add_mod_hits;
 }
+
+uint64_t xanth_native_set_fields_hits(void) { return g_set_fields_hits; }
