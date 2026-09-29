@@ -519,6 +519,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] clear_byte hits: %llu\n",
                 (unsigned long long)xanth_native_clear_byte_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] swap_int hits: %llu\n",
+                (unsigned long long)xanth_native_swap_int_hits());
 
     vm_report(&machine, stderr);
 
