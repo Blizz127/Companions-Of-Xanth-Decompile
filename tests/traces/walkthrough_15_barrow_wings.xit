@@ -1,0 +1,16 @@
+# Continue from slot 1 produced by walkthrough_14_dungeon_items.xit.
+# Dismiss the saved dialogue and move south twice from the restored room.
+include lib/resume_barrow_unmasked.xit
+key 13 28
+run 60
+move 24 161
+run 5
+click left
+run 60
+move 24 161
+run 5
+click left
+run 90
+move 305 196
+checkpoint wt15_flapping_wings
+shot build/frames/wt15_flapping_wings.bmp

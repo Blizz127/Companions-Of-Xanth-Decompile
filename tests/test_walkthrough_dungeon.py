@@ -18,6 +18,7 @@ EXE = ROOT / "original" / "XANTH.EXE"
 DATA = ROOT / "game_cd" / "XANTH"
 TOOL = ROOT / "build" / "tool_vmboot"
 TRACE = ROOT / "tests" / "traces" / "walkthrough_14_dungeon_items.xit"
+CONTINUATION_TRACE = ROOT / "tests" / "traces" / "walkthrough_15_barrow_wings.xit"
 ANCHOR = ROOT / "build" / "anchor_barrow_unmasked"
 SAVES = ROOT / "build" / "agent_dungeon_test"
 MOSS_SCREEN = ROOT / "build" / "frames" / "wt14_moss_center_attempt.bmp"
@@ -109,6 +110,30 @@ class DungeonRouteTests(unittest.TestCase):
         data = (SAVES / "XANTH000.SAV").read_bytes()
         self.assertNotEqual(hashlib.sha256(data).hexdigest(), ANCHOR_SLOT_SHA256)
         self.assertEqual(struct.unpack_from("<H", data, 0x347D)[0], 275)
+
+    def test_275_point_save_continues_to_flapping_wings_chamber(self) -> None:
+        slot = SAVES / "XANTH000.SAV"
+        before = hashlib.sha256(slot.read_bytes()).hexdigest()
+        self.assertEqual(struct.unpack_from("<H", slot.read_bytes(), 0x347D)[0], 275)
+        proc = subprocess.run(
+            [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
+             "--saves", str(SAVES), "--script", str(CONTINUATION_TRACE),
+             "--insns", str(BUDGET)],
+            capture_output=True, text=True, timeout=600,
+        )
+        out = proc.stdout + proc.stderr
+        self.assertEqual(proc.returncode, 0, out[-4000:])
+        self.assertIn("fault                 : ok", out)
+        self.assertIn("MCB chain valid       : yes", out)
+        marks = dict(re.findall(r"\[script\] hash (\S+) = ([0-9a-f]+)", out))
+        self.assertEqual(marks.get("wt15_flapping_wings"), "8083725b37faaaa2")
+        room = read_game_font_text(
+            ROOT / "build" / "frames" / "wt15_flapping_wings.bmp",
+            DATA / "XANTH_10.FNT", 130, 160,
+        )
+        self.assertIn("You're in a dimly lit chamber within an ancient barrow", room)
+        self.assertIn("sound like that of flapping wings", room)
+        self.assertEqual(hashlib.sha256(slot.read_bytes()).hexdigest(), before)
 
 
 if __name__ == "__main__":

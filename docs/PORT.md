@@ -505,8 +505,11 @@ and collects agony moss for 7 points. It shows the upper room after choosing
 the stairs' context action, melts the ironwood tree, enters a dialogue
 identifying the Region of Fire, and advances to dialogue about heading south
 toward the Gap, the chasm dividing Xanth, and the Water/Air sequence. The game's
-save routine captures a 275-point state after the dialogue is dismissed; the
-route beyond that state remains open.
+save routine captures a 275-point state after the dialogue is dismissed. A
+follow-up retail-VM replay restores that save, moves south twice, and reaches a
+second Barrow chamber whose description says flapping wings are audible nearby;
+the replay pins framebuffer hash `8083725b37faaaa2` and preserves the save. The
+Gap itself and the 1,000-point ending remain unverified.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is
