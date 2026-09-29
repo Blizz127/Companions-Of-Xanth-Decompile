@@ -121,6 +121,9 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define EXE_100016_OFFSET           100016u
 #define EXE_100016_GLOBAL_A_DS      0x6428u
 #define EXE_100016_GLOBAL_B_DS      0x642au
+#define EXE_103774_OFFSET           103774u
+#define EXE_103774_GLOBAL_A_DS      0x4f46u
+#define EXE_103774_GLOBAL_B_DS      0x4f48u
 #define EXE_136552_OFFSET            136552u
 #define EXE_52710_OFFSET              52710u
 #define EXE_52710_GLOBAL_DS_OFFSET    0x0106u
@@ -187,6 +190,7 @@ static uint64_t g_add_mod_hits;
 static uint64_t g_set_fields_hits;
 static uint64_t g_exe_112853_hits;
 static uint64_t g_exe_100016_fast_hits;
+static uint64_t g_exe_103774_negative_hits;
 static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
@@ -1427,6 +1431,42 @@ static hook_result_t native_exe_100016(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Lower exe_103774's signed-negative path; nonnegative inputs call a helper. */
+static hook_result_t native_exe_103774(cpu86 *cpu, void *user) {
+    const uint16_t entry_sp = cpu->r[CPU_SP];
+    const uint16_t saved_bp = cpu->r[CPU_BP];
+    const uint16_t arg = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    const uint32_t cycles = 12u * 4u;
+    vm *machine = (vm *)cpu->vm;
+    (void)user;
+
+    if ((int16_t)arg >= 0 || cpu->step_budget_remaining < 12u)
+        return HOOK_CONTINUE;
+    if (machine && (machine->cycles_per_second == 0 ||
+        machine->next_tick_cycles <= cpu->cycles ||
+        machine->next_tick_cycles - cpu->cycles <= cycles ||
+        (machine->sb.dma_active && (machine->sb.dma_end_cycles <= cpu->cycles ||
+         machine->sb.dma_end_cycles - cpu->cycles <= cycles))))
+        return HOOK_CONTINUE;
+
+    (void)alu_op(cpu, ALU_SUB, arg, 0u, 16);
+    cpu->r[CPU_AX] = alu_op(cpu, ALU_XOR, 0u, 0u, 16);
+    seg_w16(cpu->s[CPU_DS], EXE_103774_GLOBAL_A_DS, cpu->r[CPU_AX]);
+    seg_w16(cpu->s[CPU_DS], EXE_103774_GLOBAL_B_DS, cpu->r[CPU_AX]);
+    cpu->r[CPU_BP] = saved_bp;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = 12;
+    g_exe_103774_negative_hits++;
+    return HOOK_DID_RETF;
+}
+
+#ifdef XANTH_NATIVE_STAGE2_TESTING
+hook_result_t xanth_native_stage2_test_exe_103774(cpu86 *cpu) {
+    return native_exe_103774(cpu, NULL);
+}
+#endif
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -1606,6 +1646,14 @@ bool xanth_native_stage2_install(vm *machine) {
         0xa7, 0x08, 0x8b, 0xe5, 0xeb, 0x0c, 0x8b, 0x46, 0x06, 0xa3,
         0x28, 0x64, 0x8b, 0x46, 0x08, 0xa3, 0x2a, 0x64, 0x5d, 0xcb
     };
+    static const uint8_t verified_exe_103774_body[] = {
+        0x55, 0x8b, 0xec, 0x83, 0xec, 0x04, 0x83, 0x7e, 0x06, 0x00,
+        0x7d, 0x08, 0x33, 0xc0, 0xa3, 0x46, 0x4f, 0xeb, 0x1c, 0x90,
+        0x8d, 0x46, 0xfc, 0x16, 0x50, 0x8d, 0x4e, 0xfe, 0x16, 0x51,
+        0xff, 0x76, 0x06, 0x9a, 0xae, 0x36, 0xa5, 0x18, 0x8b, 0x46,
+        0xfe, 0xa3, 0x46, 0x4f, 0x8b, 0x46, 0xfc, 0xa3, 0x48, 0x4f,
+        0x8b, 0xe5, 0x5d, 0xcb
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1678,6 +1726,22 @@ bool xanth_native_stage2_install(vm *machine) {
                            EXE_100016_OFFSET + (i == 0u ? 29u : 50u);
         uint16_t expected_segment =
             (uint16_t)(machine->img.load_seg + 0x08a7u);
+        if (mem_r8(address) != (uint8_t)expected_segment ||
+            mem_r8(address + 1u) != (uint8_t)(expected_segment >> 8))
+            return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_103774_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_103774_OFFSET + (uint32_t)i;
+        /* The near fast path skips this far helper, whose segment is relocated. */
+        if (i == 36u || i == 37u) continue;
+        if (mem_r8(address) != verified_exe_103774_body[i]) return false;
+    }
+    {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_103774_OFFSET + 36u;
+        uint16_t expected_segment =
+            (uint16_t)(machine->img.load_seg + 0x18a5u);
         if (mem_r8(address) != (uint8_t)expected_segment ||
             mem_r8(address + 1u) != (uint8_t)(expected_segment >> 8))
             return false;
@@ -2044,6 +2108,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_100016_fast_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_100016, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_103774_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_103774_negative_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_exe_103774, NULL)) return false;
     return true;
 }
 
@@ -2182,3 +2251,4 @@ uint64_t xanth_native_add_mod_hits(void) {
 uint64_t xanth_native_set_fields_hits(void) { return g_set_fields_hits; }
 uint64_t xanth_native_exe_112853_hits(void) { return g_exe_112853_hits; }
 uint64_t xanth_native_exe_100016_fast_hits(void) { return g_exe_100016_fast_hits; }
+uint64_t xanth_native_exe_103774_negative_hits(void) { return g_exe_103774_negative_hits; }

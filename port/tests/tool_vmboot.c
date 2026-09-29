@@ -105,6 +105,71 @@ fail:
     return 1;
 }
 
+static const uint8_t test_exe_103774_body[] = {
+    0x55, 0x8b, 0xec, 0x83, 0xec, 0x04, 0x83, 0x7e, 0x06, 0x00,
+    0x7d, 0x08, 0x33, 0xc0, 0xa3, 0x46, 0x4f, 0xeb, 0x1c, 0x90,
+    0x8d, 0x46, 0xfc, 0x16, 0x50, 0x8d, 0x4e, 0xfe, 0x16, 0x51,
+    0xff, 0x76, 0x06, 0x9a, 0xae, 0x36, 0xa5, 0x18, 0x8b, 0x46,
+    0xfe, 0xa3, 0x46, 0x4f, 0x8b, 0x46, 0xfc, 0xa3, 0x48, 0x4f,
+    0x8b, 0xe5, 0x5d, 0xcb
+};
+
+static void setup_exe_103774_cpu(cpu86 *cpu) {
+    memset(g_dos_mem, 0, DOS_MEM_SIZE);
+    cpu86_reset(cpu);
+    cpu->s[CPU_CS] = 0x1000u;
+    cpu->s[CPU_SS] = 0x2000u;
+    cpu->s[CPU_DS] = 0x2100u;
+    cpu->ip = 0x0100u;
+    cpu->r[CPU_SP] = 0x1000u;
+    cpu->r[CPU_BP] = 0x2345u;
+    cpu->r[CPU_BX] = 0xaaaau;
+    cpu->r[CPU_SI] = 0x6789u;
+    cpu->flags |= F_IF | F_DF | F_CF | F_AF | F_SF | F_OF;
+    cpu->cycles = 100u;
+    cpu->step_budget_remaining = 100u;
+    memcpy(g_dos_mem + cpu_lin(cpu->s[CPU_CS], cpu->ip),
+           test_exe_103774_body, sizeof(test_exe_103774_body));
+    seg_w16(cpu->s[CPU_SS], cpu->r[CPU_SP], 0x2222u);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(cpu->r[CPU_SP] + 2u), 0x3333u);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(cpu->r[CPU_SP] + 4u), 0xffffu);
+    seg_w16(cpu->s[CPU_DS], 0x4f46u, 0x1111u);
+    seg_w16(cpu->s[CPU_DS], 0x4f48u, 0x2222u);
+}
+
+static int test_native_exe_103774_negative(void) {
+    cpu86 interpreted, native;
+    const uint16_t flag_mask = F_CF | F_PF | F_AF | F_ZF | F_SF | F_OF;
+    const uint16_t preserved_mask = F_IF | F_DF;
+    setup_exe_103774_cpu(&interpreted);
+    for (unsigned i = 0; i < 12u; i++) cpu86_step(&interpreted);
+    if (interpreted.fault || interpreted.s[CPU_CS] != 0x3333u ||
+        interpreted.ip != 0x2222u || interpreted.r[CPU_SP] != 0x1004u)
+        goto fail;
+
+    setup_exe_103774_cpu(&native);
+    if (xanth_native_stage2_test_exe_103774(&native) != HOOK_DID_RETF)
+        goto fail;
+    native.ip = cpu86_pop16(&native);
+    native.s[CPU_CS] = cpu86_pop16(&native);
+    if (native.s[CPU_CS] != interpreted.s[CPU_CS] || native.ip != interpreted.ip ||
+        native.r[CPU_SP] != interpreted.r[CPU_SP] ||
+        memcmp(native.r, interpreted.r, sizeof(native.r)) != 0 ||
+        memcmp(native.s, interpreted.s, sizeof(native.s)) != 0 ||
+        native.flags != interpreted.flags || native.cycles != interpreted.cycles ||
+        seg_r16(native.s[CPU_DS], 0x4f46u) != 0u ||
+        seg_r16(native.s[CPU_DS], 0x4f48u) != 0u ||
+        (native.flags & flag_mask) != (F_PF | F_ZF) ||
+        (native.flags & preserved_mask) != preserved_mask)
+        goto fail;
+    puts("exe_103774 negative interpreter/native state: exact (12 insns, 48 cycles)");
+    return 0;
+
+fail:
+    fprintf(stderr, "exe_103774 negative interpreter/native state mismatch\n");
+    return 1;
+}
+
 /*
  * Trace format: an ORDERED list of steps, not timestamped events.
  *
@@ -472,6 +537,7 @@ int main(int argc, char **argv) {
     bool replacement_fonts = false;
     bool replacement_graphics = false;
     bool test_native_114942_negative = false;
+    bool test_native_103774_negative = false;
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
@@ -501,6 +567,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--vm-only")) vm_only = true;
         else if (!strcmp(argv[i], "--test-native-exe114942-negative"))
             test_native_114942_negative = true;
+        else if (!strcmp(argv[i], "--test-native-exe103774-negative"))
+            test_native_103774_negative = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
         else if (!strcmp(argv[i], "--nonblocking-conin")) cfg.nonblocking_conin = true;
         else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc) {
@@ -518,6 +586,8 @@ int main(int argc, char **argv) {
 
     if (test_native_114942_negative)
         return test_native_exe_114942_negative();
+    if (test_native_103774_negative)
+        return test_native_exe_103774_negative();
 
     cfg.max_instructions = insns;
     cfg.replacement_fonts = replacement_fonts;
@@ -623,6 +693,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] exe_100016 fast-return hits: %llu\n",
                 (unsigned long long)xanth_native_exe_100016_fast_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_103774 negative hits: %llu\n",
+                (unsigned long long)xanth_native_exe_103774_negative_hits());
     if (!vm_only)
         fprintf(stderr, "[native] exe_86810 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_86810_hits());
