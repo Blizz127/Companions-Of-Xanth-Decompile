@@ -19,7 +19,8 @@ TOOL = ROOT / "build" / "tool_vmboot"
 TRACE = ROOT / "tests" / "traces" / "walkthrough_14_dungeon_items.xit"
 ANCHOR = ROOT / "build" / "anchor_barrow_unmasked"
 SAVES = ROOT / "build" / "agent_dungeon_test"
-SCORE = ROOT / "build" / "frames" / "wt13_score.bmp"
+MOSS_SCREEN = ROOT / "build" / "frames" / "wt14_moss_center_attempt.bmp"
+FIRE_SCREEN = ROOT / "build" / "frames" / "wt14_test_after_exit_north.bmp"
 BUDGET = 32_000_000_000
 ANCHOR_SLOT_SHA256 = "51b5ef6408a751c1d85cda264d83eefa6dc362f573931060c3f64dae9d36f6f1"
 GOLDEN = {
@@ -33,10 +34,13 @@ GOLDEN = {
     "wt14_free_nada": "0725a127c7c9091f",
     "wt14_open_attempt": "3d51aac74453929f",
     "wt14_moss_attempt": "b56ef82679b6be6c",
-    "wt14_upper_room": "b01a9e838825b24c",
-    "wt14_tree_blocked": "590d217662f95716",
-    "wt14_north_exit_blocked": "08549ca4c6948b93",
-    "wt14_score": "ff55337e86463e66",
+    "wt14_open_center": "66755427e42be6f7",
+    "wt14_moss_center_attempt": "6af64e152117aad5",
+    "wt14_open_reverse": "fe588f441ceedafa",
+    "wt14_moss_reverse_attempt": "e1c6a223e32eaa2f",
+    "wt14_upper_room": "09306cfec7e0da4f",
+    "wt14_tree_melted": "55b051791f858a08",
+    "wt14_region_fire": "b885e0e22388a454",
 }
 
 
@@ -73,9 +77,15 @@ class DungeonRouteTests(unittest.TestCase):
         for name, expected in GOLDEN.items():
             self.assertEqual(self.marks.get(name), expected, name)
 
-    def test_live_score_reaches_255(self) -> None:
-        text = read_game_font_text(SCORE, DATA / "XANTH_10.FNT", 30, 110)
-        self.assertIn("255 of 1000 points", text)
+    def test_moss_is_collected_in_the_open_jar(self) -> None:
+        text = read_game_font_text(MOSS_SCREEN, DATA / "XANTH_10.FNT", 120, 160)
+        self.assertIn("You scoop a bit of the blue moss", text)
+        self.assertIn("7 points", text)
+
+    def test_route_reaches_region_of_fire(self) -> None:
+        text = read_game_font_text(FIRE_SCREEN, DATA / "XANTH_10.FNT", 30, 110)
+        self.assertIn("Region of Earth", text)
+        self.assertIn("Region of Fire", text)
 
 
 if __name__ == "__main__":

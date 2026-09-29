@@ -633,6 +633,48 @@ click left
 run 45
 checkpoint wt14_moss_attempt
 shot build/frames/wt14_test_moss_taken_real.bmp
+# Probe the center of the jar inventory icon with Open, then retry Take.
+move 14 37
+run 5
+click left
+run 15
+move 106 164
+run 5
+click left
+run 40
+checkpoint wt14_open_center
+shot build/frames/wt14_open_center.bmp
+move 14 7
+run 5
+click left
+run 15
+move 148 45
+run 5
+click left
+run 45
+checkpoint wt14_moss_center_attempt
+shot build/frames/wt14_moss_center_attempt.bmp
+# Probe selecting the jar first and then invoking Open.
+move 106 164
+run 5
+click left
+run 15
+move 14 37
+run 5
+click left
+run 40
+checkpoint wt14_open_reverse
+shot build/frames/wt14_open_reverse.bmp
+move 14 7
+run 5
+click left
+run 15
+move 148 45
+run 5
+click left
+run 45
+checkpoint wt14_moss_reverse_attempt
+shot build/frames/wt14_moss_reverse_attempt.bmp
 click right
 run 10
 move 100 80
@@ -717,11 +759,11 @@ shot build/frames/wt14_test_back_at_8_6.bmp
 move 185 60
 run 10
 shot build/frames/wt14_test_tree_hover.bmp
-# Hover over inventory slot 0 (106, 172)
-move 106 172
+# Hover over inventory slot 0 (center at 106, 164)
+move 106 164
 run 10
 shot build/frames/wt14_test_inv0_hover.bmp
-# Put moss on tree: click item at (106, 172)
+# Put moss on tree: select inventory slot 0.
 click left
 run 15
 # Click Put verb at (14, 17)
@@ -736,7 +778,7 @@ click left
 run 60
 move 305 196
 run 5
-checkpoint wt14_tree_blocked
+checkpoint wt14_tree_melted
 shot build/frames/wt14_test_after_melt_tree.bmp
 # Step North into opening
 key 0 72
@@ -744,18 +786,5 @@ run 60
 move 305 196
 run 5
 dump 0:02EA 8
-checkpoint wt14_north_exit_blocked
+checkpoint wt14_region_fire
 shot build/frames/wt14_test_after_exit_north.bmp
-
-# Read the live score panel.
-move 35 174
-run 6
-click left
-run 20
-move 160 120
-run 4
-click left
-run 25
-move 305 196
-checkpoint wt14_score
-shot build/frames/wt14_score.bmp

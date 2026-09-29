@@ -500,11 +500,11 @@ save, the verified route saves 203 after the shimmering door solidifies, shows
 it remains unisolated. The next verified route reaches the unlocked barrow
 interior at 208; defeating Metria then saves a 228-point state inside the
 barrow. The item-route trace retrieves the small jar from the earlier barrow
-map room, frees Nada, and shows a separate upper room after selecting the
-stairs' context action. The Open attempt still leaves the jar closed; the moss
-interaction says “The jar isn't even open,” and the tree remains after the
-Put attempt. The live score reaches 255/1000. Opening the jar, dissolving the
-tree, and continuing to the full ending remain open.
+map room, frees Nada, opens the jar by targeting its centered inventory icon,
+and collects agony moss for 7 points. It shows the upper room after choosing
+the stairs' context action, melts the ironwood tree, and enters a dialogue
+identifying the Region of Fire. The post-transition total score and the route
+through Fire to the full ending remain open.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is
