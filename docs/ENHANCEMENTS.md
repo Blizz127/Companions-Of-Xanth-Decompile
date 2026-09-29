@@ -22,6 +22,7 @@ runtime-selected music backend; the current OPL/AdLib path remains the default.
 | Fit to display | `--fit` or `fullscreen=true` | Fullscreen desktop, fitted to 4:3. Black bars are retained. |
 | Linear filter | `--linear` or `linear_filter=true` | Optional SDL linear texture sampling. Off by default. It softens pixels and is not a pixel-art reconstruction filter. |
 | CRT scanlines | `--crt` or `crt=true` | Optional host-side scanline overlay. This is a lightweight overlay, not a programmable CRT shader. |
+| Enhanced graphics preset | `--enhanced-graphics` or `enhanced_graphics=true` | Opts into both linear texture sampling and the CRT scanline overlay from the first presented frame. It affects only SDL presentation; the guest framebuffer, logic, and saved screenshots stay unchanged. Off by default. |
 | Gamepad | `--controller` or `controller=true` | SDL GameController: left stick moves the pointer, A clicks, X right-clicks, D-pad moves with guest arrow keys, Start presses Enter. Off by default. |
 | Host hotkeys | `--hotkeys` or `hotkeys=true` | Opt-in F11 fullscreen toggle and F10 scanline toggle. These host shortcuts are not sent to the guest when enabled. |
 | Per-channel volume | `--volume-master`, `--volume-music`, `--volume-sfx`, `--volume-voice` | Each accepts 0–128. Existing defaults are retained when omitted. |
@@ -37,6 +38,7 @@ fullscreen=false
 pixel_perfect=false
 crt=false
 linear_filter=false
+enhanced_graphics=false
 handheld_1280x800=false
 controller=false
 hotkeys=false

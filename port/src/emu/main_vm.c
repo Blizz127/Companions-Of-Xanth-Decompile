@@ -59,6 +59,7 @@ static void print_usage(const char *prog) {
     printf("  --pixel-perfect  Use square pixels with integer scaling (16:10 image)\n");
     printf("  --crt            Enable optional scanline overlay\n");
     printf("  --linear         Enable optional linear texture filtering\n");
+    printf("  --enhanced-graphics Enable linear filtering and CRT scanlines\n");
     printf("  --handheld       Open at 1280x800 for Deck/Legion Go displays\n");
     printf("  --hotkeys        Enable F11 fullscreen and F10 scanline hotkeys\n");
     printf("  --volume-<name> <0..128>  Set master/music/sfx/voice channel volume\n");
@@ -88,6 +89,7 @@ static bool load_port_config(const char *path, int *scale, bool *fullscreen,
                              bool *headless, bool *pixel_perfect, bool *crt,
                              bool *linear, bool *handheld, bool *gamepad,
                              bool *hotkeys,
+                             bool *enhanced_graphics,
                              uint8_t *master, uint8_t *music, uint8_t *sfx,
                              uint8_t *voice, char *mods, size_t mods_size,
                              char *soundfont, size_t soundfont_size) {
@@ -115,6 +117,7 @@ static bool load_port_config(const char *path, int *scale, bool *fullscreen,
         else if (!strcmp(key,"handheld_1280x800")) *handheld=config_bool(value);
         else if (!strcmp(key,"controller")) *gamepad=config_bool(value);
         else if (!strcmp(key,"hotkeys")) *hotkeys=config_bool(value);
+        else if (!strcmp(key,"enhanced_graphics")) *enhanced_graphics=config_bool(value);
         else if (!strcmp(key,"volume_master")) *master=parse_volume(value);
         else if (!strcmp(key,"volume_music")) *music=parse_volume(value);
         else if (!strcmp(key,"volume_sfx")) *sfx=parse_volume(value);
@@ -135,6 +138,7 @@ int main(int argc, char **argv) {
     bool fullscreen = false, headless = false;
     bool pixel_perfect = false, crt = false, linear = false, handheld = false;
     bool gamepad = false, hotkeys = false;
+    bool enhanced_graphics = false;
     char config_path[512] = "";
     char soundfont_path[512] = "";
     long long max_frames = 0;
@@ -152,11 +156,16 @@ int main(int argc, char **argv) {
     if (config_path[0] &&
         !load_port_config(config_path,&scale,&fullscreen,&headless,&pixel_perfect,
                          &crt,&linear,&handheld,&gamepad,&hotkeys,
+                         &enhanced_graphics,
                          &volume_master,
                          &volume_music,&volume_sfx,&volume_voice,cfg.mods_dir,
                          sizeof(cfg.mods_dir),soundfont_path,sizeof(soundfont_path))) {
         fprintf(stderr,"[FATAL] cannot read config file: %s\n",config_path);
         return 2;
+    }
+    if (enhanced_graphics) {
+        crt = true;
+        linear = true;
     }
 
     for (int i = 1; i < argc; i++) {
@@ -178,6 +187,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--pixel-perfect")) pixel_perfect = true;
         else if (!strcmp(argv[i], "--crt")) crt = true;
         else if (!strcmp(argv[i], "--linear")) linear = true;
+        else if (!strcmp(argv[i], "--enhanced-graphics")) crt = linear = true;
         else if (!strcmp(argv[i], "--handheld")) handheld = true;
         else if (!strcmp(argv[i], "--controller")) gamepad = true;
         else if (!strcmp(argv[i], "--hotkeys")) hotkeys = true;
