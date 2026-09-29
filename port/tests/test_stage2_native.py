@@ -194,6 +194,8 @@ class NativeStage2ParityTests(unittest.TestCase):
                         ("arr_set_one", "arr_set_one"),
                         ("exe_114942", "exe_114942"),
                         ("store_two_globals", "store_two_globals"),
+                        ("set_int_if_ge0", "set_int_if_ge0"),
+                        ("iabs", "iabs"),
                     ):
                         hit = re.search(rf"\[native\] {label} hits: (\d+)", output)
                         self.assertIsNotNone(hit, output[-3000:])
@@ -241,6 +243,12 @@ class NativeStage2ParityTests(unittest.TestCase):
             store_two_globals_hits = int(outputs["native"]["store_two_globals_hits"])
             self.assertGreater(store_two_globals_hits, 0)
             self.assertLessEqual(store_two_globals_hits, 17)
+            set_int_if_ge0_hits = int(outputs["native"]["set_int_if_ge0_hits"])
+            self.assertGreater(set_int_if_ge0_hits, 0)
+            self.assertLessEqual(set_int_if_ge0_hits, 3)
+            iabs_hits = int(outputs["native"]["iabs_hits"])
+            self.assertGreater(iabs_hits, 0)
+            self.assertLessEqual(iabs_hits, 3)
 
 
 if __name__ == "__main__":

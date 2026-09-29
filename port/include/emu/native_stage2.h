@@ -29,5 +29,7 @@ uint64_t xanth_native_exe_115346_hits(void);
 uint64_t xanth_native_arr_set_one_hits(void);
 uint64_t xanth_native_exe_114942_hits(void);
 uint64_t xanth_native_store_two_globals_hits(void);
+uint64_t xanth_native_set_int_if_ge0_hits(void);
+uint64_t xanth_native_iabs_hits(void);
 
 #endif

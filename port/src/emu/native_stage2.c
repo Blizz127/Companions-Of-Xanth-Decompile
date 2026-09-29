@@ -63,6 +63,8 @@
 #define ARR_SET_ONE_ARRAY_DS_OFFSET 0x68d0u
 #define EXE_114942_OFFSET            114942u
 #define STORE_TWO_GLOBALS_OFFSET     85166u
+#define SET_INT_IF_GE0_OFFSET        90625u
+#define IABS_OFFSET                  17806u
 
 typedef struct {
     uint16_t offset;
@@ -90,6 +92,8 @@ static uint64_t g_exe_115346_hits;
 static uint64_t g_arr_set_one_hits;
 static uint64_t g_exe_114942_hits;
 static uint64_t g_store_two_globals_hits;
+static uint64_t g_set_int_if_ge0_hits;
+static uint64_t g_iabs_hits;
 static xanth_guest_far_pointer g_far_ptr_scratch;
 
 static hook_result_t native_set_int_and_zero(cpu86 *cpu, void *user) {
@@ -729,6 +733,68 @@ static hook_result_t native_store_two_globals(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Lower set_int_if_ge0, including its no-store negative path. */
+static hook_result_t native_set_int_if_ge0(cpu86 *cpu, void *user) {
+    uint16_t entry_sp = cpu->r[CPU_SP];
+    uint16_t saved_bp = cpu->r[CPU_BP];
+    uint16_t value = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    uint32_t cycles = (int16_t)value < 0 ? 24u : 32u;
+    vm *machine = (vm *)cpu->vm;
+    if (cpu->step_budget_remaining < cycles / 4u) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    (void)alu_op(cpu, ALU_CMP, value, 0, 16);
+    if ((int16_t)value >= 0) {
+        cpu->r[CPU_AX] = value;
+        seg_w16(cpu->s[CPU_DS], 0x4d36u, value);
+    }
+    cpu->r[CPU_BP] = saved_bp;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = (uint8_t)(cycles / 4u);
+    g_set_int_if_ge0_hits++;
+    return HOOK_DID_RETF;
+}
+
+/* Lower iabs with the guest CWD/XOR/SUB sequence and its exact final flags. */
+static hook_result_t native_iabs(cpu86 *cpu, void *user) {
+    uint16_t entry_sp = cpu->r[CPU_SP];
+    uint16_t saved_bp = cpu->r[CPU_BP];
+    uint16_t value = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    uint16_t sign = ((int16_t)value < 0) ? 0xffffu : 0;
+    vm *machine = (vm *)cpu->vm;
+    const uint32_t cycles = 32u;
+    if (cpu->step_budget_remaining < 8u) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    cpu->r[CPU_DX] = sign;
+    value = alu_op(cpu, ALU_XOR, value, sign, 16);
+    value = alu_op(cpu, ALU_SUB, value, sign, 16);
+    cpu->r[CPU_AX] = value;
+    cpu->r[CPU_BP] = saved_bp;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = 8;
+    g_iabs_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -825,6 +891,14 @@ bool xanth_native_stage2_install(vm *machine) {
         0x55, 0x8b, 0xec, 0xa1, 0x44, 0x63, 0xc4, 0x5e, 0x06,
         0x26, 0x89, 0x07, 0xa1, 0xfe, 0x6d, 0xc4, 0x5e, 0x0a,
         0x26, 0x89, 0x07, 0x5d, 0xcb
+    };
+    static const uint8_t verified_set_int_if_ge0_body[] = {
+        0x55, 0x8b, 0xec, 0x83, 0x7e, 0x06, 0x00, 0x7c, 0x06,
+        0x8b, 0x46, 0x06, 0xa3, 0x36, 0x4d, 0x5d, 0xcb
+    };
+    static const uint8_t verified_iabs_body[] = {
+        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0x99, 0x33, 0xc2,
+        0x2b, 0xc2, 0x5d, 0xcb
     };
     uint32_t linear;
     uint16_t segment, offset;
@@ -947,6 +1021,16 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            STORE_TWO_GLOBALS_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_store_two_globals_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_set_int_if_ge0_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           SET_INT_IF_GE0_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_set_int_if_ge0_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_iabs_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           IABS_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_iabs_body[i]) return false;
     }
 
     linear = (uint32_t)machine->img.load_seg * 16u + SET_INT_AND_ZERO_EXE_OFFSET;
@@ -1079,7 +1163,19 @@ bool xanth_native_stage2_install(vm *machine) {
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
     g_store_two_globals_hits = 0;
-    return cpu86_hook_install(segment, offset, native_store_two_globals, NULL);
+    if (!cpu86_hook_install(segment, offset, native_store_two_globals, NULL)) return false;
+
+    linear = (uint32_t)machine->img.load_seg * 16u + SET_INT_IF_GE0_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_set_int_if_ge0_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_set_int_if_ge0, NULL)) return false;
+
+    linear = (uint32_t)machine->img.load_seg * 16u + IABS_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_iabs_hits = 0;
+    return cpu86_hook_install(segment, offset, native_iabs, NULL);
 }
 
 uint64_t xanth_native_set_int_and_zero_hits(void) {
@@ -1164,4 +1260,12 @@ uint64_t xanth_native_exe_114942_hits(void) {
 
 uint64_t xanth_native_store_two_globals_hits(void) {
     return g_store_two_globals_hits;
+}
+
+uint64_t xanth_native_set_int_if_ge0_hits(void) {
+    return g_set_int_if_ge0_hits;
+}
+
+uint64_t xanth_native_iabs_hits(void) {
+    return g_iabs_hits;
 }

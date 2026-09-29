@@ -534,6 +534,12 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] store_two_globals hits: %llu\n",
                 (unsigned long long)xanth_native_store_two_globals_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] set_int_if_ge0 hits: %llu\n",
+                (unsigned long long)xanth_native_set_int_if_ge0_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] iabs hits: %llu\n",
+                (unsigned long long)xanth_native_iabs_hits());
 
     vm_report(&machine, stderr);
 
