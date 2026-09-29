@@ -197,6 +197,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                         ("set_int_if_ge0", "set_int_if_ge0"),
                         ("iabs", "iabs"),
                         ("set_far_arr_chk", "set_far_arr_chk"),
+                        ("set_byte_one", "set_byte_one"),
                     ):
                         hit = re.search(rf"\[native\] {label} hits: (\d+)", output)
                         self.assertIsNotNone(hit, output[-3000:])
@@ -253,6 +254,9 @@ class NativeStage2ParityTests(unittest.TestCase):
             set_far_arr_chk_hits = int(outputs["native"]["set_far_arr_chk_hits"])
             self.assertGreater(set_far_arr_chk_hits, 0)
             self.assertLessEqual(set_far_arr_chk_hits, 2)
+            set_byte_one_hits = int(outputs["native"]["set_byte_one_hits"])
+            self.assertGreater(set_byte_one_hits, 0)
+            self.assertLessEqual(set_byte_one_hits, 6)
 
 
 if __name__ == "__main__":
