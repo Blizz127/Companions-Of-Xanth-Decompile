@@ -124,6 +124,31 @@ typedef struct {
 } audio_mixer_t;
 
 static audio_mixer_t g_mixer;
+static FILE *g_audio_capture_file;
+static uint32_t g_audio_capture_bytes;
+static bool g_audio_capture_failed;
+
+static void audio_capture_header(uint8_t header[44], uint32_t data_bytes) {
+    const uint32_t riff_size = 36u + data_bytes;
+    const uint32_t byte_rate = AUDIO_SAMPLE_RATE * AUDIO_CHANNELS * 2u;
+    const uint16_t block_align = AUDIO_CHANNELS * 2u;
+    memset(header, 0, 44);
+    memcpy(header, "RIFF", 4); memcpy(header + 8, "WAVE", 4);
+    memcpy(header + 12, "fmt ", 4);
+    header[4]=(uint8_t)riff_size; header[5]=(uint8_t)(riff_size>>8);
+    header[6]=(uint8_t)(riff_size>>16); header[7]=(uint8_t)(riff_size>>24);
+    header[16]=16; header[20]=1; header[22]=AUDIO_CHANNELS;
+    header[24]=(uint8_t)AUDIO_SAMPLE_RATE;
+    header[25]=(uint8_t)(AUDIO_SAMPLE_RATE>>8);
+    header[26]=(uint8_t)(AUDIO_SAMPLE_RATE>>16);
+    header[27]=(uint8_t)(AUDIO_SAMPLE_RATE>>24);
+    header[28]=(uint8_t)byte_rate; header[29]=(uint8_t)(byte_rate>>8);
+    header[30]=(uint8_t)(byte_rate>>16); header[31]=(uint8_t)(byte_rate>>24);
+    header[32]=(uint8_t)block_align; header[34]=16;
+    memcpy(header + 36, "data", 4);
+    header[40]=(uint8_t)data_bytes; header[41]=(uint8_t)(data_bytes>>8);
+    header[42]=(uint8_t)(data_bytes>>16); header[43]=(uint8_t)(data_bytes>>24);
+}
 
 /* FluidSynth is an optional, user-installed runtime backend. Loading it at
  * runtime keeps the default AdLib path dependency-free and ships no library
@@ -979,8 +1004,61 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
 
         frames_done += chunk_frames;
     }
+    if (g_audio_capture_file && !g_audio_capture_failed) {
+        if (fwrite(stream, 1, (size_t)len, g_audio_capture_file) != (size_t)len)
+            g_audio_capture_failed = true;
+        else
+            g_audio_capture_bytes += (uint32_t)len;
+    }
 }
 #endif
+
+bool hal_audio_capture_wav_start(const char *path) {
+#ifdef XANTH_HEADLESS_STUB
+    (void)path;
+    return false;
+#else
+    uint8_t header[44];
+    if (!path || !*path || g_mixer.dummy_mode || g_mixer.device_id == 0 ||
+        g_audio_capture_file)
+        return false;
+    SDL_LockAudioDevice(g_mixer.device_id);
+    g_audio_capture_file = fopen(path, "wb");
+    if (!g_audio_capture_file) {
+        SDL_UnlockAudioDevice(g_mixer.device_id);
+        return false;
+    }
+    g_audio_capture_bytes = 0;
+    g_audio_capture_failed = false;
+    audio_capture_header(header, 0);
+    if (fwrite(header, 1, sizeof(header), g_audio_capture_file) != sizeof(header)) {
+        fclose(g_audio_capture_file);
+        g_audio_capture_file = NULL;
+        SDL_UnlockAudioDevice(g_mixer.device_id);
+        return false;
+    }
+    SDL_UnlockAudioDevice(g_mixer.device_id);
+    fprintf(stderr, "[HAL_AUDIO] capturing mixed SDL output to %s\n", path);
+    return true;
+#endif
+}
+
+static void audio_capture_wav_stop(void) {
+    if (!g_audio_capture_file) return;
+    if (!g_audio_capture_failed) {
+        uint8_t header[44];
+        audio_capture_header(header, g_audio_capture_bytes);
+        if (fseek(g_audio_capture_file, 0, SEEK_SET) != 0 ||
+            fwrite(header, 1, sizeof(header), g_audio_capture_file) != sizeof(header))
+            g_audio_capture_failed = true;
+    }
+    fclose(g_audio_capture_file);
+    g_audio_capture_file = NULL;
+    fprintf(stderr, "[HAL_AUDIO] WAV capture %s (%u PCM bytes)\n",
+            g_audio_capture_failed ? "failed" : "complete",
+            (unsigned)g_audio_capture_bytes);
+    g_audio_capture_bytes = 0;
+}
 
 bool hal_audio_init(void) {
     memset(&g_mixer, 0, sizeof(g_mixer));
@@ -1113,6 +1191,7 @@ void hal_audio_shutdown(void) {
         g_mixer.device_id = 0;
     }
 #endif
+    audio_capture_wav_stop();
     midi_set_external_backend(NULL);
 #ifndef XANTH_HEADLESS_STUB
     if (g_fluid.synth && g_fluid.delete_synth) g_fluid.delete_synth(g_fluid.synth);

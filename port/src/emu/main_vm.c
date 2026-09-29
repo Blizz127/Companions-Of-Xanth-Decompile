@@ -70,6 +70,7 @@ static void print_usage(const char *prog) {
     printf("  --headless       No window or audio device\n");
     printf("  --frames <n>     Run n frames then exit\n");
     printf("  --shot <file>    Write a BMP of the final frame\n");
+    printf("  --audio-dump <wav> Capture final mixed SDL output (optional)\n");
     printf("  --cpu-speed <n>  Virtual CPU cycles per second (default 4000000)\n");
     printf("  --trace-dos      Log DOS calls\n");
     printf("  --permissive     Warn instead of aborting on unimplemented services\n");
@@ -140,6 +141,7 @@ int main(int argc, char **argv) {
     vm machine;
     char err[512] = {0};
     char shot_path[512] = {0};
+    char audio_dump_path[512] = {0};
     int scale = 3;
     bool fullscreen = false, headless = false;
     bool pixel_perfect = false, crt = false, linear = false, handheld = false;
@@ -212,6 +214,8 @@ int main(int argc, char **argv) {
             max_frames = atoll(argv[++i]);
         else if (!strcmp(argv[i], "--shot") && i + 1 < argc)
             snprintf(shot_path, sizeof(shot_path), "%s", argv[++i]);
+        else if (!strcmp(argv[i], "--audio-dump") && i + 1 < argc)
+            snprintf(audio_dump_path, sizeof(audio_dump_path), "%s", argv[++i]);
         else if (!strcmp(argv[i], "--cpu-speed") && i + 1 < argc)
             cpu_speed = strtoul(argv[++i], NULL, 0);
         else if (!strcmp(argv[i], "--trace-dos")) cfg.trace_dos = true;
@@ -267,6 +271,14 @@ int main(int argc, char **argv) {
     if (!hal_audio_init())
         fprintf(stderr, "[WARN] audio unavailable; continuing silently\n");
     hal_audio_set_volume(volume_master,volume_music,volume_sfx,volume_voice);
+    if (audio_dump_path[0] && !hal_audio_capture_wav_start(audio_dump_path)) {
+        fprintf(stderr, "[FATAL] cannot capture audio to %s (SDL output unavailable)\n",
+                audio_dump_path);
+        hal_audio_shutdown();
+        hal_input_shutdown();
+        hal_video_shutdown();
+        return 2;
+    }
     if (soundfont_path[0] && !hal_audio_enable_fluidsynth(soundfont_path)) {
         fprintf(stderr,"[FATAL] could not enable FluidSynth with the requested soundfont\n");
         hal_audio_shutdown();

@@ -51,6 +51,8 @@ bool hal_video_save_bmp(const char *path);
  * ------------------------------------------------------------------------- */
 bool hal_audio_init(void);
 void hal_audio_shutdown(void);
+/* Optional diagnostic capture of the final mixed SDL output; off by default. */
+bool hal_audio_capture_wav_start(const char *path);
 void hal_audio_write_opl(uint16_t reg, uint8_t val);
 uint8_t hal_audio_read_opl_status(void);
 void hal_audio_render_opl(int16_t *stereo_out, uint32_t num_frames);
