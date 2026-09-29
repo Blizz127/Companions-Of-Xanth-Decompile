@@ -619,7 +619,7 @@ move 106 172
 run 5
 click left
 run 40
-checkpoint wt14_open_jar
+checkpoint wt14_open_attempt
 shot build/frames/wt14_test_jar_opened_real.bmp
 # Click Take verb at (14, 7)
 move 14 7
@@ -631,7 +631,7 @@ move 148 45
 run 5
 click left
 run 45
-checkpoint wt14_moss
+checkpoint wt14_moss_attempt
 shot build/frames/wt14_test_moss_taken_real.bmp
 click right
 run 10
@@ -736,7 +736,7 @@ click left
 run 60
 move 305 196
 run 5
-checkpoint wt14_tree_melted
+checkpoint wt14_tree_blocked
 shot build/frames/wt14_test_after_melt_tree.bmp
 # Step North into opening
 key 0 72
@@ -744,7 +744,7 @@ run 60
 move 305 196
 run 5
 dump 0:02EA 8
-checkpoint wt14_north_exit
+checkpoint wt14_north_exit_blocked
 shot build/frames/wt14_test_after_exit_north.bmp
 
 # Read the live score panel.

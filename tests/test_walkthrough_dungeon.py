@@ -31,11 +31,11 @@ GOLDEN = {
     "wt14_push_button": "186eb37cdef0bfb7",
     "wt14_in_dungeon": "d014180df173a8a5",
     "wt14_free_nada": "0725a127c7c9091f",
-    "wt14_open_jar": "3d51aac74453929f",
-    "wt14_moss": "b56ef82679b6be6c",
+    "wt14_open_attempt": "3d51aac74453929f",
+    "wt14_moss_attempt": "b56ef82679b6be6c",
     "wt14_upper_room": "b01a9e838825b24c",
-    "wt14_tree_melted": "590d217662f95716",
-    "wt14_north_exit": "08549ca4c6948b93",
+    "wt14_tree_blocked": "590d217662f95716",
+    "wt14_north_exit_blocked": "08549ca4c6948b93",
     "wt14_score": "ff55337e86463e66",
 }
 
