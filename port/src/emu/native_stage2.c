@@ -762,7 +762,7 @@ static hook_result_t native_exe_114942(cpu86 *cpu, void *user) {
     vm *machine = (vm *)cpu->vm;
     uint16_t bx, value;
     const bool negative = (int16_t)index < 0;
-    const uint8_t guest_insns = negative ? 13u : 17u;
+    const uint8_t guest_insns = negative ? 15u : 17u;
     const uint32_t cycles = (uint32_t)guest_insns * 4u;
 
     if (cpu->step_budget_remaining < guest_insns)
@@ -783,6 +783,9 @@ static hook_result_t native_exe_114942(cpu86 *cpu, void *user) {
         cpu->r[CPU_BX] = out_a;
         cpu->s[CPU_ES] = seg_a;
         seg_w16(seg_a, out_a, cpu->r[CPU_AX]);
+        cpu->r[CPU_BX] = out_b;
+        cpu->s[CPU_ES] = seg_b;
+        seg_w16(seg_b, out_b, cpu->r[CPU_AX]);
     } else {
         bx = index;
         bx = alu_op(cpu, ALU_ADD, bx, bx, 16);
@@ -803,6 +806,12 @@ static hook_result_t native_exe_114942(cpu86 *cpu, void *user) {
     if (negative) g_exe_114942_negative_hits++;
     return HOOK_DID_RETF;
 }
+
+#ifdef XANTH_NATIVE_STAGE2_TESTING
+hook_result_t xanth_native_stage2_test_exe_114942(cpu86 *cpu) {
+    return native_exe_114942(cpu, NULL);
+}
+#endif
 
 /* Lower store_two_globals: copy two DS words to caller-provided far pointers. */
 static hook_result_t native_store_two_globals(cpu86 *cpu, void *user) {

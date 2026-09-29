@@ -323,6 +323,7 @@ if(XANTH_BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
     )
+    target_compile_definitions(tool_vmboot PRIVATE XANTH_NATIVE_STAGE2_TESTING=1)
     if(SDL2_FOUND_ANY)
         target_link_libraries(tool_vmboot PRIVATE ${SDL2_TARGET_LIB})
     endif()
@@ -384,6 +385,10 @@ if(XANTH_BUILD_TESTS)
         ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy"
         TIMEOUT 30
     )
+
+    add_test(NAME Native114942NegativeFixture
+        COMMAND tool_vmboot --test-native-exe114942-negative)
+    set_tests_properties(Native114942NegativeFixture PROPERTIES TIMEOUT 10)
 
     add_test(NAME NativeHalStressTests COMMAND xanth_hal_stress)
     set_tests_properties(NativeHalStressTests PROPERTIES

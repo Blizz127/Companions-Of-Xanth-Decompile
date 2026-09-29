@@ -27,6 +27,84 @@
 
 #define MAX_EVENTS 4096
 
+static const uint8_t test_exe_114942_body[] = {
+    0x55, 0x8b, 0xec, 0x56, 0x83, 0x7e, 0x06, 0x00, 0x7d, 0x0a,
+    0x33, 0xc0, 0xc4, 0x5e, 0x08, 0x26, 0x89, 0x07, 0xeb, 0x13,
+    0x8b, 0x5e, 0x06, 0x03, 0xdb, 0x8b, 0x87, 0x40, 0x68, 0xc4,
+    0x76, 0x08, 0x26, 0x89, 0x04, 0x8b, 0x87, 0x50, 0x68, 0xc4,
+    0x5e, 0x0c, 0x26, 0x89, 0x07, 0x5e, 0x8b, 0xe5, 0x5d, 0xcb
+};
+
+static void setup_exe_114942_cpu(cpu86 *cpu) {
+    const uint16_t entry_sp = 0x1000u;
+    const uint16_t out_a = 0x0120u, seg_a = 0x3000u;
+    const uint16_t out_b = 0x0140u, seg_b = 0x4000u;
+    memset(g_dos_mem, 0, DOS_MEM_SIZE);
+    cpu86_reset(cpu);
+    cpu->s[CPU_CS] = 0x1000u;
+    cpu->s[CPU_SS] = 0x2000u;
+    cpu->s[CPU_DS] = 0x2100u;
+    cpu->s[CPU_ES] = 0x2200u;
+    cpu->ip = 0x0100u;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->r[CPU_BP] = 0x2345u;
+    cpu->r[CPU_SI] = 0x6789u;
+    cpu->r[CPU_BX] = 0xaaaau;
+    cpu->flags |= F_IF | F_DF | F_CF | F_AF | F_SF | F_OF;
+    cpu->cycles = 100u;
+    cpu->step_budget_remaining = 100u;
+    memcpy(g_dos_mem + cpu_lin(cpu->s[CPU_CS], cpu->ip),
+           test_exe_114942_body, sizeof(test_exe_114942_body));
+    seg_w16(cpu->s[CPU_SS], entry_sp, 0x2222u);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 2u), 0x3333u);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u), 0xffffu);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 6u), out_a);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 8u), seg_a);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 10u), out_b);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 12u), seg_b);
+    seg_w16(seg_a, out_a, 0xcafeu);
+    seg_w16(seg_b, out_b, 0xbeefu);
+}
+
+static int test_native_exe_114942_negative(void) {
+    cpu86 interpreted, native;
+    const uint16_t flag_mask = F_CF | F_PF | F_AF | F_ZF | F_SF | F_OF;
+    const uint16_t preserved_mask = F_IF | F_DF;
+    const uint16_t out_a = 0x0120u, seg_a = 0x3000u;
+    const uint16_t out_b = 0x0140u, seg_b = 0x4000u;
+    const uint16_t entry_sp = 0x1000u;
+    uint16_t expected_flags;
+
+    setup_exe_114942_cpu(&interpreted);
+    for (unsigned i = 0; i < 15u; i++) cpu86_step(&interpreted);
+    if (interpreted.fault || interpreted.s[CPU_CS] != 0x3333u ||
+        interpreted.ip != 0x2222u || interpreted.r[CPU_SP] != entry_sp + 4u)
+        goto fail;
+    expected_flags = interpreted.flags;
+
+    setup_exe_114942_cpu(&native);
+    if (xanth_native_stage2_test_exe_114942(&native) != HOOK_DID_RETF)
+        goto fail;
+    /* Mirror cpu86_step's HOOK_DID_RETF handling. */
+    native.ip = cpu86_pop16(&native);
+    native.s[CPU_CS] = cpu86_pop16(&native);
+    if (native.s[CPU_CS] != interpreted.s[CPU_CS] ||
+        native.ip != interpreted.ip || native.r[CPU_SP] != interpreted.r[CPU_SP] ||
+        memcmp(native.r, interpreted.r, sizeof(native.r)) != 0 ||
+        memcmp(native.s, interpreted.s, sizeof(native.s)) != 0 ||
+        native.flags != expected_flags || native.cycles != interpreted.cycles ||
+        seg_r16(seg_a, out_a) != 0u || seg_r16(seg_b, out_b) != 0u ||
+        (native.flags & flag_mask) != (F_PF | F_ZF) ||
+        (native.flags & preserved_mask) != preserved_mask)
+        goto fail;
+    puts("exe_114942 negative interpreter/native state: exact (15 insns, 60 cycles)");
+    return 0;
+
+fail:
+    fprintf(stderr, "exe_114942 negative interpreter/native state mismatch\n");
+    return 1;
+}
+
 /*
  * Trace format: an ORDERED list of steps, not timestamped events.
  *
@@ -393,6 +471,7 @@ int main(int argc, char **argv) {
     bool vm_only = false;
     bool replacement_fonts = false;
     bool replacement_graphics = false;
+    bool test_native_114942_negative = false;
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
@@ -420,6 +499,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--hook-log-all")) g_hook_log_all = true;
         else if (!strcmp(argv[i], "--permissive")) cfg.permissive = true;
         else if (!strcmp(argv[i], "--vm-only")) vm_only = true;
+        else if (!strcmp(argv[i], "--test-native-exe114942-negative"))
+            test_native_114942_negative = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
         else if (!strcmp(argv[i], "--nonblocking-conin")) cfg.nonblocking_conin = true;
         else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc) {
@@ -434,6 +515,9 @@ int main(int argc, char **argv) {
             snprintf(bmp_path, sizeof(bmp_path), "%s", argv[++i]);
         else { fprintf(stderr, "unknown argument: %s\n", argv[i]); return 2; }
     }
+
+    if (test_native_114942_negative)
+        return test_native_exe_114942_negative();
 
     cfg.max_instructions = insns;
     cfg.replacement_fonts = replacement_fonts;
