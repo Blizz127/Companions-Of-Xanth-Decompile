@@ -30,10 +30,10 @@ GOLDEN = {
     "wt13_push_button": "3d5c73bddbaee114",
     "wt13_in_dungeon": "c5ccc8e0e6b13de0",
     "wt13_free_nada": "0725a127c7c9091f",
-    "wt13_open_jar": "16dcfe2d060c3467",
+    "wt13_open_jar": "9913fcbd70a66573",
     "wt13_take_moss": "d3353741cd1df6cb",
-    "wt13_after_north_arrow": "3a90d780eb171827",
-    "wt13_score": "07be068d04aaba77",
+    "wt13_after_stair_context": "badd08e0c4485afb",
+    "wt13_score": "dd8fd7d4258274a0",
 }
 
 

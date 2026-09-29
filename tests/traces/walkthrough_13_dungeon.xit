@@ -564,12 +564,12 @@ key 32 57
 run 50
 checkpoint wt13_free_nada
 shot build/frames/draft_after_free_nada.bmp
-# 8. Try Open on the inventory jar.
+# 8. Try Open on the actual inventory jar slot.
 move 14 37
 run 5
 click left
 run 15
-move 119 164
+move 106 172
 run 5
 click left
 run 40
@@ -586,14 +586,20 @@ click left
 run 45
 checkpoint wt13_take_moss
 shot build/frames/draft_after_take_moss.bmp
-# 10. Try the north compass arrow; the screenshot records the resulting state.
-move 24 135
+# 10. Open the staircase context menu and choose its first verb.
+click right
+run 10
+move 100 80
+run 10
+click left
+run 35
+move 14 87
 run 5
 click left
-run 40
+run 50
 move 305 196
 run 5
-checkpoint wt13_after_north_arrow
+checkpoint wt13_after_stair_context
 shot build/frames/draft_after_ascended.bmp
 
 # Read the live score panel.
