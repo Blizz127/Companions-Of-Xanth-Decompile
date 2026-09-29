@@ -21,6 +21,7 @@ TRACE = ROOT / "tests" / "traces" / "walkthrough_14_dungeon_items.xit"
 CONTINUATION_TRACE = ROOT / "tests" / "traces" / "walkthrough_15_barrow_wings.xit"
 FIRE_TRACE = ROOT / "tests" / "traces" / "walkthrough_16_fire_lake_entry.xit"
 FIREMAN_TRACE = ROOT / "tests" / "traces" / "walkthrough_17_fireman_story.xit"
+FIREWALL_TRACE = ROOT / "tests" / "traces" / "walkthrough_18_firewall.xit"
 ANCHOR = ROOT / "build" / "anchor_barrow_unmasked"
 SAVES = ROOT / "build" / "agent_dungeon_test"
 MOSS_SCREEN = ROOT / "build" / "frames" / "wt14_moss_center_attempt.bmp"
@@ -162,6 +163,31 @@ class DungeonRouteTests(unittest.TestCase):
         self.assertIn("You stand before a bubbling lake of lava", text)
         self.assertIn("narrow path", text)
         self.assertIn("southeast", text)
+        self.assertEqual(hashlib.sha256(slot.read_bytes()).hexdigest(), before)
+
+    def test_275_point_save_reaches_firewall_after_mack_clue(self) -> None:
+        slot = SAVES / "XANTH000.SAV"
+        save_data = slot.read_bytes()
+        before = hashlib.sha256(save_data).hexdigest()
+        self.assertEqual(before, "901998237900d1665a78bfcc42cb0f067045c49806edc336efbed7bd062647df")
+        proc = subprocess.run(
+            [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
+             "--saves", str(SAVES), "--script", str(FIREWALL_TRACE),
+             "--insns", str(BUDGET)],
+            capture_output=True, text=True, timeout=600,
+        )
+        out = proc.stdout + proc.stderr
+        self.assertEqual(proc.returncode, 0, out[-4000:])
+        self.assertIn("fault                 : ok", out)
+        self.assertIn("MCB chain valid       : yes", out)
+        marks = dict(re.findall(r"\[script\] hash (\S+) = ([0-9a-f]+)", out))
+        self.assertEqual(marks.get("wt18_firewall"), "dc10de12e2f8098d")
+        text = read_game_font_text(
+            ROOT / "build" / "frames" / "wt18_firewall.bmp",
+            DATA / "XANTH_10.FNT", 20, 160,
+        )
+        self.assertIn("impenetrable wall of fire", text)
+        self.assertIn("piece of charcoal lies on the ground", text)
         self.assertEqual(hashlib.sha256(slot.read_bytes()).hexdigest(), before)
 
     def test_275_point_save_resolves_fireman_hotdog_and_mack_clue(self) -> None:

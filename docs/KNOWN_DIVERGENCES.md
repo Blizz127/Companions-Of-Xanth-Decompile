@@ -23,6 +23,13 @@ reference) for the behavior in question.
 | Audio | OPL music and digitized paths are implemented in the HAL. An opt-in FluidSynth General MIDI path now receives channel messages over the emulated MPU-401 UART and selects `MUSIC=mt32`; MT-32 SysEx patch maps are not reproduced. Real FluidSynth/SF2 playback, concurrency, timing, and sample-for-sample retail parity remain unverified. `adlib` remains the default configuration. | `port/src/hal_audio.c`, `port/src/emu/vm.c`, and native MPU capture assertions in `port/tests/test_smoke.c`; no DOSBox or real FluidSynth/SF2 capture comparison. | Compare decoded playback, timing and mixing with DOSBox for representative VOC, RealSound, AdLib and MPU/GM events; test with a real supported FluidSynth and user SF2. |
 | Timing | Guest time is modeled from virtual cycles and host presentation targets 70 fps. This has not been compared numerically with the retail game under DOSBox. | `port/src/emu/main_vm.c`; `docs/PORT.md`. | Pin timing measurements for boot, animation, input response and audio against the retail reference. |
 
+## Gameplay route coverage
+
+The retail-VM route now reaches the Region of Fire firewall after the hot-dog
+and Mack clue steps, and verifies the firewall description by framebuffer hash
+and OCR. Picking up the charcoal and continuing the remaining Fire puzzles,
+Gap, and ending have not been verified; no 1:1 claim is made for those routes.
+
 ## Distribution and platforms
 
 | Area | Current state | Evidence / reason | Closure evidence |

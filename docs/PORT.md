@@ -514,8 +514,12 @@ separate continuation travels east into the lava-lake entry, where OCR reads
 frame hash `5d6d67ae69300dd3`. Southeast reaches the Fireman and hot dog at hash
 `c22b2662b3ab3f89`. The bun/mustard interaction makes the dog melt into the lake
 for **15 points**; the subsequent Fireman dialogue records Mack’s explosive
-device cracking the firewall. Those replays preserve the 275-point save. The
-remaining Region of Fire puzzles, Gap, and 1,000-point ending remain unverified.
+device cracking the firewall. A direct northeast move after the Mack clue
+reaches the firewall at hash
+`dc10de12e2f8098d`; the retail description says a piece of charcoal lies on the
+ground. This checkpoint also preserves the 275-point save. The charcoal pickup
+and remaining Region of Fire puzzles, Gap, and 1,000-point ending remain
+unverified.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is
