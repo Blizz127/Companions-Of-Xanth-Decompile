@@ -389,6 +389,7 @@ int main(int argc, char **argv) {
     char bmp_path[512] = {0};
     char script_path[512] = {0};
     bool vm_only = false;
+    bool replacement_fonts = false;
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
@@ -402,6 +403,9 @@ int main(int argc, char **argv) {
             snprintf(cfg.data_dir, sizeof(cfg.data_dir), "%s", argv[++i]);
         else if (!strcmp(argv[i], "--saves") && i + 1 < argc)
             snprintf(cfg.save_dir, sizeof(cfg.save_dir), "%s", argv[++i]);
+        else if (!strcmp(argv[i], "--mods") && i + 1 < argc)
+            snprintf(cfg.mods_dir, sizeof(cfg.mods_dir), "%s", argv[++i]);
+        else if (!strcmp(argv[i], "--replacement-fonts")) replacement_fonts = true;
         else if (!strcmp(argv[i], "--insns") && i + 1 < argc)
             insns = strtoull(argv[++i], NULL, 0);
         else if (!strcmp(argv[i], "--script") && i + 1 < argc)
@@ -427,6 +431,7 @@ int main(int argc, char **argv) {
     }
 
     cfg.max_instructions = insns;
+    cfg.replacement_fonts = replacement_fonts;
 
     if (script_path[0] && !load_script(script_path)) return 2;
 
@@ -498,6 +503,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] exe_99679 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_99679_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_136552 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_136552_hits());
     if (!vm_only)
         fprintf(stderr, "[native] exe_86810 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_86810_hits());
