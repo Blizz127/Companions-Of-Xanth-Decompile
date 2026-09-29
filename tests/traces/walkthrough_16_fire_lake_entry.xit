@@ -1,0 +1,17 @@
+# Continue from slot 1 produced by walkthrough_14_dungeon_items.xit.
+# After dismissing the saved dialogue, travel east then southeast from the
+# Ironwood Tree entry into the Region of Fire lava-lake scene.
+include lib/resume_barrow_unmasked.xit
+key 13 28
+run 60
+move 37 148
+run 5
+click left
+run 60
+move 37 161
+run 5
+click left
+run 90
+move 305 196
+checkpoint wt16_fire_lake
+shot build/frames/wt16_fire_lake.bmp

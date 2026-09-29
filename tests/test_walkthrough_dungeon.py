@@ -19,6 +19,7 @@ DATA = ROOT / "game_cd" / "XANTH"
 TOOL = ROOT / "build" / "tool_vmboot"
 TRACE = ROOT / "tests" / "traces" / "walkthrough_14_dungeon_items.xit"
 CONTINUATION_TRACE = ROOT / "tests" / "traces" / "walkthrough_15_barrow_wings.xit"
+FIRE_TRACE = ROOT / "tests" / "traces" / "walkthrough_16_fire_lake_entry.xit"
 ANCHOR = ROOT / "build" / "anchor_barrow_unmasked"
 SAVES = ROOT / "build" / "agent_dungeon_test"
 MOSS_SCREEN = ROOT / "build" / "frames" / "wt14_moss_center_attempt.bmp"
@@ -133,6 +134,32 @@ class DungeonRouteTests(unittest.TestCase):
         )
         self.assertIn("You're in a dimly lit chamber within an ancient barrow", room)
         self.assertIn("sound like that of flapping wings", room)
+        self.assertEqual(hashlib.sha256(slot.read_bytes()).hexdigest(), before)
+
+    def test_275_point_save_enters_fire_lake(self) -> None:
+        slot = SAVES / "XANTH000.SAV"
+        save_data = slot.read_bytes()
+        before = hashlib.sha256(save_data).hexdigest()
+        self.assertEqual(before, "901998237900d1665a78bfcc42cb0f067045c49806edc336efbed7bd062647df")
+        self.assertEqual(struct.unpack_from("<H", save_data, 0x347D)[0], 275)
+        proc = subprocess.run(
+            [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
+             "--saves", str(SAVES), "--script", str(FIRE_TRACE),
+             "--insns", str(BUDGET)],
+            capture_output=True, text=True, timeout=600,
+        )
+        out = proc.stdout + proc.stderr
+        self.assertEqual(proc.returncode, 0, out[-4000:])
+        self.assertIn("fault                 : ok", out)
+        self.assertIn("MCB chain valid       : yes", out)
+        marks = dict(re.findall(r"\[script\] hash (\S+) = ([0-9a-f]+)", out))
+        self.assertEqual(marks.get("wt16_fire_lake"), "c22b2662b3ab3f89")
+        text = read_game_font_text(
+            ROOT / "build" / "frames" / "wt16_fire_lake.bmp",
+            DATA / "XANTH_10.FNT", 125, 160,
+        )
+        self.assertIn("You stand before a bubbling lake of lava", text)
+        self.assertIn("path leads off to the southeast", text)
         self.assertEqual(hashlib.sha256(slot.read_bytes()).hexdigest(), before)
 
 
