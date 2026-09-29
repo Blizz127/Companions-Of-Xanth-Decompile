@@ -364,7 +364,9 @@ int main(int argc, char **argv) {
     }
 
     fprintf(stderr, "[native] set_int_and_zero hits: %llu\n",
-            (unsigned long long)xanth_native_stage2_hits());
+            (unsigned long long)xanth_native_set_int_and_zero_hits());
+    fprintf(stderr, "[native] set_far_ptr hits: %llu\n",
+            (unsigned long long)xanth_native_set_far_ptr_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();

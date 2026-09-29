@@ -55,9 +55,11 @@ class NativeStage2ParityTests(unittest.TestCase):
                 frame = re.search(r"\[script\] hash stage2_boot = ([0-9a-f]+)", output)
                 self.assertIsNotNone(frame, output[-3000:])
                 hit = re.search(r"\[native\] set_int_and_zero hits: (\d+)", output)
+                far_hit = re.search(r"\[native\] set_far_ptr hits: (\d+)", output)
                 metrics = {
                     "frame": frame.group(1),
-                    "hits": hit.group(1) if hit else None,
+                    "set_int_and_zero_hits": hit.group(1) if hit else None,
+                    "set_far_ptr_hits": far_hit.group(1) if far_hit else None,
                 }
                 for name, pattern in (
                     ("instructions", r"^instructions executed\s*:\s*(\d+)$"),
@@ -73,11 +75,15 @@ class NativeStage2ParityTests(unittest.TestCase):
                 outputs[mode] = metrics
 
             self.assertEqual(
-                {key: value for key, value in outputs["vm"].items() if key != "hits"},
-                {key: value for key, value in outputs["native"].items() if key != "hits"},
+                {key: value for key, value in outputs["vm"].items()
+                 if not key.endswith("_hits")},
+                {key: value for key, value in outputs["native"].items()
+                 if not key.endswith("_hits")},
             )
-            self.assertIsNone(outputs["vm"]["hits"])
-            self.assertEqual(outputs["native"]["hits"], "1")
+            self.assertIsNone(outputs["vm"]["set_int_and_zero_hits"])
+            self.assertEqual(outputs["native"]["set_int_and_zero_hits"], "1")
+            self.assertIsNone(outputs["vm"]["set_far_ptr_hits"])
+            self.assertEqual(outputs["native"]["set_far_ptr_hits"], "1")
 
 
 if __name__ == "__main__":
