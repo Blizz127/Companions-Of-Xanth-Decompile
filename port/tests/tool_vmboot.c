@@ -519,6 +519,9 @@ int main(int argc, char **argv) {
         fprintf(stderr, "[native] exe_52674 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_52674_hits());
     if (!vm_only)
+        fprintf(stderr, "[native] exe_112711 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_112711_hits());
+    if (!vm_only)
         fprintf(stderr, "[native] exe_86810 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_86810_hits());
     if (!vm_only)

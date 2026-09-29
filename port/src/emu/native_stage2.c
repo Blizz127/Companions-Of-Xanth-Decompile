@@ -35,6 +35,9 @@
 #undef g1
 #undef g0
 #undef far
+#define far
+#include "../../../src/exe_112711.c"
+#undef far
 
 /* Host scratch backing for the source C body invoked by its guest adapter. */
 unsigned g_idx;
@@ -110,6 +113,7 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define EXE_52674_OFFSET              52674u
 #define EXE_52674_G0_DS_OFFSET        0x0106u
 #define EXE_52674_G1_DS_OFFSET        0x0102u
+#define EXE_112711_OFFSET            112711u
 
 typedef struct {
     uint16_t exe_offset;
@@ -155,6 +159,8 @@ static uint64_t g_exe_136552_hits;
 static uint64_t g_exe_52710_hits;
 static uint64_t g_exe_112795_hits;
 static uint64_t g_exe_52674_hits;
+static uint64_t g_exe_112711_hits;
+static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
 
@@ -1077,6 +1083,90 @@ static hook_result_t native_exe_52674(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Run the recovered record walk on a host scratch table, then copy bit writes back. */
+static hook_result_t native_exe_112711(cpu86 *cpu, void *user) {
+    uint16_t entry_sp = cpu->r[CPU_SP];
+    uint16_t saved_bp = cpu->r[CPU_BP];
+    uint16_t value = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    uint16_t table_index = seg_r16(cpu->s[CPU_DS], EXE_112795_INDEX_DS_OFFSET);
+    uint16_t count_index = (uint16_t)(table_index * 2u);
+    uint16_t count = seg_r16(cpu->s[CPU_DS],
+                             (uint16_t)(EXE_112795_COUNT_DS_OFFSET + count_index));
+    bool has_records = (int16_t)count > 0;
+    uint16_t pointer_offset = 0, pointer_segment = 0;
+    uint8_t guest_insns = 11u;
+    uint32_t cycles = 44u;
+    size_t matches = 0;
+    uint8_t *scratch = (uint8_t *)g_exe_112711_record_scratch;
+    vm *machine = (vm *)cpu->vm;
+
+    /* Large tables use the interpreter so both event boundaries and local widths stay exact. */
+    if (has_records && count > 16u) return HOOK_CONTINUE;
+    if (has_records) {
+        uint16_t pointer_index = (uint16_t)(table_index * 4u);
+        pointer_offset = seg_r16(cpu->s[CPU_DS],
+            (uint16_t)(EXE_112795_TABLE_DS_OFFSET + pointer_index));
+        pointer_segment = seg_r16(cpu->s[CPU_DS],
+            (uint16_t)(EXE_112795_TABLE_DS_OFFSET + pointer_index + 2u));
+        for (uint16_t i = 0; i < count; i++) {
+            uint16_t record_offset = (uint16_t)(i * 20u);
+            uint8_t *record = scratch + 2u + record_offset;
+            for (uint16_t b = 0; b < 20u; b++)
+                record[b] = seg_r8(pointer_segment,
+                    (uint16_t)(pointer_offset + record_offset + b));
+            {
+                uint16_t word = (uint16_t)(record[10] | ((uint16_t)record[11] << 8));
+                record[12] = ((int16_t)word < 0) ? 0xffu : 0u;
+                record[13] = record[12];
+                if ((int16_t)word == (int16_t)value) matches++;
+            }
+        }
+        {
+            uint32_t instruction_count = 12u + (uint32_t)count * 15u +
+                                         (uint32_t)matches;
+            if (instruction_count > UINT8_MAX) return HOOK_CONTINUE;
+            guest_insns = (uint8_t)instruction_count;
+            cycles = instruction_count * 4u;
+        }
+    }
+
+    if (cpu->step_budget_remaining < guest_insns) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    if (has_records) {
+        g_idx = 0;
+        g_cnt[0] = (int16_t)count;
+        g_tbl[0] = (char *)(scratch + 2u);
+        exe_112711((int16_t)value);
+        for (uint16_t i = 0; i < count; i++) {
+            uint16_t target = (uint16_t)(pointer_offset + i * 20u + 1u);
+            seg_w8(pointer_segment, target, scratch[2u + i * 20u + 1u]);
+        }
+        cpu->r[CPU_AX] = count;
+        cpu->r[CPU_BX] = alu_op(cpu, ALU_ADD, table_index, table_index, 16);
+        cpu->s[CPU_ES] = pointer_segment;
+        (void)alu_op(cpu, ALU_CMP, count, count, 16);
+    } else {
+        cpu->r[CPU_BX] = alu_op(cpu, ALU_ADD, table_index, table_index, 16);
+        (void)alu_op(cpu, ALU_CMP, count, 0, 16);
+    }
+
+    cpu->r[CPU_BP] = saved_bp;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = guest_insns;
+    g_exe_112711_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -1208,6 +1298,18 @@ bool xanth_native_stage2_install(vm *machine) {
         0xc7, 0x06, 0x06, 0x01, 0x01, 0x00,
         0xc7, 0x06, 0x02, 0x01, 0x00, 0x00, 0xcb
     };
+    static const uint8_t verified_exe_112711_body[] = {
+        0x55, 0x8b, 0xec, 0x83, 0xec, 0x08, 0xc7, 0x46, 0xfa,
+        0x00, 0x00, 0x8b, 0x1e, 0xc0, 0x67, 0x03, 0xdb, 0x83,
+        0xbf, 0xe2, 0x67, 0x00, 0x7e, 0x38, 0xc7, 0x46, 0xf8,
+        0x00, 0x00, 0x8b, 0x46, 0x06, 0x8b, 0x1e, 0xc0, 0x67,
+        0x03, 0xdb, 0x03, 0xdb, 0xc4, 0x9f, 0xc2, 0x67, 0x03,
+        0x5e, 0xf8, 0x26, 0x39, 0x47, 0x0a, 0x75, 0x05, 0x26,
+        0x80, 0x4f, 0x01, 0x80, 0x83, 0x46, 0xf8, 0x14, 0xff,
+        0x46, 0xfa, 0x8b, 0x46, 0xfa, 0x8b, 0x1e, 0xc0, 0x67,
+        0x03, 0xdb, 0x39, 0x87, 0xe2, 0x67, 0x7f, 0xcd, 0x8b,
+        0xe5, 0x5d, 0xcb
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1231,6 +1333,11 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            EXE_52674_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_exe_52674_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_112711_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_112711_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_exe_112711_body[i]) return false;
     }
 
     for (size_t i = 0; i < sizeof(verified_body); i++) {
@@ -1563,6 +1670,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_52674_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_52674, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_112711_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_112711_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_exe_112711, NULL)) return false;
     return true;
 }
 
@@ -1680,4 +1792,8 @@ uint64_t xanth_native_exe_112795_hits(void) {
 
 uint64_t xanth_native_exe_52674_hits(void) {
     return g_exe_52674_hits;
+}
+
+uint64_t xanth_native_exe_112711_hits(void) {
+    return g_exe_112711_hits;
 }
