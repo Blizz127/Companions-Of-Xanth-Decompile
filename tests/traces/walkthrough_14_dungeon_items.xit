@@ -1,0 +1,761 @@
+include lib/resume_barrow_unmasked.xit
+move 18 188
+run 5
+click left
+run 35
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+move 18 188
+run 5
+click left
+run 35
+move 14 7
+run 5
+click left
+run 15
+move 240 105
+run 5
+click left
+run 40
+move 18 188
+run 5
+click left
+run 35
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+move 18 188
+run 5
+click left
+run 35
+move 305 196
+run 5
+dump 0:02EA 8
+shot build/frames/wt14_reached_7_0.bmp
+
+# Click pad at (181, 113)
+move 181 113
+run 10
+click left
+run 35
+# Click context verb 1 at (14, 87)
+move 14 87
+run 5
+click left
+run 50
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+key 0 77
+run 25
+key 0 80
+run 25
+key 0 77
+run 25
+key 0 72
+run 25
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+move 305 196
+run 5
+dump 0:02EA 8
+checkpoint wt14_jar_room
+shot build/frames/wt14_reached_8_6.bmp
+
+# Click Take verb
+move 14 7
+run 5
+click left
+run 15
+# Click door ajar at (185, 60)
+move 185 60
+run 5
+click left
+run 45
+checkpoint wt14_door_ajar
+shot build/frames/wt14_after_take_door_ajar.bmp
+# Click Take verb
+move 14 7
+run 5
+click left
+run 15
+# Click jar on ground at (141, 91)
+move 141 91
+run 5
+click left
+run 45
+checkpoint wt14_jar_acquired
+shot build/frames/wt14_after_take_jar_ground.bmp
+
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+# 1. Navigate (8, 6) -> (8, 4)
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+# 2. Step on pad at (8, 4) to return to (7, 0)
+move 181 113
+run 10
+click left
+run 35
+move 14 87
+run 5
+click left
+run 50
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+# 3. Navigate (7, 0) -> (4, 1)
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 80
+run 20
+key 0 80
+run 20
+key 0 80
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+# 4. Solve switches
+# --- PASS 1: Flip all 16 switches up ---
+# Switch 0
+move 228 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 1
+move 237 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 2
+move 123 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 3
+move 132 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 4
+move 237 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 5
+move 141 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 6
+move 141 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 7
+move 246 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 8
+move 132 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 9
+move 228 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 10
+move 123 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 11
+move 246 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 12
+move 123 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 13
+move 246 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 14
+move 237 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 15
+move 132 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# --- PASS 2: Flip all 16 switches down ---
+# Switch 0 pass 2
+move 228 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 1 pass 2
+move 237 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 2 pass 2
+move 123 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 3 pass 2
+move 132 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 4 pass 2
+move 237 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 5 pass 2
+move 141 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 6 pass 2
+move 141 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 7 pass 2
+move 246 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 8 pass 2
+move 132 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 9 pass 2
+move 228 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 10 pass 2
+move 123 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 11 pass 2
+move 246 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 12 pass 2
+move 123 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 13 pass 2
+move 246 59
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 14 pass 2
+move 237 77
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+# Switch 15 pass 2
+move 132 68
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 35
+move 305 196
+run 5
+dump 0:02EE 4
+dump 0:029C 2
+# Move to glowing button at (231, 66)
+move 231 66
+run 5
+checkpoint wt14_button_hover
+shot build/frames/wt14_button_hover.bmp
+click left
+run 35
+checkpoint wt14_button_clicked
+shot build/frames/wt14_button_clicked.bmp
+# Click verb at (14, 87)
+move 14 87
+run 5
+click left
+run 100
+move 305 196
+run 5
+checkpoint wt14_push_button
+shot build/frames/wt14_after_push_button.bmp
+# 5. Enter door into dungeon
+move 184 67
+run 5
+click left
+run 35
+move 14 87
+run 5
+click left
+run 50
+# 6. Nada dialogue
+key 0 80
+run 10
+key 13 28
+run 40
+key 0 80
+run 10
+key 0 80
+run 10
+key 0 80
+run 10
+key 0 80
+run 10
+key 13 28
+run 40
+key 0 80
+run 10
+key 0 80
+run 10
+key 0 80
+run 10
+key 13 28
+run 40
+key 13 28
+run 40
+key 32 57
+run 50
+checkpoint wt14_in_dungeon
+shot build/frames/wt14_chain_in_dungeon.bmp
+# 7. Free Nada: talk to manacles
+move 14 57
+run 5
+click left
+run 15
+move 213 23
+run 5
+click left
+run 60
+# Dressing dialogue Opt 1
+key 13 28
+run 40
+key 32 57
+run 50
+checkpoint wt14_free_nada
+shot build/frames/wt14_chain_after_free_nada.bmp
+# Click Open verb at (14, 37)
+move 14 37
+run 5
+click left
+run 15
+# Click jar in inventory at (106, 172)
+move 106 172
+run 5
+click left
+run 40
+checkpoint wt14_open_jar
+shot build/frames/wt14_test_jar_opened_real.bmp
+# Click Take verb at (14, 7)
+move 14 7
+run 5
+click left
+run 15
+# Click agony moss at (148, 45)
+move 148 45
+run 5
+click left
+run 45
+checkpoint wt14_moss
+shot build/frames/wt14_test_moss_taken_real.bmp
+click right
+run 10
+move 100 80
+run 10
+shot build/frames/wt14_test_stairs_hover.bmp
+click left
+run 35
+shot build/frames/wt14_test_stairs_clicked.bmp
+move 14 87
+run 5
+click left
+run 50
+move 305 196
+run 5
+dump 0:02EA 8
+checkpoint wt14_upper_room
+shot build/frames/wt14_test_after_stairs_climb.bmp
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+# Navigate (4, 1) -> (7, 0)
+key 0 80
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+key 0 72
+run 20
+key 0 75
+run 20
+key 0 75
+run 20
+key 0 72
+run 20
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+# Pad at (7, 0) -> teleports to (8, 4)
+move 181 113
+run 10
+click left
+run 35
+move 14 87
+run 5
+click left
+run 50
+# Switch to MAP
+move 18 188
+run 5
+click left
+run 35
+# Navigate (8, 4) -> (8, 6)
+key 0 77
+run 20
+key 0 80
+run 20
+key 0 77
+run 20
+key 0 72
+run 20
+# Switch to PICT
+move 18 188
+run 5
+click left
+run 35
+move 305 196
+run 5
+dump 0:02EA 8
+shot build/frames/wt14_test_back_at_8_6.bmp
+# Hover over tree at (185, 60)
+move 185 60
+run 10
+shot build/frames/wt14_test_tree_hover.bmp
+# Hover over inventory slot 0 (106, 172)
+move 106 172
+run 10
+shot build/frames/wt14_test_inv0_hover.bmp
+# Put moss on tree: click item at (106, 172)
+click left
+run 15
+# Click Put verb at (14, 17)
+move 14 17
+run 5
+click left
+run 15
+# Click tree at (185, 60)
+move 185 60
+run 5
+click left
+run 60
+move 305 196
+run 5
+checkpoint wt14_tree_melted
+shot build/frames/wt14_test_after_melt_tree.bmp
+# Step North into opening
+key 0 72
+run 60
+move 305 196
+run 5
+dump 0:02EA 8
+checkpoint wt14_north_exit
+shot build/frames/wt14_test_after_exit_north.bmp
+
+# Read the live score panel.
+move 35 174
+run 6
+click left
+run 20
+move 160 120
+run 4
+click left
+run 25
+move 305 196
+checkpoint wt14_score
+shot build/frames/wt14_score.bmp

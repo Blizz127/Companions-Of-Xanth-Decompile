@@ -499,11 +499,12 @@ save, the verified route saves 203 after the shimmering door solidifies, shows
 208/1000. This crosses the 200-point threshold; the exact action that crosses
 it remains unisolated. The next verified route reaches the unlocked barrow
 interior at 208; defeating Metria then saves a 228-point state inside the
-barrow. The latest dungeon trace reaches Nada's freed dialogue, reads 242/1000
-live, and shows a separate upper room after selecting the stairs' context
-action. The jar interaction still fails to open it, and the game says a
-container is needed before taking the moss. The item setup, route beyond the
-upper room, and full ending are still open.
+barrow. The item-route trace retrieves the small jar from the earlier barrow
+map room, frees Nada, and shows a separate upper room after selecting the
+stairs' context action. The Open attempt still leaves the jar closed; the moss
+interaction says “The jar isn't even open,” and the tree remains after the
+Put attempt. The live score reaches 255/1000. Opening the jar, dissolving the
+tree, and continuing to the full ending remain open.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is

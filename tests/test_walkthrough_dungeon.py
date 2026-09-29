@@ -16,24 +16,27 @@ ROOT = Path(__file__).resolve().parent.parent
 EXE = ROOT / "original" / "XANTH.EXE"
 DATA = ROOT / "game_cd" / "XANTH"
 TOOL = ROOT / "build" / "tool_vmboot"
-TRACE = ROOT / "tests" / "traces" / "walkthrough_13_dungeon.xit"
+TRACE = ROOT / "tests" / "traces" / "walkthrough_14_dungeon_items.xit"
 ANCHOR = ROOT / "build" / "anchor_barrow_unmasked"
 SAVES = ROOT / "build" / "agent_dungeon_test"
 SCORE = ROOT / "build" / "frames" / "wt13_score.bmp"
 BUDGET = 32_000_000_000
 ANCHOR_SLOT_SHA256 = "51b5ef6408a751c1d85cda264d83eefa6dc362f573931060c3f64dae9d36f6f1"
 GOLDEN = {
-    "wt13_jar": "447059f60a1f04c3",
-    "wt13_pestle": "a08bc76faeb1e1fd",
-    "wt13_button_hover": "920c01c0a12380ad",
-    "wt13_button_clicked": "c573cf635e857cbc",
-    "wt13_push_button": "3d5c73bddbaee114",
-    "wt13_in_dungeon": "c5ccc8e0e6b13de0",
-    "wt13_free_nada": "0725a127c7c9091f",
-    "wt13_open_jar": "9913fcbd70a66573",
-    "wt13_take_moss": "d3353741cd1df6cb",
-    "wt13_after_stair_context": "badd08e0c4485afb",
-    "wt13_score": "dd8fd7d4258274a0",
+    "wt14_jar_room": "158ebdbb374cc1fa",
+    "wt14_door_ajar": "37d6a0eea6d9c4d0",
+    "wt14_jar_acquired": "1699e1bb3bf3f651",
+    "wt14_button_hover": "e212efd1f099f48e",
+    "wt14_button_clicked": "f0da8c5de99c522b",
+    "wt14_push_button": "186eb37cdef0bfb7",
+    "wt14_in_dungeon": "d014180df173a8a5",
+    "wt14_free_nada": "0725a127c7c9091f",
+    "wt14_open_jar": "3d51aac74453929f",
+    "wt14_moss": "b56ef82679b6be6c",
+    "wt14_upper_room": "b01a9e838825b24c",
+    "wt14_tree_melted": "590d217662f95716",
+    "wt14_north_exit": "08549ca4c6948b93",
+    "wt14_score": "ff55337e86463e66",
 }
 
 
@@ -70,9 +73,9 @@ class DungeonRouteTests(unittest.TestCase):
         for name, expected in GOLDEN.items():
             self.assertEqual(self.marks.get(name), expected, name)
 
-    def test_live_score_reaches_242(self) -> None:
+    def test_live_score_reaches_255(self) -> None:
         text = read_game_font_text(SCORE, DATA / "XANTH_10.FNT", 30, 110)
-        self.assertIn("242 of 1000 points", text)
+        self.assertIn("255 of 1000 points", text)
 
 
 if __name__ == "__main__":
