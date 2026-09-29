@@ -1,0 +1,205 @@
+# Walkthrough segment 10: The Void & Solidifying the Shimmering Door (Scene III).
+#
+# Starts from anchor_isthmus save in slot 1 (The Void boundary, 193 pts).
+# Dug and Nada are stranded in The Void. Through 4 cycles of conviction
+# ("belief creates reality in Xanth"), the shimmering door solidifies.
+# Dug opens the door and steps through into the outskirts of the Region of Earth.
+
+include lib/resume_isthmus.xit
+
+checkpoint wt10_resumed
+shot build/frames/wt10_resumed.bmp
+
+# Wait 1 tick for Nada to speak
+key 0 59
+run 30
+
+# Initial conversation with Nada
+# Option 1: "Could you explain your talent again."
+move 100 125
+run 5
+click left
+run 30
+
+# Option 4: "Never mind, Nada. Let's look for a way out of here."
+move 100 150
+run 5
+click left
+run 30
+
+# Dismiss via checkmark
+move 315 195
+run 5
+click left
+run 30
+
+# Option 1: "Okay, I'm eager to get back to the Game, princess."
+move 100 125
+run 5
+click left
+run 30
+
+# Shimmer 1 appears
+key 0 59
+run 30
+move 305 196
+run 5
+checkpoint wt10_door_shimmer
+shot build/frames/wt10_door_shimmer.bmp
+
+# === Conversation 1 ===
+move 14 57
+run 5
+click left
+run 10
+move 60 165
+run 5
+click left
+run 30
+
+# Select Option 2: "Did you see that door appear just then?"
+move 100 134
+run 5
+click left
+run 10
+click left
+run 30
+
+# Select Option 1: "Just keep looking at that area in front of us."
+move 100 125
+run 5
+click left
+run 10
+click left
+run 30
+
+# Shimmer 2: Wait 1 tick -> Nada speaks: "I can't believe it but I just saw that door..."
+key 0 59
+run 30
+
+# Option 1: "Me, too. Maybe it's a way out of here."
+move 100 125
+run 5
+click left
+run 10
+click left
+run 30
+
+# === Conversation 2 ===
+# Wait 1 tick for shimmer 3
+key 0 59
+run 30
+
+# Talk to Nada
+move 14 57
+run 5
+click left
+run 10
+move 60 165
+run 5
+click left
+run 30
+
+# Select Option 2: "I'm sure I just saw a door appear right there in front of us!"
+move 100 132
+run 5
+click left
+run 10
+click left
+run 30
+
+# === Conversation 3 ===
+# Wait 1 tick for shimmer 4
+key 0 59
+run 30
+
+# Talk to Nada
+move 14 57
+run 5
+click left
+run 10
+move 60 165
+run 5
+click left
+run 30
+
+# Select Option 2: "I'm certain of it! I just saw a door appear."
+move 100 132
+run 5
+click left
+run 10
+click left
+run 30
+
+# === Conversation 4 ===
+# Wait 1 tick for shimmer 5
+key 0 59
+run 30
+
+# Talk to Nada
+move 14 57
+run 5
+click left
+run 10
+move 60 165
+run 5
+click left
+run 30
+
+# Select Option 2: "There can be no doubt about it. There is a door here!"
+move 100 132
+run 5
+click left
+run 10
+click left
+run 30
+
+# Wait 1 tick for door to solidify into physical object!
+key 0 59
+run 30
+move 305 196
+run 5
+checkpoint wt10_door_solidified
+shot build/frames/wt10_door_solidified.bmp
+
+# Open the door (+3 points)
+move 14 37
+run 5
+click left
+run 10
+move 160 68
+run 5
+click left
+run 35
+move 305 196
+run 5
+checkpoint wt10_door_opened
+shot build/frames/wt10_door_opened.bmp
+
+# Step through open door into blackness beyond
+move 24 135
+run 5
+click left
+run 50
+key 32
+run 20
+move 305 196
+run 5
+checkpoint wt10_stepped_through
+shot build/frames/wt10_stepped_through.bmp
+
+# Select Option 2 in Nada dialogue: "Earth, huh? That sounds familiar."
+move 100 134
+run 5
+click left
+run 10
+click left
+run 30
+key 32
+run 20
+move 305 196
+run 5
+
+# Reached outskirts of Region of Earth
+checkpoint wt10_earth_outskirts
+shot build/frames/wt10_earth_outskirts.bmp

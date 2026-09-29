@@ -493,9 +493,10 @@ and the egg, and reads Fairy Nuff's recipe. The panel at his booth reads
 on the panel. Next is two dashes of eye scream into the pail, then the rest
 of the recipe, then the censor-ship. The experimental continuation through
 Crossroads (two eye screams and Nada's cough drops) was exercised in the retail
-VM, but its score panel still read 122/1000. The trace's old “200 pts” label
-is therefore not evidence of Scene II completion; the missing 78 points and
-published endpoint remain under investigation.
+VM, but its score panel still read 122/1000. From the existing 193-point Void
+save, the verified transition through the shimmering door reaches the Region
+of Earth outskirts at 208/1000. The exact point where the published 200-point
+Scene II endpoint is crossed remains unverified; the full ending is also open.
 
 Digitized effects are covered in the audio section. `MUSIC=adlib` still
 plays no `.RS` and no `.VOC`; that is the game's device choice, and it is
@@ -718,8 +719,8 @@ Both Python tests skip cleanly without the retail disc, so they are safe in publ
 
 ## Next
 
-- Extend the verified route from 122 points through Scene II's 200-point endpoint,
-  then continue through the full 1,000-point finale. The whole-game completion gate
+- Pin the exact 200-point transition on the verified Void-to-Earth route, then
+  continue through the full 1,000-point finale. The whole-game completion gate
   remains open.
 - Verify the Windows job on a real runner. The workflow exists and executes the
   conformance suite and CTest; it has not yet been observed passing.
