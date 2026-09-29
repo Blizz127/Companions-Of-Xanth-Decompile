@@ -531,6 +531,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] exe_114942 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_114942_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] store_two_globals hits: %llu\n",
+                (unsigned long long)xanth_native_store_two_globals_hits());
 
     vm_report(&machine, stderr);
 
