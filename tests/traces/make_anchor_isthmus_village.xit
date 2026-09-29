@@ -1,0 +1,49 @@
+# Build a reusable 45-point village-center save from the 40-point cavern
+# anchor. The save is written by the retail game through its own UI.
+include walkthrough_07_cavern.xit
+
+# Clearing -> Crossroads; take the cherry bomb and buttercup.
+move 37 135
+run 10
+click left
+run 80
+move 305 196
+run 15
+move 14 7
+run 5
+click left
+run 15
+move 210 35
+run 5
+click left
+run 40
+move 305 196
+run 10
+move 14 7
+run 5
+click left
+run 15
+move 201 61
+run 5
+click left
+run 40
+move 305 196
+run 10
+
+# East through the forest, then southeast to Isthmus Village.
+move 37 148
+run 6
+click left
+run 50
+move 305 196
+run 10
+move 37 161
+run 6
+click left
+run 50
+move 305 196
+run 10
+checkpoint wt8_village_anchor
+
+# Save slot 1 through the game's normal system menu.
+include lib/save_over_slot1.xit
