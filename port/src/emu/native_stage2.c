@@ -65,6 +65,7 @@
 #define STORE_TWO_GLOBALS_OFFSET     85166u
 #define SET_INT_IF_GE0_OFFSET        90625u
 #define IABS_OFFSET                  17806u
+#define SET_FAR_ARR_CHK_OFFSET       94589u
 
 typedef struct {
     uint16_t offset;
@@ -94,6 +95,7 @@ static uint64_t g_exe_114942_hits;
 static uint64_t g_store_two_globals_hits;
 static uint64_t g_set_int_if_ge0_hits;
 static uint64_t g_iabs_hits;
+static uint64_t g_set_far_arr_chk_hits;
 static xanth_guest_far_pointer g_far_ptr_scratch;
 
 static hook_result_t native_set_int_and_zero(cpu86 *cpu, void *user) {
@@ -795,6 +797,52 @@ static hook_result_t native_iabs(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
+/* Lower the full bounds-checked guest far-pointer array store. */
+static hook_result_t native_set_far_arr_chk(cpu86 *cpu, void *user) {
+    uint16_t entry_sp = cpu->r[CPU_SP];
+    uint16_t saved_bp = cpu->r[CPU_BP];
+    uint16_t index = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    uint16_t ptr_off = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 6u));
+    uint16_t ptr_seg = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 8u));
+    uint16_t count = seg_r16(cpu->s[CPU_DS], 0x4db4u);
+    bool negative = (int16_t)index < 0;
+    bool out_of_range = !negative && (int16_t)index >= (int16_t)count;
+    uint8_t guest_insns = negative ? 6u : (out_of_range ? 9u : 16u);
+    uint32_t cycles = (uint32_t)guest_insns * 4u;
+    vm *machine = (vm *)cpu->vm;
+    if (cpu->step_budget_remaining < guest_insns) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    (void)alu_op(cpu, ALU_CMP, index, 0, 16);
+    if (!negative) {
+        cpu->r[CPU_AX] = count;
+        (void)alu_op(cpu, ALU_CMP, index, count, 16);
+        if (!out_of_range) {
+            uint16_t bx = alu_op(cpu, ALU_ADD, index, index, 16);
+            bx = alu_op(cpu, ALU_ADD, bx, bx, 16);
+            cpu->r[CPU_BX] = bx;
+            cpu->r[CPU_AX] = ptr_off;
+            cpu->r[CPU_DX] = ptr_seg;
+            seg_w16(cpu->s[CPU_DS], (uint16_t)(0x63e8u + bx), ptr_off);
+            seg_w16(cpu->s[CPU_DS], (uint16_t)(0x63eau + bx), ptr_seg);
+        }
+    }
+    cpu->r[CPU_BP] = saved_bp;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = guest_insns;
+    g_set_far_arr_chk_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -899,6 +947,13 @@ bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_iabs_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0x99, 0x33, 0xc2,
         0x2b, 0xc2, 0x5d, 0xcb
+    };
+    static const uint8_t verified_set_far_arr_chk_body[] = {
+        0x55, 0x8b, 0xec, 0x83, 0x7e, 0x06, 0x00, 0x7c, 0x1d,
+        0xa1, 0xb4, 0x4d, 0x39, 0x46, 0x06, 0x7d, 0x15, 0x8b,
+        0x46, 0x08, 0x8b, 0x56, 0x0a, 0x8b, 0x5e, 0x06, 0x03,
+        0xdb, 0x03, 0xdb, 0x89, 0x87, 0xe8, 0x63, 0x89, 0x97,
+        0xea, 0x63, 0x5d, 0xcb
     };
     uint32_t linear;
     uint16_t segment, offset;
@@ -1031,6 +1086,11 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            IABS_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_iabs_body[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_set_far_arr_chk_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           SET_FAR_ARR_CHK_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_set_far_arr_chk_body[i]) return false;
     }
 
     linear = (uint32_t)machine->img.load_seg * 16u + SET_INT_AND_ZERO_EXE_OFFSET;
@@ -1175,7 +1235,13 @@ bool xanth_native_stage2_install(vm *machine) {
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
     g_iabs_hits = 0;
-    return cpu86_hook_install(segment, offset, native_iabs, NULL);
+    if (!cpu86_hook_install(segment, offset, native_iabs, NULL)) return false;
+
+    linear = (uint32_t)machine->img.load_seg * 16u + SET_FAR_ARR_CHK_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_set_far_arr_chk_hits = 0;
+    return cpu86_hook_install(segment, offset, native_set_far_arr_chk, NULL);
 }
 
 uint64_t xanth_native_set_int_and_zero_hits(void) {
@@ -1268,4 +1334,8 @@ uint64_t xanth_native_set_int_if_ge0_hits(void) {
 
 uint64_t xanth_native_iabs_hits(void) {
     return g_iabs_hits;
+}
+
+uint64_t xanth_native_set_far_arr_chk_hits(void) {
+    return g_set_far_arr_chk_hits;
 }

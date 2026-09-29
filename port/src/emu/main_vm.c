@@ -409,6 +409,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_set_int_if_ge0_hits());
     fprintf(stderr, "[native] iabs hits: %llu\n",
             (unsigned long long)xanth_native_iabs_hits());
+    fprintf(stderr, "[native] set_far_arr_chk hits: %llu\n",
+            (unsigned long long)xanth_native_set_far_arr_chk_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();
