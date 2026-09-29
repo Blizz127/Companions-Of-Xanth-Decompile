@@ -57,11 +57,15 @@ class NativeStage2ParityTests(unittest.TestCase):
                 hit = re.search(r"\[native\] set_int_and_zero hits: (\d+)", output)
                 far_hit = re.search(r"\[native\] set_far_ptr hits: (\d+)", output)
                 lift_hit = re.search(r"\[native\] exe_94712 hits: (\d+)", output)
+                helper_hit = re.search(
+                    r"\[native\] if0_helper_inc fast-return hits: (\d+)", output
+                )
                 metrics = {
                     "frame": frame.group(1),
                     "set_int_and_zero_hits": hit.group(1) if hit else None,
                     "set_far_ptr_hits": far_hit.group(1) if far_hit else None,
                     "exe_94712_hits": lift_hit.group(1) if lift_hit else None,
+                    "if0_helper_inc_hits": helper_hit.group(1) if helper_hit else None,
                 }
                 for name, pattern in (
                     ("instructions", r"^instructions executed\s*:\s*(\d+)$"),
@@ -88,6 +92,8 @@ class NativeStage2ParityTests(unittest.TestCase):
             self.assertEqual(outputs["native"]["set_far_ptr_hits"], "1")
             self.assertIsNone(outputs["vm"]["exe_94712_hits"])
             self.assertGreater(int(outputs["native"]["exe_94712_hits"]), 0)
+            self.assertIsNone(outputs["vm"]["if0_helper_inc_hits"])
+            self.assertGreater(int(outputs["native"]["if0_helper_inc_hits"]), 0)
 
 
 if __name__ == "__main__":

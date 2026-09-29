@@ -354,17 +354,22 @@ static bool run_script(vm *m, uint64_t overall_budget) {
  * debugger breakpoint. Running it against real code now is how we find out
  * the mechanism works before anything depends on it.
  */
-static vm *g_hook_vm;
-static uint32_t g_hook_hits;
+typedef struct {
+    unsigned long exe_offset;
+    uint32_t hits;
+} hook_probe;
+
+static hook_probe g_hook_probes[256];
+static size_t g_hook_probe_count;
 
 static hook_result_t log_hook(cpu86 *c, void *user) {
-    const char *name = (const char *)user;
-    if (g_hook_hits < 12) {
+    hook_probe *probe = (hook_probe *)user;
+    if (probe->hits == 0) {
         fprintf(stderr,
-            "[hook] %s @%04X:%04X  called from %04X:%04X  "
+            "[hook] exe-code %lu @%04X:%04X  called from %04X:%04X  "
             "AX=%04X DX=%04X DS=%04X  "
             "args=%04X %04X %04X\n",
-            name, c->s[CPU_CS], c->ip,
+            probe->exe_offset, c->s[CPU_CS], c->ip,
             seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 2)),
             seg_r16(c->s[CPU_SS], c->r[CPU_SP]),
             c->r[CPU_AX], c->r[CPU_DX], c->s[CPU_DS],
@@ -372,7 +377,7 @@ static hook_result_t log_hook(cpu86 *c, void *user) {
             seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 6)),
             seg_r16(c->s[CPU_SS], (uint16_t)(c->r[CPU_SP] + 8)));
     }
-    g_hook_hits++;
+    probe->hits++;
     return HOOK_CONTINUE;   /* observe only; let the guest code run */
 }
 
@@ -383,7 +388,6 @@ int main(int argc, char **argv) {
     uint64_t insns = 20000000ULL;
     char bmp_path[512] = {0};
     char script_path[512] = {0};
-    unsigned long hook_exe_off = 0;   /* exe-code offset to breakpoint on */
     bool vm_only = false;
 
     memset(&cfg, 0, sizeof(cfg));
@@ -409,8 +413,14 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--vm-only")) vm_only = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
         else if (!strcmp(argv[i], "--nonblocking-conin")) cfg.nonblocking_conin = true;
-        else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc)
-            hook_exe_off = strtoul(argv[++i], NULL, 0);
+        else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc) {
+            if (g_hook_probe_count == sizeof(g_hook_probes) / sizeof(g_hook_probes[0])) {
+                fprintf(stderr, "too many --hook-at probes (max %zu)\n",
+                        sizeof(g_hook_probes) / sizeof(g_hook_probes[0]));
+                return 2;
+            }
+            g_hook_probes[g_hook_probe_count++].exe_offset = strtoul(argv[++i], NULL, 0);
+        }
         else if (!strcmp(argv[i], "--bmp") && i + 1 < argc)
             snprintf(bmp_path, sizeof(bmp_path), "%s", argv[++i]);
         else { fprintf(stderr, "unknown argument: %s\n", argv[i]); return 2; }
@@ -437,16 +447,20 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (hook_exe_off) {
+    for (size_t p = 0; p < g_hook_probe_count; p++) {
         /* exe-code offsets are relative to the load segment. */
-        uint32_t lin = (uint32_t)machine.img.load_seg * 16u + hook_exe_off;
+        uint32_t lin = (uint32_t)machine.img.load_seg * 16u + g_hook_probes[p].exe_offset;
         uint16_t sg = (uint16_t)(lin >> 4), of = (uint16_t)(lin & 0xF);
-        if (cpu86_hook_install(sg, of, log_hook, (void *)"target"))
+        if (cpu86_hook_install(sg, of, log_hook, &g_hook_probes[p]))
             fprintf(stderr, "[hook] watching exe-code %lu -> %04X:%04X\n",
-                    hook_exe_off, sg, of);
-        else
-            fprintf(stderr, "[hook] could not install hook\n");
-        g_hook_vm = &machine;
+                    g_hook_probes[p].exe_offset, sg, of);
+        else {
+            fprintf(stderr, "[hook] could not install exe-code %lu\n",
+                    g_hook_probes[p].exe_offset);
+            vm_shutdown(&machine);
+            hal_audio_shutdown();
+            return 1;
+        }
     }
 
     if (g_step_count)
@@ -454,8 +468,9 @@ int main(int argc, char **argv) {
     else
         vm_run(&machine, insns);
 
-    if (hook_exe_off)
-        fprintf(stderr, "[hook] hit %u times\n", g_hook_hits);
+    for (size_t p = 0; p < g_hook_probe_count; p++)
+        fprintf(stderr, "[hook] exe-code %lu hits: %u\n",
+                g_hook_probes[p].exe_offset, g_hook_probes[p].hits);
     if (!vm_only)
         fprintf(stderr, "[native] set_int_and_zero hits: %llu\n",
                 (unsigned long long)xanth_native_set_int_and_zero_hits());
@@ -465,6 +480,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] exe_94712 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_94712_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] if0_helper_inc fast-return hits: %llu\n",
+                (unsigned long long)xanth_native_if0_helper_inc_hits());
 
     vm_report(&machine, stderr);
 

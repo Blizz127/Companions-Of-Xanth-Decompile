@@ -11,5 +11,6 @@ bool xanth_native_stage2_install(vm *machine);
 uint64_t xanth_native_set_int_and_zero_hits(void);
 uint64_t xanth_native_set_far_ptr_hits(void);
 uint64_t xanth_native_exe_94712_hits(void);
+uint64_t xanth_native_if0_helper_inc_hits(void);
 
 #endif
