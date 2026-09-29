@@ -489,6 +489,9 @@ int main(int argc, char **argv) {
     if (!vm_only)
         fprintf(stderr, "[native] set_far_arr hits: %llu\n",
                 (unsigned long long)xanth_native_set_far_arr_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] get_far_idx hits: %llu\n",
+                (unsigned long long)xanth_native_get_far_idx_hits());
 
     vm_report(&machine, stderr);
 

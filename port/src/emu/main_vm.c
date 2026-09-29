@@ -375,6 +375,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_14360_hits());
     fprintf(stderr, "[native] set_far_arr hits: %llu\n",
             (unsigned long long)xanth_native_set_far_arr_hits());
+    fprintf(stderr, "[native] get_far_idx hits: %llu\n",
+            (unsigned long long)xanth_native_get_far_idx_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();
