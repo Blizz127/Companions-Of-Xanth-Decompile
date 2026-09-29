@@ -28,6 +28,7 @@ runtime-selected music backend; the current OPL/AdLib path remains the default.
 | Per-channel volume | `--volume-master`, `--volume-music`, `--volume-sfx`, `--volume-voice` | Each accepts 0–128. Existing defaults are retained when omitted. |
 | General MIDI soundfont | `--soundfont <user.sf2>` or `soundfont=<user.sf2>` | Opt-in FluidSynth runtime backend over the emulated MPU-401 path; selects `MUSIC=mt32` in the save-side LEGEND.INI. Requires a system FluidSynth library and user-supplied SF2. No library, ROM, or soundfont is bundled. The existing AdLib route remains default. |
 | Hash-keyed asset mods | `--mods mods` or `mods=mods` | Local replacements in `mods/` are looked up by lowercase SHA-256 of the original asset. No replacement is active unless explicitly configured; files in the directory are ignored by Git. |
+| Replacement fonts | `--mods mods --replacement-fonts` or `mods=mods` plus `replacement_fonts=true` | Allows hash-keyed `.FNT` files to be replaced from the local mods directory. Both switches are required; fonts retain their retail files by default. After the game rasterizes a font into VGA pixels, SDL filters cannot change it, so this option replaces the user-supplied font asset before the guest loads it. |
 
 Config files are simple `key=value` text. For example:
 
@@ -47,6 +48,7 @@ volume_music=100
 volume_sfx=110
 volume_voice=120
 # mods=mods
+# replacement_fonts=false
 # soundfont=/path/to/user.sf2
 ```
 

@@ -21,6 +21,7 @@
 #include <time.h>
 
 #ifdef _WIN32
+#  define strcasecmp _stricmp
 #  include <direct.h>
 #  define vm_mkdir(path) _mkdir(path)
 #else
@@ -114,6 +115,15 @@ static bool find_hash_replacement(const vm *v, const char *original_path,
     char digest[65], candidate[1024];
     FILE *f;
     int n;
+    const char *base = strrchr(original_path, '/');
+    const char *back = strrchr(original_path, '\\');
+    const char *dot;
+    bool is_font;
+    if (!base || (back && back > base)) base = back;
+    base = base ? base + 1 : original_path;
+    dot = strrchr(base, '.');
+    is_font = dot && strcasecmp(dot, ".FNT") == 0;
+    if (is_font && !v->cfg.replacement_fonts) return false;
     if (!v->cfg.mods_dir[0] || !xanth_sha256_file(original_path,digest)) return false;
     n=snprintf(candidate,sizeof(candidate),"%s/%s",v->cfg.mods_dir,digest);
     if (n<0 || (size_t)n>=sizeof(candidate)) return false;

@@ -51,6 +51,7 @@ typedef struct {
     char     data_dir[512];
     char     save_dir[512];
     char     mods_dir[512]; /* empty unless hash-keyed replacements are opted in */
+    bool     replacement_fonts; /* FNT replacements require an explicit opt-in */
     bool     use_general_midi; /* opt-in MPU-401 path for the configured soundfont */
     bool     trace_int;
     bool     trace_dos;
