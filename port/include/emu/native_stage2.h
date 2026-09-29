@@ -35,5 +35,6 @@ uint64_t xanth_native_set_far_arr_chk_hits(void);
 uint64_t xanth_native_set_byte_one_hits(void);
 uint64_t xanth_native_exe_136552_hits(void);
 uint64_t xanth_native_exe_52710_hits(void);
+uint64_t xanth_native_exe_112795_hits(void);
 
 #endif
