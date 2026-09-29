@@ -422,6 +422,16 @@ if(XANTH_BUILD_TESTS)
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 180
             )
+            add_test(NAME Stage2OpeningNativeParityTest
+                COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_VMBOOT=$<TARGET_FILE:tool_vmboot>"
+                        ${Python3_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_stage2_opening.py
+            )
+            set_tests_properties(Stage2OpeningNativeParityTest PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 360
+            )
         endif()
 
         add_test(NAME HeadlessBootSmokeTest
