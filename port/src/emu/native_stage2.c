@@ -12,6 +12,16 @@
 #include <stdint.h>
 
 #define far
+#define unsigned uint16_t
+#define g0 xanth_add_mod_g0
+#define g1 xanth_add_mod_g1
+#include "../../../src/add_mod.c"
+#undef g1
+#undef g0
+#undef unsigned
+#undef far
+
+#define far
 #include "../../../src/set_int_and_zero.c"
 #undef far
 #define far
@@ -103,6 +113,9 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define SET_INT_IF_GE0_OFFSET        90625u
 #define IABS_OFFSET                  17806u
 #define SET_FAR_ARR_CHK_OFFSET       94589u
+#define ADD_MOD_EXE_OFFSET          56247u
+#define ADD_MOD_G0_DS_OFFSET        0x025eu
+#define ADD_MOD_G1_DS_OFFSET        0x0260u
 #define EXE_136552_OFFSET            136552u
 #define EXE_52710_OFFSET              52710u
 #define EXE_52710_GLOBAL_DS_OFFSET    0x0106u
@@ -164,6 +177,7 @@ static uint64_t g_exe_112795_hits;
 static uint64_t g_exe_52674_hits;
 static uint64_t g_exe_112711_hits;
 static uint64_t g_exe_34775_hits;
+static uint64_t g_add_mod_hits;
 static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
@@ -1210,6 +1224,53 @@ static hook_result_t native_exe_34775(cpu86 *cpu, void *user) {
     return HOOK_DID_SETIP;
 }
 
+/* Run recovered 16-bit C, then preserve the retail register/flag/ABI result. */
+static hook_result_t native_add_mod(cpu86 *cpu, void *user) {
+    const uint16_t entry_sp = cpu->r[CPU_SP];
+    const uint16_t old_bp = cpu->r[CPU_BP];
+    const uint16_t arg = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 4u));
+    const uint16_t old_g0 = seg_r16(cpu->s[CPU_DS], ADD_MOD_G0_DS_OFFSET);
+    const uint16_t old_g1 = seg_r16(cpu->s[CPU_DS], ADD_MOD_G1_DS_OFFSET);
+    const uint16_t accumulated = (uint16_t)(old_g0 + arg);
+    const uint16_t quotient = (uint16_t)(accumulated / 0x05a0u);
+    const uint16_t remainder = (uint16_t)(accumulated % 0x05a0u);
+    vm *machine = (vm *)cpu->vm;
+    const uint16_t instruction_count = 15u;
+    const uint64_t cycles = (uint64_t)instruction_count * 4u;
+
+    if (cpu->step_budget_remaining < instruction_count) return HOOK_CONTINUE;
+    if (machine) {
+        uint64_t next_tick = machine->next_tick_cycles;
+        uint64_t dma_end = machine->sb.dma_end_cycles;
+        if (machine->cycles_per_second == 0 || next_tick <= cpu->cycles ||
+            next_tick - cpu->cycles <= cycles ||
+            (machine->sb.dma_active &&
+             (dma_end <= cpu->cycles || dma_end - cpu->cycles <= cycles)))
+            return HOOK_CONTINUE;
+    }
+
+    xanth_add_mod_g0 = old_g0;
+    xanth_add_mod_g1 = old_g1;
+    add_mod(arg);
+    seg_w16(cpu->s[CPU_DS], ADD_MOD_G0_DS_OFFSET,
+            (uint16_t)xanth_add_mod_g0);
+    seg_w16(cpu->s[CPU_DS], ADD_MOD_G1_DS_OFFSET,
+            (uint16_t)xanth_add_mod_g1);
+
+    /* Final DIV leaves the preceding SUB DX,DX flag image in this 8086 core. */
+    cpu->r[CPU_AX] = quotient;
+    cpu->r[CPU_CX] = 0x05a0u;
+    cpu->r[CPU_DX] = 0;
+    (void)alu_op(cpu, ALU_SUB, 0, 0, 16);
+    cpu->r[CPU_DX] = remainder;
+    cpu->r[CPU_BP] = old_bp;
+    cpu->r[CPU_SP] = entry_sp;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = (uint8_t)instruction_count;
+    g_add_mod_hits++;
+    return HOOK_DID_RETF;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_body[] = {
         0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
@@ -1361,6 +1422,12 @@ bool xanth_native_stage2_install(vm *machine) {
         0x5f, 0x5e, 0x07, 0x1f, 0x8b, 0xe5, 0x5d, 0xca,
         0x02, 0x00
     };
+    static const uint8_t verified_add_mod_body[] = {
+        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0x01, 0x06, 0x5e, 0x02,
+        0xa1, 0x5e, 0x02, 0xb9, 0xa0, 0x05, 0x2b, 0xd2, 0xf7, 0xf1,
+        0x01, 0x06, 0x60, 0x02, 0xa1, 0x5e, 0x02, 0x2b, 0xd2, 0xf7,
+        0xf1, 0x89, 0x16, 0x5e, 0x02, 0x5d, 0xcb
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1405,6 +1472,11 @@ bool xanth_native_stage2_install(vm *machine) {
         if (mem_r8(segment_word) != (uint8_t)expected_segment ||
             mem_r8(segment_word + 1u) != (uint8_t)(expected_segment >> 8))
             return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_add_mod_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           ADD_MOD_EXE_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_add_mod_body[i]) return false;
     }
 
     for (size_t i = 0; i < sizeof(verified_body); i++) {
@@ -1747,6 +1819,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_34775_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_34775, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + ADD_MOD_EXE_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_add_mod_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_add_mod, NULL)) return false;
     return true;
 }
 
@@ -1872,4 +1949,8 @@ uint64_t xanth_native_exe_112711_hits(void) {
 
 uint64_t xanth_native_exe_34775_hits(void) {
     return g_exe_34775_hits;
+}
+
+uint64_t xanth_native_add_mod_hits(void) {
+    return g_add_mod_hits;
 }

@@ -528,6 +528,9 @@ int main(int argc, char **argv) {
         fprintf(stderr, "[native] exe_34775 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_34775_hits());
     if (!vm_only)
+        fprintf(stderr, "[native] add_mod hits: %llu\n",
+                (unsigned long long)xanth_native_add_mod_hits());
+    if (!vm_only)
         fprintf(stderr, "[native] exe_86810 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_86810_hits());
     if (!vm_only)

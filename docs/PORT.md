@@ -4,7 +4,7 @@ The EXE and OVL have documented byte-exact rebuild results. This verifies the
 image reconstruction, not semantic recovery of every function or 1:1 behavior
 of the port. See [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md) for the open
 parity, completeness, platform and asset-validation gaps. The port currently
-executes the supplied retail binaries in an 8086/DOS VM, with thirty-eight verified
+executes the supplied retail binaries in an 8086/DOS VM, with thirty-nine verified
 source-backed entries dispatched natively through guest-ABI adapters (one
 entry accelerates only a branch and leaves its helper-call path interpreted).
 
@@ -43,7 +43,7 @@ configuration has no mods or cheats active and must preserve retail behavior.
 
 **Current implementation status:** Stage 1 runs the supplied retail EXE and
 OVL in the custom 8086/DOS VM. VM services reach host facilities through the
-HAL and DOS shims. Stage 2 has thirty-eight active entries: the exact recovered bodies in
+HAL and DOS shims. Stage 2 has thirty-nine active entries: the exact recovered bodies in
 `src/set_int_and_zero.c` and `src/set_far_ptr.c` are compiled into the port;
 the 16-bit arithmetic in `src/exe_94712.c` is lowered through the VM's
 8086 flag-accurate ALU. The nonzero fast-return branch from
@@ -60,14 +60,14 @@ are installed at verified EXE offsets 17,806, 17,820, 28,365, 29,169, 30,199, 31
 far pointer. `src/swap_int.c` replaces and returns a guest DS word; `src/exe_115346.c` stores -1 in its indexed DS table; the nonzero branch of `src/arr_set_one.c` stores 1; and the nonnegative branch of `src/exe_114942.c` copies two indexed table values to guest far pointers. Six `set_byte_one` entries write 1 to distinct guest DS bytes. Their partial branches stay interpreted. Two `src/set_int_pair.c` entries store two arguments into guest DS,
 and `src/set_int.c` entries at 85,206 and 112,665 store one argument. `src/exe_136552.c` returns -1 via verified `MOV AX,FFFF / RETF` bytes at offset 136,552. `src/exe_52710.c` returns the previous DS:0106 word and clears that word. `src/exe_52674.c` sets DS:0106 to one and DS:0102 to zero. `src/exe_112795.c` sets bit 7 on a bounds-checked far-table record.
 The counter/table update in
-`src/exe_99679.c` is lowered with guest DS reads, writes and 8086 flag rules. `src/exe_112711.c` now runs through a byte-guarded far-table adapter; its opening-route dispatches preserve the retail VM state. The byte-matched `src/exe_34775.asm` data setter is also lowered with MZ segment relocation and `RETF 2` cleanup preserved.
+`src/exe_99679.c` is lowered with guest DS reads, writes and 8086 flag rules. `src/exe_112711.c` now runs through a byte-guarded far-table adapter; its opening-route dispatches preserve the retail VM state. The byte-matched `src/exe_34775.asm` data setter is also lowered with MZ segment relocation and `RETF 2` cleanup preserved. `src/add_mod.c` is now included at offset 56,247, with 16-bit unsigned globals mapped to guest DS:025E and DS:0260. Its exact 37-byte, 15-instruction retail body is guarded; VM/native execution through `walkthrough_03_kitchen.xit` matched all 15 hashes and instructions, timer ticks, DAC/OPL writes, input waits and opened-file metrics, with 15 native hits.
 Adapters map the far-call
 stack, DS globals, result registers, far returns, flags, and guest instruction/cycle
 budgets. The interaction trace covers the earlier entries; `walkthrough_01_mundania.xit` dispatches `exe_52674` once, `exe_52710` eight times, `exe_112795` eighteen times, and `exe_112711` seven times, with the `exe_34775` adapter also active; all nine VM/native hashes, instructions, timer ticks, DAC/OPL writes, input waits, and opened-file lists matching. The constant-return `exe_136552` hook is byte-guarded but was not hit by these profiles; setter hooks retain
 interpreter fallback at timer/DMA boundaries. A 100-frame production run calls
 `exe_94712` 18,880 times and takes the native fast return 90 times. The boot
 checkpoint hash and guest instruction, timer, audio and file-open metrics
-match with hooks disabled or enabled. This is 40/2,844 indexed units (1.41%),
+match with hooks disabled or enabled. This is 41/2,844 indexed units (1.44%),
 including one partial-path dispatch, not proof of whole-route source coverage.
 The full renderer/audio/input/files/timing interface boundary is also not yet
 complete. Further units need the same per-path byte evidence and VM/native
@@ -772,7 +772,7 @@ Both Python tests skip cleanly without the retail disc, so they are safe in publ
   remains open.
 - Verify the Windows job on a real runner. The workflow exists and executes the
   conformance suite and CTest; it has not yet been observed passing.
-- Expand Stage 2 from the first thirty-eight source-backed entries: generate address/extent/ABI
+- Expand Stage 2 from the thirty-nine current source-backed entries: generate address/extent/ABI
   metadata for recovered functions, prioritize units measured on real routes,
   and keep VM/native frame, save, audio and timing comparisons as gates. The
   first hook is at EXE code offset 17,820; `tests/test_stage2_native.py` checks

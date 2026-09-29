@@ -448,6 +448,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_112711_hits());
     fprintf(stderr, "[native] exe_34775 hits: %llu\n",
             (unsigned long long)xanth_native_exe_34775_hits());
+    fprintf(stderr, "[native] add_mod hits: %llu\n",
+            (unsigned long long)xanth_native_add_mod_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();
