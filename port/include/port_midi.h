@@ -13,6 +13,16 @@ extern "C" {
 #define MIDI_OPL_VOICES 9
 
 typedef struct {
+    bool (*note_on)(void *user,uint8_t channel,uint8_t note,uint8_t velocity);
+    bool (*note_off)(void *user,uint8_t channel,uint8_t note);
+    bool (*program_change)(void *user,uint8_t channel,uint8_t program);
+    bool (*control_change)(void *user,uint8_t channel,uint8_t control,uint8_t value);
+    void (*all_notes_off)(void *user);
+    void *user;
+} MidiExternalBackend;
+void midi_set_external_backend(const MidiExternalBackend *backend);
+
+typedef struct {
     const uint8_t *data;
     uint32_t length;
     uint32_t pos;

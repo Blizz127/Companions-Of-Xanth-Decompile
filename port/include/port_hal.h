@@ -16,6 +16,15 @@ extern "C" {
 #define HAL_VIDEO_PALETTE_NUM 256
 
 bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycling);
+typedef enum {
+    HAL_VIDEO_PRESENT_ASPECT_4_3 = 0, /* DOS pixel aspect correction */
+    HAL_VIDEO_PRESENT_PIXEL_INTEGER = 1 /* square pixels, integer scale */
+} hal_video_present_mode;
+void hal_video_set_present_mode(hal_video_present_mode mode);
+void hal_video_set_filter(bool crt_scanlines, bool linear_filter);
+void hal_video_set_window_size(int width, int height);
+void hal_video_toggle_fullscreen(void);
+void hal_video_toggle_crt(void);
 void hal_video_shutdown(void);
 void hal_video_set_active_buffer(int target); /* 0: screen 0xA000, 1: backbuffer */
 uint8_t *hal_video_get_screen_buffer(void);
@@ -43,7 +52,9 @@ bool hal_audio_play_rs(const uint8_t *data, size_t len);
 bool hal_audio_play_voc(const uint8_t *data, size_t len);
 bool hal_audio_play_sound_file(const char *filename);
 void hal_audio_set_volume(uint8_t master, uint8_t music, uint8_t sfx, uint8_t voice);
+bool hal_audio_enable_fluidsynth(const char *soundfont_path);
 void hal_audio_tick(void);
+void hal_audio_dma_submit_block(const uint8_t *pcm_mono_8bit, uint32_t count, uint32_t sample_rate);
 
 /* Sound Blaster DSP emulation */
 void hal_audio_dsp_reset(void);
@@ -63,6 +74,9 @@ void hal_audio_mpu_write_data(uint8_t data);
 #define HAL_MOUSE_BTN_MIDDLE  0x04
 
 void hal_input_init(void);
+void hal_input_enable_gamepad(bool enabled);
+void hal_input_enable_hotkeys(bool enabled);
+int hal_input_take_hotkey(void);
 void hal_input_shutdown(void);
 void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_code);
 

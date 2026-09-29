@@ -18,8 +18,9 @@
   #endif
 #endif
 
-/* 1 MB Virtual DOS conventional memory buffer */
-uint8_t g_dos_mem[DOS_MEM_SIZE] = {0};
+/* g_dos_mem now lives in src/dos_mem.c so the emulation core can link
+ * without SDL. The Mode 13h framebuffer is still aliased to it at +0xA0000
+ * in hal_video_init(), which is why guest VGA writes need no translation. */
 
 typedef struct {
     uint8_t r;
@@ -56,6 +57,10 @@ typedef struct {
     int viewport_h;
 
     bool headless;
+    bool fullscreen;
+    hal_video_present_mode present_mode;
+    bool crt_scanlines;
+    bool linear_filter;
     uint64_t frame_count;
 } hal_video_ctx_t;
 
@@ -82,6 +87,10 @@ bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycli
     g_video.active_target = 0; /* Default: screen buffer */
     g_video.cycling_enabled = enable_cycling;
     g_video.headless = headless;
+    g_video.fullscreen = fullscreen;
+    g_video.present_mode = HAL_VIDEO_PRESENT_ASPECT_4_3;
+    g_video.crt_scanlines = false;
+    g_video.linear_filter = false;
     g_video.frame_count = 0;
 
     /* Initialize default VGA 16-color palette for UI/text elements, grayscale for rest */
@@ -174,6 +183,47 @@ bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycli
     g_video.viewport_h = g_video.window_height;
 
     return true;
+}
+
+void hal_video_set_present_mode(hal_video_present_mode mode) {
+    g_video.present_mode = mode;
+}
+
+void hal_video_set_filter(bool crt_scanlines, bool linear_filter) {
+    g_video.crt_scanlines = crt_scanlines;
+    g_video.linear_filter = linear_filter;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_video.texture) {
+#if SDL_VERSION_ATLEAST(2, 0, 12)
+        SDL_SetTextureScaleMode(g_video.texture,
+            linear_filter ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
+#else
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, linear_filter ? "linear" : "nearest");
+#endif
+    }
+#endif
+}
+
+void hal_video_set_window_size(int width, int height) {
+    if (width <= 0 || height <= 0) return;
+    g_video.window_width = width;
+    g_video.window_height = height;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_video.window) SDL_SetWindowSize(g_video.window,width,height);
+#endif
+}
+
+void hal_video_toggle_fullscreen(void) {
+    g_video.fullscreen = !g_video.fullscreen;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_video.window && !g_video.headless)
+        (void)SDL_SetWindowFullscreen(g_video.window,
+            g_video.fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+#endif
+}
+
+void hal_video_toggle_crt(void) {
+    g_video.crt_scanlines = !g_video.crt_scanlines;
 }
 
 void hal_video_shutdown(void) {
@@ -316,14 +366,23 @@ void hal_video_flip(void) {
         int win_w = 0, win_h = 0;
         SDL_GetRendererOutputSize(g_video.renderer, &win_w, &win_h);
         if (win_w > 0 && win_h > 0) {
-            /* 4:3 aspect ratio letterboxing / pillarboxing */
+            /* 4:3 pixel-aspect correction, or square-pixel integer scaling. */
             int target_w, target_h;
-            if (win_w * 3 > win_h * 4) {
-                target_h = win_h;
-                target_w = (win_h * 4) / 3;
+            if (g_video.present_mode == HAL_VIDEO_PRESENT_PIXEL_INTEGER) {
+                int factor_w = win_w / HAL_VIDEO_WIDTH;
+                int factor_h = win_h / HAL_VIDEO_HEIGHT;
+                int factor = factor_w < factor_h ? factor_w : factor_h;
+                if (factor < 1) factor = 1;
+                target_w = HAL_VIDEO_WIDTH * factor;
+                target_h = HAL_VIDEO_HEIGHT * factor;
             } else {
-                target_w = win_w;
-                target_h = (win_w * 3) / 4;
+                if (win_w * 3 > win_h * 4) {
+                    target_h = win_h;
+                    target_w = (win_h * 4) / 3;
+                } else {
+                    target_w = win_w;
+                    target_h = (win_w * 3) / 4;
+                }
             }
             int off_x = (win_w - target_w) / 2;
             int off_y = (win_h - target_h) / 2;
@@ -337,6 +396,13 @@ void hal_video_flip(void) {
             SDL_SetRenderDrawColor(g_video.renderer, 0, 0, 0, 255);
             SDL_RenderClear(g_video.renderer);
             SDL_RenderCopy(g_video.renderer, g_video.texture, NULL, &dst_rect);
+            if (g_video.crt_scanlines) {
+                SDL_SetRenderDrawBlendMode(g_video.renderer, SDL_BLENDMODE_BLEND);
+                SDL_SetRenderDrawColor(g_video.renderer, 0, 0, 0, 48);
+                for (int y = off_y + 1; y < off_y + target_h; y += 2)
+                    SDL_RenderDrawLine(g_video.renderer, off_x, y, off_x + target_w - 1, y);
+                SDL_SetRenderDrawBlendMode(g_video.renderer, SDL_BLENDMODE_NONE);
+            }
             SDL_RenderPresent(g_video.renderer);
         }
     }

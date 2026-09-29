@@ -146,12 +146,34 @@ endif()
 # ---------------------------------------------------------------------------
 # Source Files and Target Definitions
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Emulation core (16-bit x86 + DOS/BIOS shims).
+#
+# Deliberately links WITHOUT SDL so the conformance suite runs in asset-free,
+# headless CI and the core stays free of HAL dependencies.
+# ---------------------------------------------------------------------------
+set(XANTH_EMU_SOURCES
+    src/asset_check.c
+    src/emu/cpu86.c
+    src/emu/cpu86_alu.c
+    src/emu/mzload.c
+    src/emu/dos_mcb.c
+    src/emu/vm.c
+)
+
+add_library(xanth_emu OBJECT ${XANTH_EMU_SOURCES})
+target_include_directories(xanth_emu PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
+)
+
 set(XANTH_COMMON_SOURCES
+    src/dos_mem.c
+    src/asset_oracle.c
     src/hal_video.c
     src/hal_audio.c
     src/hal_input.c
     src/hal_fs.c
-    src/engine_glue.c
     src/blast.c
     src/pic_loader.c
     src/story_loader.c
@@ -159,16 +181,26 @@ set(XANTH_COMMON_SOURCES
     src/midi_player.c
 )
 
+# The port executable runs the retail image under the VM. It deliberately
+# does NOT link engine_glue.c: that file is the hand-written reimplementation
+# being retired, and linking it here is what let the port drift into being a
+# replacement implementation.
 set(XANTH_PORT_SOURCES
-    src/main.c
-    ${XANTH_COMMON_SOURCES}
+    src/emu/main_vm.c
+    src/dos_mem.c
+    src/hal_video.c
+    src/hal_audio.c
+    src/hal_input.c
+    src/hal_fs.c
+    src/midi_player.c   # hal_audio depends on midi_tick; retired with audio rework
 )
 
-add_executable(xanth_port ${XANTH_PORT_SOURCES})
+add_executable(xanth_port ${XANTH_PORT_SOURCES} $<TARGET_OBJECTS:xanth_emu>)
 
 target_include_directories(xanth_port PRIVATE
     include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
 )
 
 if(SDL2_FOUND_ANY)
@@ -248,23 +280,101 @@ if(XANTH_BUILD_TESTS)
         target_link_libraries(test_stress_audio_engine PRIVATE m)
     endif()
 
-    add_executable(test_interactive_rooms
-        tests/test_interactive_rooms.c
-        ${XANTH_COMMON_SOURCES}
+    # CPU conformance: no SDL, no retail assets, so it can gate public CI.
+    add_executable(xanth_cpu_tests
+        tests/test_cpu86.c
+        src/dos_mem.c
+        $<TARGET_OBJECTS:xanth_emu>
     )
-
-    target_include_directories(test_interactive_rooms PRIVATE
-        include
+    target_include_directories(xanth_cpu_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
     )
+    set_target_properties(xanth_cpu_tests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
+    # Loader dump tool: the Python side of tests/test_mzload.py drives this
+    # and asserts the C loader and the decomp pipeline's reference agree.
+    add_executable(tool_mzdump
+        tests/tool_mzdump.c
+        src/dos_mem.c
+        $<TARGET_OBJECTS:xanth_emu>
+    )
+    target_include_directories(tool_mzdump PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
+    )
+    set_target_properties(tool_mzdump PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+    # Boot driver: runs the retail image under the VM. Fatal on any
+    # unimplemented service, so its output is the work queue.
+    add_executable(tool_vmboot
+        tests/tool_vmboot.c
+        src/dos_mem.c
+        src/hal_audio.c
+        src/midi_player.c
+        src/hal_fs.c
+        $<TARGET_OBJECTS:xanth_emu>
+    )
+    target_include_directories(tool_vmboot PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
+    )
     if(SDL2_FOUND_ANY)
-        target_link_libraries(test_interactive_rooms PRIVATE ${SDL2_TARGET_LIB})
+        target_link_libraries(tool_vmboot PRIVATE ${SDL2_TARGET_LIB})
     endif()
-
     if(UNIX AND NOT APPLE)
-        target_link_libraries(test_interactive_rooms PRIVATE m)
+        target_link_libraries(tool_vmboot PRIVATE m)
     endif()
+    set_target_properties(tool_vmboot PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+    # Sound Blaster DMA Pipeline and Virtual Cycle Timing test
+    add_executable(test_dma_pipeline
+        tests/test_dma_pipeline.c
+        src/dos_mem.c
+        src/hal_audio.c
+        src/midi_player.c
+        src/hal_fs.c
+        $<TARGET_OBJECTS:xanth_emu>
+    )
+    target_include_directories(test_dma_pipeline PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
+    )
+    if(SDL2_FOUND_ANY)
+        target_link_libraries(test_dma_pipeline PRIVATE ${SDL2_TARGET_LIB})
+    endif()
+    if(UNIX AND NOT APPLE)
+        target_link_libraries(test_dma_pipeline PRIVATE m)
+    endif()
+    set_target_properties(test_dma_pipeline PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+    add_executable(test_adversarial_dma
+        tests/test_adversarial_dma.c
+        src/dos_mem.c
+        src/hal_audio.c
+        src/midi_player.c
+        src/hal_fs.c
+        $<TARGET_OBJECTS:xanth_emu>
+    )
+    target_include_directories(test_adversarial_dma PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/emu
+    )
+    if(SDL2_FOUND_ANY)
+        target_link_libraries(test_adversarial_dma PRIVATE ${SDL2_TARGET_LIB})
+    endif()
+    if(UNIX AND NOT APPLE)
+        target_link_libraries(test_adversarial_dma PRIVATE m)
+    endif()
+    set_target_properties(test_adversarial_dma PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+    add_test(NAME CpuConformanceTests COMMAND xanth_cpu_tests)
+    set_tests_properties(CpuConformanceTests PROPERTIES TIMEOUT 60)
 
     add_test(NAME NativeUnitTests COMMAND xanth_tests)
     set_tests_properties(NativeUnitTests PROPERTIES
@@ -280,12 +390,56 @@ if(XANTH_BUILD_TESTS)
         TIMEOUT 30
     )
 
-    add_test(NAME HeadlessBootSmokeTest
-        COMMAND xanth_port --headless --frames 300 --data ${CMAKE_CURRENT_SOURCE_DIR}/../original --test-boot
-    )
-    set_tests_properties(HeadlessBootSmokeTest PROPERTIES
+    add_test(NAME NativeAudioStressTests COMMAND test_stress_audio_engine)
+    set_tests_properties(NativeAudioStressTests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
         ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy"
-        TIMEOUT 30
+        TIMEOUT 60
     )
+
+    add_test(NAME NativeDmaPipelineTests COMMAND test_dma_pipeline)
+    set_tests_properties(NativeDmaPipelineTests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+        ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy"
+        TIMEOUT 60
+    )
+
+    # Boot smoke against the real retail image. Requires the disc, so it is
+    # only registered when the assets are actually present -- an absent disc
+    # must not look like a failure in asset-free CI.
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH/XANTH.EXE")
+        add_test(NAME HeadlessBootSmokeTest
+            COMMAND xanth_port --headless --frames 600
+                    --data ${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH
+                    --saves ${CMAKE_BINARY_DIR}/saves
+        )
+        set_tests_properties(HeadlessBootSmokeTest PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+            ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy"
+            TIMEOUT 300
+        )
+
+        # Asset-gated suites. Each drives the real game; see tests/*.py.
+        foreach(suite IN ITEMS vmplay contextverbs hotspots walkthrough overlay
+                       saveload navigate soundblaster soak)
+            add_test(NAME Vm_${suite}
+                COMMAND ${CMAKE_COMMAND} -E env
+                        python3 -m unittest discover -s tests
+                                -p "test_${suite}.py"
+            )
+            set_tests_properties(Vm_${suite} PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 1800
+            )
+        endforeach()
+
+        # The walkthrough is the long pole and grows as segments are added:
+        # segments 1-5 each replay the route from a cold boot, and segment 6
+        # first builds the save anchor the later segments resume from. It sat
+        # at ~1100s of the shared 1800s budget when segment 6 landed, which is
+        # too little headroom -- and a ctest timeout reads as a hard failure
+        # with no useful output, which is the worst way to learn the suite
+        # simply got longer.
+        set_tests_properties(Vm_walkthrough PROPERTIES TIMEOUT 5400)
+    endif()
 endif()

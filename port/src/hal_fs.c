@@ -300,11 +300,15 @@ bool hal_fs_resolve_gamedata(const char *filename, char *out_path, size_t max_le
     char exe_parent_orig[512] = {0};
 
     if (exe_dir[0]) {
-        snprintf(exe_cd, sizeof(exe_cd), "%s/game_cd/XANTH", exe_dir);
-        snprintf(exe_orig, sizeof(exe_orig), "%s/original", exe_dir);
-        snprintf(exe_parent, sizeof(exe_parent), "%s/..", exe_dir);
-        snprintf(exe_parent_cd, sizeof(exe_parent_cd), "%s/../game_cd/XANTH", exe_dir);
-        snprintf(exe_parent_orig, sizeof(exe_parent_orig), "%s/../original", exe_dir);
+        /* Bound the directory portion explicitly. Without the precision these
+         * are "may be truncated" warnings, and silently truncating a search
+         * path would turn a missing asset into a confusing "file not found"
+         * rather than an obvious configuration error. */
+        snprintf(exe_cd, sizeof(exe_cd), "%.480s/game_cd/XANTH", exe_dir);
+        snprintf(exe_orig, sizeof(exe_orig), "%.480s/original", exe_dir);
+        snprintf(exe_parent, sizeof(exe_parent), "%.480s/..", exe_dir);
+        snprintf(exe_parent_cd, sizeof(exe_parent_cd), "%.480s/../game_cd/XANTH", exe_dir);
+        snprintf(exe_parent_orig, sizeof(exe_parent_orig), "%.480s/../original", exe_dir);
     }
 
     const char *candidates[32];

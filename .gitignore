@@ -12,6 +12,7 @@
 *.bin
 *.cue
 *.bmp
+*.png
 __pycache__/
 .venv/
 /build/

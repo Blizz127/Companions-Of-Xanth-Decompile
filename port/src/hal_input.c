@@ -53,6 +53,11 @@ typedef struct {
 } keyboard_state_t;
 
 static keyboard_state_t g_keyboard;
+static bool g_hotkeys_enabled;
+static int g_pending_hotkey;
+#ifndef XANTH_HEADLESS_STUB
+static SDL_GameController *g_controller;
+#endif
 
 void hal_input_init(void) {
     memset(&g_mouse, 0, sizeof(g_mouse));
@@ -67,10 +72,52 @@ void hal_input_init(void) {
     g_mouse.visible = true;
 
     memset(&g_keyboard, 0, sizeof(g_keyboard));
+    g_hotkeys_enabled = false;
+    g_pending_hotkey = 0;
+#ifndef XANTH_HEADLESS_STUB
+    g_controller = NULL;
+    if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+        (void)SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+#endif
+}
+
+void hal_input_enable_hotkeys(bool enabled) {
+    g_hotkeys_enabled = enabled;
+}
+
+int hal_input_take_hotkey(void) {
+    int hotkey = g_pending_hotkey;
+    g_pending_hotkey = 0;
+    return hotkey;
+}
+
+void hal_input_enable_gamepad(bool enabled) {
+#ifndef XANTH_HEADLESS_STUB
+    if (!enabled) {
+        if (g_controller) SDL_GameControllerClose(g_controller);
+        g_controller=NULL;
+        return;
+    }
+    if (g_controller) return;
+    if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+        (void)SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+    for (int i=0;i<SDL_NumJoysticks();++i) {
+        if (SDL_IsGameController(i)) {
+            g_controller = SDL_GameControllerOpen(i);
+            if (g_controller) break;
+        }
+    }
+#else
+    (void)enabled;
+#endif
 }
 
 void hal_input_shutdown(void) {
     /* Clean up input resources */
+#ifndef XANTH_HEADLESS_STUB
+    if (g_controller) SDL_GameControllerClose(g_controller);
+    g_controller = NULL;
+#endif
 }
 
 /* -------------------------------------------------------------------------
@@ -279,6 +326,16 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             break;
 
         case SDL_KEYDOWN: {
+            if (g_hotkeys_enabled && event.key.repeat == 0 &&
+                event.key.keysym.sym == SDLK_F11) {
+                g_pending_hotkey = 1; /* fullscreen */
+                break;
+            }
+            if (g_hotkeys_enabled && event.key.repeat == 0 &&
+                event.key.keysym.sym == SDLK_F10) {
+                g_pending_hotkey = 2; /* CRT scanlines */
+                break;
+            }
             uint8_t scan = 0, ascii = 0;
             translate_sdl_key(&event.key, &scan, &ascii);
             if (scan != 0 || ascii != 0) {
@@ -297,6 +354,38 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             if (mod & KMOD_CTRL)   g_keyboard.shift_flags |= 0x04;
             if (mod & KMOD_ALT)    g_keyboard.shift_flags |= 0x08;
             if (mod & KMOD_CAPS)   g_keyboard.shift_flags |= 0x40;
+            break;
+        }
+
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP: {
+            bool down = event.type == SDL_CONTROLLERBUTTONDOWN;
+            switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_A:
+                if (down) g_mouse.buttons |= HAL_MOUSE_BTN_LEFT;
+                else g_mouse.buttons &= ~HAL_MOUSE_BTN_LEFT;
+                break;
+            case SDL_CONTROLLER_BUTTON_X:
+                if (down) g_mouse.buttons |= HAL_MOUSE_BTN_RIGHT;
+                else g_mouse.buttons &= ~HAL_MOUSE_BTN_RIGHT;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                if (down) (void)hal_keyboard_push(0x48,0);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                if (down) (void)hal_keyboard_push(0x50,0);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                if (down) (void)hal_keyboard_push(0x4B,0);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                if (down) (void)hal_keyboard_push(0x4D,0);
+                break;
+            case SDL_CONTROLLER_BUTTON_START:
+                if (down) (void)hal_keyboard_push(0x1C,0x0D);
+                break;
+            default: break;
+            }
             break;
         }
 
@@ -339,6 +428,21 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             else g_mouse.buttons &= ~btn_mask;
             break;
         }
+        }
+    }
+    if (g_controller && SDL_GameControllerGetAttached(g_controller)) {
+        int dx=SDL_GameControllerGetAxis(g_controller,SDL_CONTROLLER_AXIS_LEFTX);
+        int dy=SDL_GameControllerGetAxis(g_controller,SDL_CONTROLLER_AXIS_LEFTY);
+        int step_x=(dx > 12000) ? 3 : ((dx < -12000) ? -3 : 0);
+        int step_y=(dy > 12000) ? 2 : ((dy < -12000) ? -2 : 0);
+        if (step_x || step_y) {
+            int nx=g_mouse.screen_x+step_x, ny=g_mouse.screen_y+step_y;
+            if (nx<0) nx=0;
+            if (nx>=HAL_VIDEO_WIDTH) nx=HAL_VIDEO_WIDTH-1;
+            if (ny<0) ny=0;
+            if (ny>=HAL_VIDEO_HEIGHT) ny=HAL_VIDEO_HEIGHT-1;
+            g_mouse.screen_x=nx; g_mouse.screen_y=ny;
+            g_mouse.virt_x=nx*2; g_mouse.virt_y=ny;
         }
     }
 #endif

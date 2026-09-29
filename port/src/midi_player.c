@@ -6,6 +6,12 @@
 #include <math.h>
 
 MidiPlayer g_midi_player = {0};
+static MidiExternalBackend g_external_backend;
+
+void midi_set_external_backend(const MidiExternalBackend *backend) {
+    if (backend) g_external_backend=*backend;
+    else memset(&g_external_backend,0,sizeof(g_external_backend));
+}
 
 /* Precomputed OPL (block, f_num) table for MIDI notes 0..127 */
 static uint8_t s_note_block[128];
@@ -129,6 +135,8 @@ void midi_shutdown(void) {
 
 void midi_stop(void) {
     g_midi_player.playing = false;
+    if (g_external_backend.all_notes_off)
+        g_external_backend.all_notes_off(g_external_backend.user);
 
     /* Key off all active OPL channels */
     for (int v = 0; v < MIDI_OPL_VOICES; v++) {
@@ -144,6 +152,8 @@ void midi_stop(void) {
 static void note_on(uint8_t ch, uint8_t note, uint8_t vel) {
     if (note > 127) return;
     if (vel == 0) {
+        if (g_external_backend.note_off &&
+            g_external_backend.note_off(g_external_backend.user,ch,note)) return;
         /* Note On with 0 velocity is Note Off */
         for (int v = 0; v < MIDI_OPL_VOICES; v++) {
             if (g_midi_player.voices[v].active &&
@@ -158,6 +168,9 @@ static void note_on(uint8_t ch, uint8_t note, uint8_t vel) {
         }
         return;
     }
+
+    if (g_external_backend.note_on &&
+        g_external_backend.note_on(g_external_backend.user,ch,note,vel)) return;
 
     /* Find available voice or steal oldest */
     int voice_idx = -1;
@@ -205,6 +218,8 @@ static void note_on(uint8_t ch, uint8_t note, uint8_t vel) {
 
 static void note_off(uint8_t ch, uint8_t note) {
     if (note > 127) return;
+    if (g_external_backend.note_off &&
+        g_external_backend.note_off(g_external_backend.user,ch,note)) return;
     for (int v = 0; v < MIDI_OPL_VOICES; v++) {
         if (g_midi_player.voices[v].active &&
             g_midi_player.voices[v].channel == ch &&
@@ -315,10 +330,15 @@ static void advance_track_event(MidiTrackState *trk) {
             if (ctrl == 7) { /* Channel Volume */
                 g_midi_player.channel_volume[ch] = val;
             }
+            if (g_external_backend.control_change)
+                (void)g_external_backend.control_change(g_external_backend.user,ch,ctrl,val);
         }
     } else if (ev_type == 0xC0) { /* Program Change */
         if (trk->pos + 1 <= trk->length) {
             g_midi_player.channel_program[ch] = trk->data[trk->pos++];
+            if (g_external_backend.program_change)
+                (void)g_external_backend.program_change(g_external_backend.user,ch,
+                                                        g_midi_player.channel_program[ch]);
         }
     } else if (ev_type == 0xD0 || ev_type == 0xA0 || ev_type == 0xE0) {
         /* Other channel events */

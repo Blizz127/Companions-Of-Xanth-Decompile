@@ -125,6 +125,164 @@ typedef struct {
 
 static audio_mixer_t g_mixer;
 
+/* FluidSynth is an optional, user-installed runtime backend. Loading it at
+ * runtime keeps the default AdLib path dependency-free and ships no library
+ * or soundfont with the port. */
+#ifndef XANTH_HEADLESS_STUB
+typedef struct fluid_settings_t fluid_settings_t;
+typedef struct fluid_synth_t fluid_synth_t;
+typedef struct {
+    void *library;
+    fluid_settings_t *settings;
+    fluid_synth_t *synth;
+    fluid_settings_t *(*new_settings)(void);
+    int (*settings_setnum)(fluid_settings_t *,const char *,double);
+    int (*settings_setint)(fluid_settings_t *,const char *,int);
+    fluid_synth_t *(*new_synth)(fluid_settings_t *);
+    int (*sfload)(fluid_synth_t *,const char *,int);
+    int (*noteon)(fluid_synth_t *,int,int,int);
+    int (*noteoff)(fluid_synth_t *,int,int);
+    int (*program)(fluid_synth_t *,int,int);
+    int (*cc)(fluid_synth_t *,int,int,int);
+    int (*write_float)(fluid_synth_t *,int,void *,int,int,void *,int,int);
+    int (*all_sounds_off)(fluid_synth_t *,int);
+    void (*delete_synth)(fluid_synth_t *);
+    void (*delete_settings)(fluid_settings_t *);
+} fluidsynth_api_t;
+static fluidsynth_api_t g_fluid;
+
+#define FLUID_LOAD(field,symbol) do { \
+    void *address=SDL_LoadFunction(g_fluid.library,symbol); \
+    if (!address) goto fluid_load_fail; \
+    memcpy(&g_fluid.field,&address,sizeof(address)); \
+} while (0)
+
+static bool fluid_note_on(void *user,uint8_t ch,uint8_t note,uint8_t vel) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    return api && api->synth && api->noteon(api->synth,ch,note,vel)>=0;
+}
+static bool fluid_note_off(void *user,uint8_t ch,uint8_t note) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    return api && api->synth && api->noteoff(api->synth,ch,note)>=0;
+}
+static bool fluid_program_change(void *user,uint8_t ch,uint8_t pgm) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    return api && api->synth && api->program(api->synth,ch,pgm)>=0;
+}
+static bool fluid_control_change(void *user,uint8_t ch,uint8_t cc,uint8_t value) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    return api && api->synth && api->cc(api->synth,ch,cc,value)>=0;
+}
+static void fluid_all_notes_off(void *user) {
+    fluidsynth_api_t *api=(fluidsynth_api_t *)user;
+    if (api && api->synth)
+        for (int ch=0;ch<16;++ch) (void)api->all_sounds_off(api->synth,ch);
+}
+#endif
+
+/* -------------------------------------------------------------------------
+ * Sound Blaster DMA SPSC Ring Buffer
+ * ------------------------------------------------------------------------- */
+#define DMA_RING_FRAMES 65536
+#define DMA_RING_MASK   (DMA_RING_FRAMES - 1)
+
+typedef struct {
+    int16_t buffer[DMA_RING_FRAMES * AUDIO_CHANNELS];
+    volatile uint32_t write_pos; /* in frames */
+    volatile uint32_t read_pos;  /* in frames */
+} dma_ring_buffer_t;
+
+static dma_ring_buffer_t g_dma_ring;
+
+/*
+ * Raw DMA / RealSound queue. A single DSP block is up to 64 KB and a .RS
+ * effect is ~44 KB; resampled to 44.1 kHz that does not fit in the 64K-frame
+ * ring, which used to keep the first ~1.5 s and drop the rest. The ring is
+ * still filled when the block fits so short submits behave as before. Anything
+ * the ring cannot hold is appended here and mixed until it has actually played.
+ */
+#define DMA_Q_CAP (512u * 1024u)
+
+static struct {
+    uint8_t *data;
+    uint32_t len;
+    uint32_t pos;
+    uint32_t rate;
+    double   frac;
+} g_dma_q;
+
+static void dma_q_compact(void) {
+    if (!g_dma_q.data || g_dma_q.pos == 0) return;
+    if (g_dma_q.pos >= g_dma_q.len) {
+        g_dma_q.pos = 0;
+        g_dma_q.len = 0;
+        g_dma_q.frac = 0;
+        return;
+    }
+    memmove(g_dma_q.data, g_dma_q.data + g_dma_q.pos, g_dma_q.len - g_dma_q.pos);
+    g_dma_q.len -= g_dma_q.pos;
+    g_dma_q.pos = 0;
+}
+
+static void dma_q_append(const uint8_t *pcm, uint32_t count, uint32_t rate) {
+    if (!pcm || count == 0) return;
+    if (!g_dma_q.data) {
+        g_dma_q.data = (uint8_t *)malloc(DMA_Q_CAP);
+        if (!g_dma_q.data) return;
+    }
+    dma_q_compact();
+    if (count > DMA_Q_CAP) {
+        pcm += count - DMA_Q_CAP;
+        count = DMA_Q_CAP;
+    }
+    if (g_dma_q.len + count > DMA_Q_CAP) {
+        uint32_t drop = g_dma_q.len + count - DMA_Q_CAP;
+        if (drop >= g_dma_q.len) {
+            g_dma_q.len = 0;
+        } else {
+            memmove(g_dma_q.data, g_dma_q.data + drop, g_dma_q.len - drop);
+            g_dma_q.len -= drop;
+        }
+        g_dma_q.frac = 0;
+    }
+    memcpy(g_dma_q.data + g_dma_q.len, pcm, count);
+    g_dma_q.len += count;
+    if (rate) g_dma_q.rate = rate;
+}
+
+/* One output frame from the raw queue. 0 if it is drained. */
+static int dma_q_frame(int16_t *left, int16_t *right) {
+    uint32_t rate;
+    double step, s0, s1, interp;
+    size_t idx, idx1;
+    int32_t sample16;
+
+    if (!g_dma_q.data || g_dma_q.pos >= g_dma_q.len) return 0;
+    rate = g_dma_q.rate ? g_dma_q.rate : 11025;
+    idx = g_dma_q.pos;
+    idx1 = (idx + 1 < g_dma_q.len) ? idx + 1 : idx;
+    s0 = (double)g_dma_q.data[idx] - 128.0;
+    s1 = (double)g_dma_q.data[idx1] - 128.0;
+    interp = s0 + g_dma_q.frac * (s1 - s0);
+    sample16 = (int32_t)(interp * 256.0);
+    if (sample16 > 32767) sample16 = 32767;
+    else if (sample16 < -32768) sample16 = -32768;
+    *left = *right = (int16_t)sample16;
+
+    step = (double)rate / (double)AUDIO_SAMPLE_RATE;
+    g_dma_q.frac += step;
+    while (g_dma_q.frac >= 1.0 && g_dma_q.pos < g_dma_q.len) {
+        g_dma_q.frac -= 1.0;
+        g_dma_q.pos++;
+    }
+    if (g_dma_q.pos >= g_dma_q.len) {
+        g_dma_q.pos = 0;
+        g_dma_q.len = 0;
+        g_dma_q.frac = 0;
+    }
+    return 1;
+}
+
 /* -------------------------------------------------------------------------
  * OPL3 Internal Synthesis Functions
  * ------------------------------------------------------------------------- */
@@ -183,8 +341,18 @@ void hal_audio_write_opl(uint16_t reg, uint8_t val) {
         g_opl3.queue.buffer[g_opl3.queue.head].val = val;
         g_opl3.queue.head = next_head;
     } else {
-        /* If queue full, write immediately */
+        /* If queue full, write immediately with audio device lock */
+#ifndef XANTH_HEADLESS_STUB
+        if (g_mixer.device_id != 0) {
+            SDL_LockAudioDevice(g_mixer.device_id);
+            opl_write_internal(&g_opl3, reg, val);
+            SDL_UnlockAudioDevice(g_mixer.device_id);
+        } else {
+            opl_write_internal(&g_opl3, reg, val);
+        }
+#else
         opl_write_internal(&g_opl3, reg, val);
+#endif
     }
 }
 
@@ -472,6 +640,9 @@ bool hal_audio_play_rs(const uint8_t *data, size_t len) {
     free(pcm8);
 
     /* Enqueue to mixer Channel 1 (SFX) */
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) SDL_LockAudioDevice(g_mixer.device_id);
+#endif
     if (g_mixer.sfx_pcm) {
         free(g_mixer.sfx_pcm);
     }
@@ -479,6 +650,9 @@ bool hal_audio_play_rs(const uint8_t *data, size_t len) {
     g_mixer.sfx_total_frames = dst_frames;
     g_mixer.sfx_current_frame = 0;
     g_mixer.sfx_active = true;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) SDL_UnlockAudioDevice(g_mixer.device_id);
+#endif
 
     return true;
 }
@@ -509,6 +683,9 @@ bool hal_audio_play_voc(const uint8_t *data, size_t len) {
         }
     }
 
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) SDL_LockAudioDevice(g_mixer.device_id);
+#endif
     if (g_mixer.voice_pcm) {
         free(g_mixer.voice_pcm);
     }
@@ -516,6 +693,9 @@ bool hal_audio_play_voc(const uint8_t *data, size_t len) {
     g_mixer.voice_total_frames = dst_frames;
     g_mixer.voice_current_frame = 0;
     g_mixer.voice_active = true;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) SDL_UnlockAudioDevice(g_mixer.device_id);
+#endif
 
     return true;
 }
@@ -569,7 +749,33 @@ bool hal_audio_play_sound_file(const char *filename) {
 }
 
 /* -------------------------------------------------------------------------
- * SDL2 Audio Callback & 3-Channel Mixer
+ * Sound Blaster DMA Streaming Sink
+ * ------------------------------------------------------------------------- */
+void hal_audio_dma_submit_block(const uint8_t *pcm_mono_8bit, uint32_t count, uint32_t sample_rate) {
+    if (!pcm_mono_8bit || count == 0) return;
+    if (sample_rate == 0) sample_rate = 11025;
+
+    /*
+     * Always queue the raw block. The old ring kept 65536 resampled frames
+     * and dropped the rest of a DSP transfer or a RealSound effect, and
+     * splitting one effect across ring-then-queue played it out of order.
+     * The ring is still drained by the callback if anything was left there.
+     */
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) {
+        SDL_LockAudioDevice(g_mixer.device_id);
+    }
+#endif
+    dma_q_append(pcm_mono_8bit, count, sample_rate);
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) {
+        SDL_UnlockAudioDevice(g_mixer.device_id);
+    }
+#endif
+}
+
+/* -------------------------------------------------------------------------
+ * SDL2 Audio Callback & 4-Channel Mixer
  * ------------------------------------------------------------------------- */
 #ifndef XANTH_HEADLESS_STUB
 static void sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
@@ -594,6 +800,18 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
             memset(mixer->opl_temp, 0, (size_t)chunk_frames * AUDIO_CHANNELS * sizeof(int16_t));
         }
 
+        float fluid_left[AUDIO_BUFFER_FRAMES], fluid_right[AUDIO_BUFFER_FRAMES];
+        if (g_fluid.synth && !mixer->dummy_mode) {
+            if (g_fluid.write_float(g_fluid.synth,chunk_frames,
+                                    fluid_left,0,1,fluid_right,0,1)<0) {
+                memset(fluid_left,0,(size_t)chunk_frames*sizeof(float));
+                memset(fluid_right,0,(size_t)chunk_frames*sizeof(float));
+            }
+        } else {
+            memset(fluid_left,0,(size_t)chunk_frames*sizeof(float));
+            memset(fluid_right,0,(size_t)chunk_frames*sizeof(float));
+        }
+
         /* 2. Mix Channels with 32-bit signed accumulation and volume scaling */
         int16_t *chunk_out = out + frames_done * AUDIO_CHANNELS;
         for (int i = 0; i < chunk_frames; i++) {
@@ -605,6 +823,8 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
                 mix_l += (int32_t)mixer->opl_temp[i * 2 + 0] * (int32_t)mixer->music_volume / 128;
                 mix_r += (int32_t)mixer->opl_temp[i * 2 + 1] * (int32_t)mixer->music_volume / 128;
             }
+            mix_l += (int32_t)(fluid_left[i] * 32767.0f) * (int32_t)mixer->music_volume / 128;
+            mix_r += (int32_t)(fluid_right[i] * 32767.0f) * (int32_t)mixer->music_volume / 128;
 
             /* Channel 1: SFX */
             if (mixer->sfx_active && mixer->sfx_pcm && mixer->sfx_current_frame < mixer->sfx_total_frames) {
@@ -623,6 +843,25 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
                 mixer->voice_current_frame++;
                 if (mixer->voice_current_frame >= mixer->voice_total_frames) {
                     mixer->voice_active = false;
+                }
+            }
+
+            /* Channel 3: digitized audio. The raw queue holds blocks the
+             * ring could not, and is drained before the ring so a long
+             * effect is not stuck behind a partial copy of itself. */
+            {
+                int16_t dma_l = 0, dma_r = 0;
+                int have = dma_q_frame(&dma_l, &dma_r);
+                if (!have && g_dma_ring.read_pos != g_dma_ring.write_pos) {
+                    uint32_t slot = g_dma_ring.read_pos & DMA_RING_MASK;
+                    dma_l = g_dma_ring.buffer[slot * 2 + 0];
+                    dma_r = g_dma_ring.buffer[slot * 2 + 1];
+                    g_dma_ring.read_pos++;
+                    have = 1;
+                }
+                if (have) {
+                    mix_l += (int32_t)dma_l * (int32_t)mixer->voice_volume / 128;
+                    mix_r += (int32_t)dma_r * (int32_t)mixer->voice_volume / 128;
                 }
             }
 
@@ -688,7 +927,78 @@ bool hal_audio_init(void) {
 #endif
 
     g_mixer.initialized = true;
+    g_dma_ring.write_pos = 0;
+    g_dma_ring.read_pos = 0;
+    g_dma_q.len = 0;
+    g_dma_q.pos = 0;
+    g_dma_q.frac = 0;
+    g_dma_q.rate = 11025;
     return true;
+}
+
+bool hal_audio_enable_fluidsynth(const char *soundfont_path) {
+#ifndef XANTH_HEADLESS_STUB
+    static const char *libraries[] = {
+        "libfluidsynth.so.3", "libfluidsynth.so", "libfluidsynth.3.dylib",
+        "libfluidsynth.dylib", "libfluidsynth-3.dll", "libfluidsynth.dll"
+    };
+    MidiExternalBackend backend;
+    size_t i;
+    if (!soundfont_path || !*soundfont_path) return false;
+    memset(&g_fluid,0,sizeof(g_fluid));
+    for (i=0;i<sizeof(libraries)/sizeof(libraries[0]);++i) {
+        g_fluid.library=SDL_LoadObject(libraries[i]);
+        if (g_fluid.library) break;
+    }
+    if (!g_fluid.library) {
+        fprintf(stderr,"[HAL_AUDIO] FluidSynth library not found; install it or omit --soundfont\n");
+        return false;
+    }
+    FLUID_LOAD(new_settings,"new_fluid_settings");
+    FLUID_LOAD(settings_setnum,"fluid_settings_setnum");
+    FLUID_LOAD(settings_setint,"fluid_settings_setint");
+    FLUID_LOAD(new_synth,"new_fluid_synth");
+    FLUID_LOAD(sfload,"fluid_synth_sfload");
+    FLUID_LOAD(noteon,"fluid_synth_noteon");
+    FLUID_LOAD(noteoff,"fluid_synth_noteoff");
+    FLUID_LOAD(program,"fluid_synth_program_change");
+    FLUID_LOAD(cc,"fluid_synth_cc");
+    FLUID_LOAD(write_float,"fluid_synth_write_float");
+    FLUID_LOAD(all_sounds_off,"fluid_synth_all_sounds_off");
+    FLUID_LOAD(delete_synth,"delete_fluid_synth");
+    FLUID_LOAD(delete_settings,"delete_fluid_settings");
+    g_fluid.settings=g_fluid.new_settings();
+    if (!g_fluid.settings) goto fluid_load_fail;
+    (void)g_fluid.settings_setnum(g_fluid.settings,"synth.sample-rate",AUDIO_SAMPLE_RATE);
+    (void)g_fluid.settings_setnum(g_fluid.settings,"synth.gain",0.5);
+    (void)g_fluid.settings_setint(g_fluid.settings,"synth.reverb.active",1);
+    (void)g_fluid.settings_setint(g_fluid.settings,"synth.chorus.active",1);
+    g_fluid.synth=g_fluid.new_synth(g_fluid.settings);
+    if (!g_fluid.synth || g_fluid.sfload(g_fluid.synth,soundfont_path,1)<0) {
+        fprintf(stderr,"[HAL_AUDIO] cannot create FluidSynth or load soundfont: %s\n",soundfont_path);
+        goto fluid_load_fail;
+    }
+    memset(&backend,0,sizeof(backend));
+    backend.note_on=fluid_note_on;
+    backend.note_off=fluid_note_off;
+    backend.program_change=fluid_program_change;
+    backend.control_change=fluid_control_change;
+    backend.all_notes_off=fluid_all_notes_off;
+    backend.user=&g_fluid;
+    midi_set_external_backend(&backend);
+    fprintf(stderr,"[HAL_AUDIO] FluidSynth enabled with user soundfont: %s\n",soundfont_path);
+    return true;
+
+fluid_load_fail:
+    if (g_fluid.synth && g_fluid.delete_synth) g_fluid.delete_synth(g_fluid.synth);
+    if (g_fluid.settings && g_fluid.delete_settings) g_fluid.delete_settings(g_fluid.settings);
+    if (g_fluid.library) SDL_UnloadObject(g_fluid.library);
+    memset(&g_fluid,0,sizeof(g_fluid));
+    return false;
+#else
+    (void)soundfont_path;
+    return false;
+#endif
 }
 
 void hal_audio_shutdown(void) {
@@ -698,6 +1008,13 @@ void hal_audio_shutdown(void) {
         g_mixer.device_id = 0;
     }
 #endif
+    midi_set_external_backend(NULL);
+#ifndef XANTH_HEADLESS_STUB
+    if (g_fluid.synth && g_fluid.delete_synth) g_fluid.delete_synth(g_fluid.synth);
+    if (g_fluid.settings && g_fluid.delete_settings) g_fluid.delete_settings(g_fluid.settings);
+    if (g_fluid.library) SDL_UnloadObject(g_fluid.library);
+    memset(&g_fluid,0,sizeof(g_fluid));
+#endif
     if (g_mixer.sfx_pcm) {
         free(g_mixer.sfx_pcm);
         g_mixer.sfx_pcm = NULL;
@@ -706,20 +1023,41 @@ void hal_audio_shutdown(void) {
         free(g_mixer.voice_pcm);
         g_mixer.voice_pcm = NULL;
     }
+    g_dma_ring.write_pos = 0;
+    g_dma_ring.read_pos = 0;
+    free(g_dma_q.data);
+    g_dma_q.data = NULL;
+    g_dma_q.len = g_dma_q.pos = 0;
+    g_dma_q.frac = 0;
     g_mixer.initialized = false;
 }
 
 void hal_audio_set_volume(uint8_t master, uint8_t music, uint8_t sfx, uint8_t voice) {
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) SDL_LockAudioDevice(g_mixer.device_id);
+#endif
     g_mixer.master_volume = master;
     g_mixer.music_volume = music;
     g_mixer.sfx_volume = sfx;
     g_mixer.voice_volume = voice;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_mixer.device_id != 0) SDL_UnlockAudioDevice(g_mixer.device_id);
+#endif
 }
 
 void hal_audio_tick(void) {
     /* If in headless dummy mode, advance audio frame positions periodically */
     if (g_mixer.dummy_mode) {
         size_t frames_per_tick = AUDIO_SAMPLE_RATE / 70;
+        uint32_t avail = g_dma_ring.write_pos - g_dma_ring.read_pos;
+        if (avail > 0) {
+            uint32_t to_drain = (avail < (uint32_t)frames_per_tick) ? avail : (uint32_t)frames_per_tick;
+            g_dma_ring.read_pos += to_drain;
+        }
+        for (size_t n = 0; n < frames_per_tick; n++) {
+            int16_t l, r;
+            if (!dma_q_frame(&l, &r)) break;
+        }
         if (g_mixer.sfx_active) {
             g_mixer.sfx_current_frame += frames_per_tick;
             if (g_mixer.sfx_current_frame >= g_mixer.sfx_total_frames) {
