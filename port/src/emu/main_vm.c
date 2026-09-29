@@ -426,6 +426,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_arr_set_one_hits());
     fprintf(stderr, "[native] exe_114942 hits: %llu\n",
             (unsigned long long)xanth_native_exe_114942_hits());
+    fprintf(stderr, "[native] exe_114942 negative hits: %llu\n",
+            (unsigned long long)xanth_native_exe_114942_negative_hits());
     fprintf(stderr, "[native] store_two_globals hits: %llu\n",
             (unsigned long long)xanth_native_store_two_globals_hits());
     fprintf(stderr, "[native] set_int_if_ge0 hits: %llu\n",

@@ -193,6 +193,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                         ("exe_115346", "exe_115346"),
                         ("arr_set_one", "arr_set_one"),
                         ("exe_114942", "exe_114942"),
+                        ("exe_114942_negative", "exe_114942 negative"),
                         ("store_two_globals", "store_two_globals"),
                         ("set_int_if_ge0", "set_int_if_ge0"),
                         ("iabs", "iabs"),
@@ -243,6 +244,9 @@ class NativeStage2ParityTests(unittest.TestCase):
             exe_114942_hits = int(outputs["native"]["exe_114942_hits"])
             self.assertGreater(exe_114942_hits, 0)
             self.assertLessEqual(exe_114942_hits, 3731)
+            # The pinned interaction trace uses only nonnegative indices; it
+            # verifies parity for that route but does not exercise this branch.
+            self.assertEqual(int(outputs["native"]["exe_114942_negative_hits"]), 0)
             store_two_globals_hits = int(outputs["native"]["store_two_globals_hits"])
             self.assertGreater(store_two_globals_hits, 0)
             self.assertLessEqual(store_two_globals_hits, 17)

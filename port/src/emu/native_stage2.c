@@ -168,6 +168,7 @@ static uint64_t g_swap_int_hits;
 static uint64_t g_exe_115346_hits;
 static uint64_t g_arr_set_one_hits;
 static uint64_t g_exe_114942_hits;
+static uint64_t g_exe_114942_negative_hits;
 static uint64_t g_store_two_globals_hits;
 static uint64_t g_set_int_if_ge0_hits;
 static uint64_t g_iabs_hits;
@@ -744,7 +745,7 @@ static hook_result_t native_arr_set_one(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
-/* Lower exe_114942's nonnegative table-to-far-output path; negative stays VM. */
+/* Lower exe_114942's signed-negative clear and nonnegative table paths. */
 static hook_result_t native_exe_114942(cpu86 *cpu, void *user) {
     uint16_t entry_sp = cpu->r[CPU_SP];
     uint16_t saved_bp = cpu->r[CPU_BP];
@@ -756,9 +757,11 @@ static hook_result_t native_exe_114942(cpu86 *cpu, void *user) {
     uint16_t seg_b = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 12u));
     vm *machine = (vm *)cpu->vm;
     uint16_t bx, value;
-    const uint32_t cycles = 68u;
+    const bool negative = (int16_t)index < 0;
+    const uint8_t guest_insns = negative ? 13u : 17u;
+    const uint32_t cycles = (uint32_t)guest_insns * 4u;
 
-    if ((int16_t)index < 0 || cpu->step_budget_remaining < 17u)
+    if (cpu->step_budget_remaining < guest_insns)
         return HOOK_CONTINUE;
     if (machine) {
         uint64_t next_tick = machine->next_tick_cycles;
@@ -770,21 +773,30 @@ static hook_result_t native_exe_114942(cpu86 *cpu, void *user) {
             return HOOK_CONTINUE;
     }
 
-    bx = index;
-    bx = alu_op(cpu, ALU_ADD, bx, bx, 16);
-    value = seg_r16(cpu->s[CPU_DS], (uint16_t)(bx + 0x6840u));
-    cpu->r[CPU_SI] = saved_si;
-    cpu->s[CPU_ES] = seg_a;
-    seg_w16(seg_a, out_a, value);
-    cpu->r[CPU_AX] = seg_r16(cpu->s[CPU_DS], (uint16_t)(bx + 0x6850u));
-    cpu->r[CPU_BX] = out_b;
-    cpu->s[CPU_ES] = seg_b;
-    seg_w16(seg_b, out_b, cpu->r[CPU_AX]);
+    if (negative) {
+        (void)alu_op(cpu, ALU_SUB, index, 0u, 16);
+        cpu->r[CPU_AX] = alu_op(cpu, ALU_XOR, 0u, 0u, 16);
+        cpu->r[CPU_BX] = out_a;
+        cpu->s[CPU_ES] = seg_a;
+        seg_w16(seg_a, out_a, cpu->r[CPU_AX]);
+    } else {
+        bx = index;
+        bx = alu_op(cpu, ALU_ADD, bx, bx, 16);
+        value = seg_r16(cpu->s[CPU_DS], (uint16_t)(bx + 0x6840u));
+        cpu->r[CPU_SI] = saved_si;
+        cpu->s[CPU_ES] = seg_a;
+        seg_w16(seg_a, out_a, value);
+        cpu->r[CPU_AX] = seg_r16(cpu->s[CPU_DS], (uint16_t)(bx + 0x6850u));
+        cpu->r[CPU_BX] = out_b;
+        cpu->s[CPU_ES] = seg_b;
+        seg_w16(seg_b, out_b, cpu->r[CPU_AX]);
+    }
     cpu->r[CPU_BP] = saved_bp;
     cpu->r[CPU_SP] = entry_sp;
     cpu->cycles += cycles;
-    cpu->step_guest_insns = 17;
+    cpu->step_guest_insns = guest_insns;
     g_exe_114942_hits++;
+    if (negative) g_exe_114942_negative_hits++;
     return HOOK_DID_RETF;
 }
 
@@ -1873,6 +1885,7 @@ bool xanth_native_stage2_install(vm *machine) {
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_114942_hits = 0;
+    g_exe_114942_negative_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_114942, NULL)) return false;
 
     linear = (uint32_t)machine->img.load_seg * 16u + STORE_TWO_GLOBALS_OFFSET;
@@ -2035,6 +2048,10 @@ uint64_t xanth_native_arr_set_one_hits(void) {
 
 uint64_t xanth_native_exe_114942_hits(void) {
     return g_exe_114942_hits;
+}
+
+uint64_t xanth_native_exe_114942_negative_hits(void) {
+    return g_exe_114942_negative_hits;
 }
 
 uint64_t xanth_native_store_two_globals_hits(void) {
