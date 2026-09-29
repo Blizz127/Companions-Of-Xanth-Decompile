@@ -16,5 +16,6 @@ uint64_t xanth_native_exe_14360_hits(void);
 uint64_t xanth_native_set_far_arr_hits(void);
 uint64_t xanth_native_get_far_idx_hits(void);
 uint64_t xanth_native_exe_37625_hits(void);
+uint64_t xanth_native_exe_99679_hits(void);
 
 #endif

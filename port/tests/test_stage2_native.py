@@ -64,6 +64,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                 far_arr_hit = re.search(r"\[native\] set_far_arr hits: (\d+)", output)
                 far_idx_hit = re.search(r"\[native\] get_far_idx hits: (\d+)", output)
                 reset_hit = re.search(r"\[native\] exe_37625 hits: (\d+)", output)
+                table_state_hit = re.search(r"\[native\] exe_99679 hits: (\d+)", output)
                 metrics = {
                     "frame": frame.group(1),
                     "set_int_and_zero_hits": hit.group(1) if hit else None,
@@ -74,6 +75,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                     "set_far_arr_hits": far_arr_hit.group(1) if far_arr_hit else None,
                     "get_far_idx_hits": far_idx_hit.group(1) if far_idx_hit else None,
                     "exe_37625_hits": reset_hit.group(1) if reset_hit else None,
+                    "exe_99679_hits": table_state_hit.group(1) if table_state_hit else None,
                 }
                 for name, pattern in (
                     ("instructions", r"^instructions executed\s*:\s*(\d+)$"),
@@ -110,6 +112,8 @@ class NativeStage2ParityTests(unittest.TestCase):
             self.assertGreater(int(outputs["native"]["get_far_idx_hits"]), 0)
             self.assertIsNone(outputs["vm"]["exe_37625_hits"])
             self.assertGreater(int(outputs["native"]["exe_37625_hits"]), 0)
+            self.assertIsNone(outputs["vm"]["exe_99679_hits"])
+            self.assertGreater(int(outputs["native"]["exe_99679_hits"]), 0)
 
 
 if __name__ == "__main__":
