@@ -1,7 +1,9 @@
 # Native dev menu work
 
-Releases up to alpha.3 do not contain a dev menu; it is opt-in from alpha.4. The shared implementation
-contract is `~/release-staging/port-dev-menu/DEV_MENU_SPEC.md` (v1,
+Releases up to alpha.3 do not contain a dev menu. From alpha.4 it is on by
+default, public builds included: the owner decided on 2026-09-30 that "the
+public ones can have debug menu too for now", which overrides the shared
+spec's off-by-default rule for now. The shared implementation contract is `~/release-staging/port-dev-menu/DEV_MENU_SPEC.md` (v1,
 2026-09-30). The owner additionally requires Xanth checkpoints to use the
 game's own save/restore path, with no host memory pokes.
 
@@ -10,17 +12,22 @@ F9 video recording, F10 screenshot, and held Backspace fast-forward. The
 controller opens with Back/View + Start on the same pad. The root categories
 are Warp, Finish Area, Cheats, and Options. The host overlay must leave guest
 VRAM untouched, keep simulation running, consume its inputs while open, and
-wait for neutral input before returning control to gameplay. The existing
-optional F11 fullscreen/F10 scanline shortcuts will need collision handling
-under the dev-menu opt-in. Normal launches must retain retail inputs and
-frame hashes. No replacement hotkey mapping has shipped yet.
+wait for neutral input before returning control to gameplay. While the menu
+is closed, launches must keep retail inputs and frame hashes.
 
 ## Menu shell
 
-The host-side shell is in `port/src/dev_menu.c`. It is off by default and
-enabled by `--dev-menu`, `XANTH_DEV_MENU=1` or `dev_menu=1` in the port
-config. `XANTH_DEV_MENU=0` turns it off again, and `XANTH_CHEATS=0`
-hard-disables it, so no filter, overlay or controller handle is subscribed.
+The host-side shell is in `port/src/dev_menu.c`. It is on by default. In
+order of precedence:
+- `XANTH_CHEATS=0` hard-disables it: no filter, overlay or controller
+  handle is subscribed;
+- `XANTH_DEV_MENU=0` or `=1` turns it off or on;
+- `--no-dev-menu` or `--dev-menu` on the command line;
+- `dev_menu=0` or `dev_menu=1` (also `false`/`off`, `true`/`on`) in the
+  port config.
+
+When it is off, a launch is the retail launch, and the `--hotkeys` F10/F11
+shortcuts work as before.
 
 - **Opening:** F12, or Back+Start held on the same pad. Back and Start are
   reserved from the moment either is pressed; a lone press reaches the game as
@@ -59,14 +66,16 @@ so fast-forward is L3 (toggle) and R3 (hold). While the menu is open it
 consumes all keyboard input, F-keys included.
 
 Gates on the branch:
-- `DevMenuTests` (asset-free, SDL virtual devices) covers opt-in resolution,
+- `DevMenuTests` (asset-free, SDL virtual devices) covers the resolution
+  order (default on, CLI, config off, env off, hard disable),
   the all-off identity, navigation and empty groups, keyboard/mouse/pad
   capture and drain, the same-pad combo and replays, fast-forward, refusals,
   screenshots, the key script, and held-at-connect/removal hotplug.
 - `DevMenuRetailIdentityTest` (asset-gated) runs the real game for 1500
-  frames three ways: off, opted in with a scripted walk through every page,
-  and hard-disabled. Guest RAM plus DAC hash, cycle count and final frame
-  must be identical in all three.
+  frames four ways: `--no-dev-menu` (retail), the default launch with the
+  menu on but never opened, a scripted walk through every page, and
+  hard-disabled. Guest RAM plus DAC hash, cycle count and final frame must
+  be identical in all four.
 
 The menu uses the shared hooks:
 - `hal_input_set_event_filter` sees every SDL event before the game and the

@@ -71,10 +71,12 @@ typedef struct {
     char checkpoint_dir[512];
 } dev_menu_host;
 
-/* Resolve the opt-in from the CLI flag, XANTH_DEV_MENU, XANTH_CHEATS and the
- * dev_menu key of the port config file (may be NULL or empty).  Call once,
- * before SDL is initialised.  Returns true when the menu is enabled. */
-bool dev_menu_resolve(bool cli_opt_in, const char *config_path);
+/* Resolve whether the menu is on.  It is on by default; in order of
+ * precedence, XANTH_CHEATS=0 hard-disables it, XANTH_DEV_MENU=0/1 overrides,
+ * then the CLI (cli < 0: no flag, 0: --no-dev-menu, > 0: --dev-menu), then
+ * the dev_menu key of the port config file (may be NULL or empty).  Call
+ * once, before SDL is initialised.  Returns true when the menu is enabled. */
+bool dev_menu_resolve(int cli, const char *config_path);
 bool dev_menu_enabled(void);
 
 /* Start the menu (controllers, harness script).  No-op when the menu is not

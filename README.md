@@ -43,6 +43,16 @@ Controllers are detected automatically. The left stick moves the pointer,
 A clicks, X right-clicks, D-pad sends guest arrows, Start sends Enter, and Back
 opens help. Alpha.2 includes reconnection and Steam/InputPlumber handheld fixes.
 Use `--no-controller` or `controller=false` to disable controller input.
+
+A playtest dev menu is on by default for now: F12, or Back+Start on the same
+pad, opens it (fast-forward, screenshots, display options; warps need locally
+built checkpoints). A lone Back or Start acts on release. While it is on,
+fullscreen and CRT scanlines are on its Options page instead of the
+`--hotkeys` F10/F11 shortcuts. The game is unchanged while the menu is closed.
+Turn it off with `--no-dev-menu`, `dev_menu=0` in the config, or
+`XANTH_DEV_MENU=0`; `XANTH_CHEATS=0` disables it completely. See
+[docs/DEV_MENU.md](docs/DEV_MENU.md).
+
 Optional settings include `--pixel-perfect`, `--fit`, `--crt`,
 `--linear`, `--fullscreen`, `--handheld`, `--hotkeys`, `--soundfont <your.sf2>`,
 per-channel `--volume-* N`, and hash-keyed `--mods <directory>` with separate
