@@ -9,6 +9,17 @@ import struct
 from pathlib import Path
 
 
+CRT_NOTICE = (56, '8bd793bdb191480fee2b61f0a03a7fd06fab1d08af0a8c9d347a91b4794a4398')
+OVL_NOTICE = (47, '087bf47a7ea53b9f7b189eeca13d1f81fb717842ca5a8c30c4f9553c6fa7aa88')
+
+def _digest_offset(data: bytes, size: int, digest: str) -> int:
+    """Identify a supplied retail range by one-way metadata, without embedding it."""
+    view = memoryview(data)
+    for offset in range(len(data) - size + 1):
+        if hashlib.sha256(view[offset:offset + size]).hexdigest() == digest:
+            return offset
+    return -1
+
 class IdentifyError(ValueError):
     """The buffer is not the expected executable or overlay shape."""
 
@@ -73,7 +84,7 @@ def identify_mz(data: bytes) -> dict:
         },
         "tail_sha256": hashlib.sha256(tail).hexdigest(),
         "strings": {
-            "microsoft_crt_1992": b"[retail bytes removed]" in data,
+            "microsoft_crt_1992": _digest_offset(data, *CRT_NOTICE) >= 0,
             "overlay_manager": b"Cannot find overlay" in data or b"Overlay Manager" in data,
             "xanth_ovl": b"XANTH.OVL" in data,
             "pkware_dcl": b"PKWARE" in data,
@@ -100,7 +111,7 @@ def identify_ovl(data: bytes) -> dict:
     if terminator_offset is None:
         raise IdentifyError("overlay directory has no 0xFFFF terminator")
     segments = {entry["segment"] for entry in entries}
-    credits = data.find(b"[retail bytes removed]")
+    credits = _digest_offset(data, *OVL_NOTICE)
     return {
         "schema_version": 1,
         "kind": "legend-ovl",

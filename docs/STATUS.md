@@ -922,7 +922,7 @@ functions.** From roughly `0x1dc00` to the end of the image:
 - `eov0001:` at `0x1dc2e` and `RELOAD to increase` at `0x1dda3` — the
   third-party overlay-manager markers, the same strings seen in `XANTH.OVL`.
 - `RTLink` at `0x215c5` and the string
-  `[retail bytes removed]` — the **Pocket Soft
+  an internal-failure diagnostic identifying the RTLink/Plus runtime — the **Pocket Soft
   RTLink/Plus** overlay runtime, linked in and not game source.
 - Game message strings (`XANTH.OVL`, `XANTH.EXE`, `Fatal Error $`,
   `Overlay save buffer too small`, `Free memory: %s`, `1.2.0  04-18-1994`).

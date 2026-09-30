@@ -38,9 +38,9 @@ produced identical JSON.
 - Relocation count and a large header imply an unpacked image; this is not
   PKLITE/EXEPACK-packed.
 - Strings inside the file (not inferred from filenames):
-  - `[retail bytes removed]` (in the tail)
+  - Microsoft's 1992 C runtime identification notice (in the tail)
   - Overlay manager messages (`Cannot find overlay file`, `XANTH.OVL`)
-  - `[retail bytes removed]` Version 1.03, copyright 1990-92
+  - PKWARE compression-library identification Version 1.03, copyright 1990-92
   - `Legend Entertainment`, `Companions of Xanth`
 
 ## XANTH.OVL
@@ -67,7 +67,7 @@ produced identical JSON.
 - Section payloads are plain **uncompressed 8086**: section 0 at file offset
   `0x1F0` begins `55 8B EC 81 EC 18 03 56 57` — a textbook MSC prologue —
   followed by a `9A` far call.
-- Credits string `[retail bytes removed]` at offset
+- Credits string Legend's 1994 copyright notice at offset
   1792. Credits name Michael Lindner, Mark Poesch, and Duane Beck.
 
 **Identity: LOCALLY_SUPPORTED_XANBUD.** Volume label, PVD date, and the two

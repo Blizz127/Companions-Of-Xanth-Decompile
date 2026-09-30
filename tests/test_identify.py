@@ -1,6 +1,8 @@
 import hashlib
 import struct
 import unittest
+from unittest.mock import patch
+from tools import identify as identity_module
 
 from tools.identify import IdentifyError, identify_mz, identify_ovl
 
@@ -65,7 +67,8 @@ class IdentifyMzTests(unittest.TestCase):
         self.assertEqual(report["mz"]["tail_size"], 0)
 
     def test_splits_mz_image_from_appended_tail(self):
-        data = synthetic_mz(extra=b"[retail bytes removed]")
+        notice = b"Authored test runtime identifier"
+        data = synthetic_mz(extra=notice)
         report = identify_mz(data)
         self.assertGreater(report["mz"]["tail_size"], 0)
         self.assertEqual(
@@ -76,10 +79,12 @@ class IdentifyMzTests(unittest.TestCase):
             report["tail_sha256"],
             hashlib.sha256(data[report["mz"]["image_size"] :]).hexdigest(),
         )
-        self.assertTrue(report["strings"]["microsoft_crt_1992"])
+        with patch.object(identity_module, "CRT_NOTICE", (len(notice), hashlib.sha256(notice).hexdigest())):
+            self.assertTrue(identify_mz(data)["strings"]["microsoft_crt_1992"])
+            self.assertFalse(identify_mz(synthetic_mz(extra=notice[:-1] + b"!"))["strings"]["microsoft_crt_1992"])
 
     def test_records_overlay_and_pkware_strings(self):
-        extra = b'Cannot find overlay file "XANTH.OVL" [retail bytes removed]'
+        extra = b'Overlay Manager fixture XANTH.OVL codec: PKWARE'
         report = identify_mz(synthetic_mz(extra=extra))
         self.assertTrue(report["strings"]["overlay_manager"])
         self.assertTrue(report["strings"]["xanth_ovl"])
@@ -111,7 +116,7 @@ def synthetic_ovl():
         0xFFFF,
     )
     pad = b"\x00" * (1792 - len(directory))
-    credits = b"[retail bytes removed]\x00"
+    credits = b"Authored overlay attribution fixture\x00"
     return directory + pad + credits
 
 
@@ -133,7 +138,9 @@ class IdentifyOvlTests(unittest.TestCase):
 
     def test_records_credits_offset(self):
         data = synthetic_ovl()
-        report = identify_ovl(data)
+        notice = b"Authored overlay attribution fixture"
+        with patch.object(identity_module, "OVL_NOTICE", (len(notice), hashlib.sha256(notice).hexdigest())):
+            report = identify_ovl(data)
         self.assertEqual(report["credits_offset"], 1792)
         self.assertTrue(report["strings"]["legend_copyright_1994"])
 

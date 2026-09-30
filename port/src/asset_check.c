@@ -94,6 +94,22 @@ static void sha256_final(sha256_ctx *c, uint8_t out[32]) {
     }
 }
 
+bool xanth_sha256_buffer(const void *data, size_t size, char hex[65]) {
+    sha256_ctx c;
+    uint8_t digest[32];
+    static const char digits[] = "0123456789abcdef";
+    if (!hex || (!data && size)) return false;
+    sha256_init(&c);
+    if (size) sha256_update(&c, data, size);
+    sha256_final(&c, digest);
+    for (unsigned i = 0; i < 32; i++) {
+        hex[i * 2] = digits[digest[i] >> 4];
+        hex[i * 2 + 1] = digits[digest[i] & 15];
+    }
+    hex[64] = '\0';
+    return true;
+}
+
 bool xanth_sha256_file(const char *path, char hex[65]) {
     FILE *f = fopen(path, "rb");
     sha256_ctx c;

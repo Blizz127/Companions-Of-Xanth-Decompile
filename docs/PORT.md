@@ -262,9 +262,7 @@ branches on a flag the host was throwing away.
 
 ## The core mechanic: object-first selection
 
-The game's tutorial explains the interaction model: "There is no TURN ON verb
-[retail bytes removed]
-verbs we can find." Clicking an object selects it and **extends the verb
+The tutorial explains that selecting an object reveals additional actions beyond the initial verb menu. Clicking an object selects it and **extends the verb
 column with verbs specific to that object**.
 
 Selecting the computer screen adds `Read` and `Touch` below the seven standard

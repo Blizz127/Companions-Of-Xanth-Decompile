@@ -18,6 +18,7 @@
  */
 #include "vm.h"
 #include "native_stage2.h"
+#include "asset_check.h"
 #include "port_hal.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -27,13 +28,7 @@
 
 #define MAX_EVENTS 4096
 
-static const uint8_t test_exe_114942_body[] = {
-    0x55, 0x8b, 0xec, 0x56, 0x83, 0x7e, 0x06, 0x00, 0x7d, 0x0a,
-    0x33, 0xc0, 0xc4, 0x5e, 0x08, 0x26, 0x89, 0x07, 0xeb, 0x13,
-    0x8b, 0x5e, 0x06, 0x03, 0xdb, 0x8b, 0x87, 0x40, 0x68, 0xc4,
-    0x76, 0x08, 0x26, 0x89, 0x04, 0x8b, 0x87, 0x50, 0x68, 0xc4,
-    0x5e, 0x0c, 0x26, 0x89, 0x07, 0x5e, 0x8b, 0xe5, 0x5d, 0xcb
-};
+static uint8_t test_exe_114942_body[50];
 
 static void setup_exe_114942_cpu(cpu86 *cpu) {
     const uint16_t entry_sp = 0x1000u;
@@ -105,14 +100,7 @@ fail:
     return 1;
 }
 
-static const uint8_t test_exe_103774_body[] = {
-    0x55, 0x8b, 0xec, 0x83, 0xec, 0x04, 0x83, 0x7e, 0x06, 0x00,
-    0x7d, 0x08, 0x33, 0xc0, 0xa3, 0x46, 0x4f, 0xeb, 0x1c, 0x90,
-    0x8d, 0x46, 0xfc, 0x16, 0x50, 0x8d, 0x4e, 0xfe, 0x16, 0x51,
-    0xff, 0x76, 0x06, 0x9a, 0xae, 0x36, 0xa5, 0x18, 0x8b, 0x46,
-    0xfe, 0xa3, 0x46, 0x4f, 0x8b, 0x46, 0xfc, 0xa3, 0x48, 0x4f,
-    0x8b, 0xe5, 0x5d, 0xcb
-};
+static uint8_t test_exe_103774_body[54];
 
 static void setup_exe_103774_cpu(cpu86 *cpu) {
     memset(g_dos_mem, 0, DOS_MEM_SIZE);
@@ -170,8 +158,10 @@ fail:
     return 1;
 }
 
+static uint8_t test_exe_100203_body[5];
+
 static int test_native_exe_100203_prefix(void) {
-    static const uint8_t prefix[] = {0x50, 0x50, 0x50, 0x50, 0x9a};
+
     cpu86 interpreted, native;
     memset(g_dos_mem, 0, DOS_MEM_SIZE);
     cpu86_reset(&interpreted);
@@ -184,7 +174,7 @@ static int test_native_exe_100203_prefix(void) {
     interpreted.cycles = 100u;
     interpreted.step_budget_remaining = 100u;
     memcpy(g_dos_mem + cpu_lin(interpreted.s[CPU_CS], interpreted.ip),
-           prefix, sizeof(prefix));
+           test_exe_100203_body, sizeof(test_exe_100203_body));
     for (unsigned i = 0; i < 4u; i++) cpu86_step(&interpreted);
 
     native = interpreted;
@@ -212,10 +202,7 @@ fail:
     return 1;
 }
 
-static const uint8_t test_exe_103744_body[] = {
-    0xa1, 0x4a, 0x4f, 0xa3, 0x46, 0x4f,
-    0xa1, 0x4c, 0x4f, 0xa3, 0x48, 0x4f, 0xcb
-};
+static uint8_t test_exe_103744_body[13];
 
 static void setup_exe_103744_cpu(cpu86 *cpu) {
     memset(g_dos_mem, 0xa5, DOS_MEM_SIZE);
@@ -314,15 +301,7 @@ fail:
 
 /* Retail exe_100016, including both helper-call sites. The fixture only
  * executes its no-call paths; helper paths must decline native dispatch. */
-static const uint8_t test_exe_100016_body[] = {
-    0x55, 0x8b, 0xec, 0xa1, 0x28, 0x64, 0x39, 0x46, 0x06, 0x75,
-    0x08, 0xa1, 0x2a, 0x64, 0x39, 0x46, 0x08, 0x74, 0x31, 0xf6,
-    0x06, 0x9e, 0x4e, 0x01, 0x74, 0x1e, 0x9a, 0x34, 0xfa, 0xa7,
-    0x08, 0x8b, 0x46, 0x06, 0xa3, 0x28, 0x64, 0x8b, 0x46, 0x08,
-    0xa3, 0x2a, 0x64, 0xb8, 0x01, 0x00, 0x50, 0x9a, 0x79, 0xf9,
-    0xa7, 0x08, 0x8b, 0xe5, 0xeb, 0x0c, 0x8b, 0x46, 0x06, 0xa3,
-    0x28, 0x64, 0x8b, 0x46, 0x08, 0xa3, 0x2a, 0x64, 0x5d, 0xcb
-};
+static uint8_t test_exe_100016_body[70];
 
 static void setup_exe_100016_cpu(cpu86 *cpu, uint16_t a, uint16_t b, uint8_t flag) {
     memset(g_dos_mem, 0xa5, DOS_MEM_SIZE);
@@ -792,6 +771,60 @@ static hook_result_t log_hook(cpu86 *c, void *user) {
     return HOOK_CONTINUE;   /* observe only; let the guest code run */
 }
 
+/* Test executable bytes come only from the owner's pinned retail file.
+ * These hashes are one-way fixture metadata, not redistributable byte images. */
+static int load_retail_fixture(unsigned code_offset, const vm_config *cfg,
+                               bool explicit_exe) {
+    static const struct {
+        unsigned offset;
+        size_t size;
+        uint8_t *bytes;
+        const char *sha256;
+    } fixtures[] = {
+    {114942u, sizeof(test_exe_114942_body), test_exe_114942_body, "9c1af8039f71389165d282228ac88fb631b875d7044d10f6974a6e8751d3f58f"},
+    {103774u, sizeof(test_exe_103774_body), test_exe_103774_body, "3d8dbf791729faab25a699b77c78a6cc19a8ca12af7cc6d11ce711245e58403e"},
+    {103744u, sizeof(test_exe_103744_body), test_exe_103744_body, "ccee99fef6c420fc3af43f1b422fca5d7a073671c406f82508d17d97aa703f6c"},
+    {100016u, sizeof(test_exe_100016_body), test_exe_100016_body, "7ae6236e6c245b31ea3e02ee61e2908e1b68f3cdfbea672f6f3f92ca0d6754ff"},
+    {100203u, sizeof(test_exe_100203_body), test_exe_100203_body, "a204f67ca982c0618151b4f5762248cb11cd1ef9382b196f13b50cd494fc0c7e"},
+    };
+    char path[1024], hash[65];
+    const char *data = getenv("XANTH_DATA");
+    const char *resource = getenv("XANTH_TEST_EXE");
+    FILE *file;
+    if (explicit_exe) snprintf(path, sizeof(path), "%s", cfg->exe_path);
+    else if (resource && *resource) snprintf(path, sizeof(path), "%s", resource);
+    else snprintf(path, sizeof(path), "%s/XANTH.EXE",
+                  data && *data ? data : cfg->data_dir);
+    file = fopen(path, "rb");
+    if (!file) {
+        fprintf(stderr, "SKIP retail fixture: owner XANTH.EXE unavailable at %s; "
+                "set XANTH_DATA, XANTH_TEST_EXE, or --exe\n", path);
+        return 77;
+    }
+    fclose(file);
+    if (!xanth_sha256_file(path, hash) ||
+        strcmp(hash, "3982b5f5c055a4fd84b0a4fe3b911b7393af687b623d0d00f846c5da46d26671")) {
+        fprintf(stderr, "retail fixture executable SHA-256 mismatch: %s\n", path);
+        return 1;
+    }
+    for (unsigned i = 0; i < sizeof(fixtures)/sizeof(fixtures[0]); i++) {
+        if (fixtures[i].offset != code_offset) continue;
+        file = fopen(path, "rb");
+        if (!file) return 1;
+        bool read_ok = fseek(file, (long)(0x7600u + code_offset), SEEK_SET) == 0 &&
+            fread(fixtures[i].bytes, 1, fixtures[i].size, file) == fixtures[i].size;
+        fclose(file);
+        if (!read_ok || !xanth_sha256_buffer(fixtures[i].bytes, fixtures[i].size, hash) ||
+            strcmp(hash, fixtures[i].sha256)) {
+            fprintf(stderr, "retail fixture extent SHA-256 mismatch at %u\n", code_offset);
+            return 1;
+        }
+        return 0;
+    }
+    fprintf(stderr, "unknown retail fixture extent %u\n", code_offset);
+    return 1;
+}
+
 int main(int argc, char **argv) {
     vm_config cfg;
     vm machine;
@@ -802,6 +835,7 @@ int main(int argc, char **argv) {
     bool vm_only = false;
     bool replacement_fonts = false;
     bool replacement_graphics = false;
+    bool explicit_fixture_exe = false;
     bool test_native_114942_negative = false;
     bool test_native_103774_negative = false;
     bool test_native_100203_prefix = false;
@@ -814,8 +848,10 @@ int main(int argc, char **argv) {
     snprintf(cfg.save_dir, sizeof(cfg.save_dir), "build/saves");
 
     for (int i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "--exe") && i + 1 < argc)
+        if (!strcmp(argv[i], "--exe") && i + 1 < argc) {
+            explicit_fixture_exe = true;
             snprintf(cfg.exe_path, sizeof(cfg.exe_path), "%s", argv[++i]);
+        }
         else if (!strcmp(argv[i], "--data") && i + 1 < argc)
             snprintf(cfg.data_dir, sizeof(cfg.data_dir), "%s", argv[++i]);
         else if (!strcmp(argv[i], "--saves") && i + 1 < argc)
@@ -857,6 +893,14 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--bmp") && i + 1 < argc)
             snprintf(bmp_path, sizeof(bmp_path), "%s", argv[++i]);
         else { fprintf(stderr, "unknown argument: %s\n", argv[i]); return 2; }
+    }
+
+    unsigned fixture_offset = test_native_114942_negative ? 114942u :
+        test_native_103774_negative ? 103774u : test_native_100203_prefix ? 100203u :
+        test_native_103744 ? 103744u : test_native_100016_store ? 100016u : 0u;
+    if (fixture_offset) {
+        int result = load_retail_fixture(fixture_offset, &cfg, explicit_fixture_exe);
+        if (result) return result;
     }
 
     if (test_native_114942_negative)

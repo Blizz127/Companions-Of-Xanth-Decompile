@@ -8,6 +8,16 @@
 #include <string.h>
 #include <assert.h>
 
+static const char *retail_data_dir(void) {
+    const char *value = getenv("XANTH_DATA");
+    return value && *value ? value : "original";
+}
+static const char *retail_path(const char *name) {
+    static char path[1024];
+    snprintf(path, sizeof(path), "%s/%s", retail_data_dir(), name);
+    return path;
+}
+
 static int g_tests_run = 0;
 static int g_tests_passed = 0;
 
@@ -260,16 +270,16 @@ static void test_filesystem_and_ini(void) {
 
     /* Case-insensitive search */
     char resolved[512] = {0};
-    bool found_lower = hal_fs_find_file("original", "object.dat", resolved, sizeof(resolved));
+    bool found_lower = hal_fs_find_file(retail_data_dir(), "object.dat", resolved, sizeof(resolved));
     TEST_ASSERT(found_lower, "Must find object.dat in original/");
 
     char resolved_upper[512] = {0};
-    bool found_upper = hal_fs_find_file("original", "OBJECT.DAT", resolved_upper, sizeof(resolved_upper));
+    bool found_upper = hal_fs_find_file(retail_data_dir(), "OBJECT.DAT", resolved_upper, sizeof(resolved_upper));
     TEST_ASSERT(found_upper, "Must find OBJECT.DAT in original/");
 
     /* Directory traversal attack prevention */
     char bad_resolved[512] = {0};
-    bool traversal_blocked = !hal_fs_find_file("original", "../../etc/passwd", bad_resolved, sizeof(bad_resolved));
+    bool traversal_blocked = !hal_fs_find_file(retail_data_dir(), "../../etc/passwd", bad_resolved, sizeof(bad_resolved));
     TEST_ASSERT(traversal_blocked, "Directory traversal attack must be blocked");
 
     /* Save slot naming */
@@ -359,18 +369,18 @@ static void test_audio_subsystem(void) {
 static void test_overlay_and_databases(void) {
     printf("[TEST] Running test_overlay_and_databases...\n");
 
-    int ovl_res = overlay_init("original/XANTH.OVL");
+    int ovl_res = overlay_init(retail_path("XANTH.OVL"));
     TEST_ASSERT(ovl_res == 0, "overlay_init must succeed for original/XANTH.OVL");
     TEST_ASSERT(g_overlay_mgr.loaded, "Overlay manager loaded flag must be true");
     TEST_ASSERT(g_overlay_mgr.payload_size == OVL_PAYLOAD_SIZE, "Overlay payload size must be 325,595 bytes");
 
-    int obj_res = object_table_load("original/OBJECT.DAT");
+    int obj_res = object_table_load(retail_path("OBJECT.DAT"));
     TEST_ASSERT(obj_res == 0, "object_table_load must succeed");
     TEST_ASSERT(g_object_table.string_count >= 500, "OBJECT.DAT must contain >= 500 strings");
     TEST_ASSERT(object_table_find("You") >= 0, "OBJECT.DAT must contain 'You'");
     TEST_ASSERT(object_table_find("Grundy") >= 0, "OBJECT.DAT must contain 'Grundy'");
 
-    int str_res = story_db_load("original/XANTHSTR.DAT");
+    int str_res = story_db_load(retail_path("XANTHSTR.DAT"));
     TEST_ASSERT(str_res == 0, "story_db_load must succeed");
     TEST_ASSERT(g_story_db.entry_count == 80, "XANTHSTR.DAT entry count must be 80");
 

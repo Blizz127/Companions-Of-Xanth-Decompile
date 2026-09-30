@@ -376,6 +376,8 @@ if(XANTH_BUILD_TESTS)
     set_target_properties(test_adversarial_dma PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
+    add_executable(xanth_native_guard_tests tests/test_native_guards.c src/dos_mem.c $<TARGET_OBJECTS:xanth_emu>)
+    target_include_directories(xanth_native_guard_tests PRIVATE include include/emu)
     # SDL virtual controllers require 2.0.14; preservation stub builds omit this.
     if(SDL2_FOUND_ANY)
         include(CheckSymbolExists)
@@ -431,6 +433,10 @@ if(XANTH_BUILD_TESTS)
         ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy"
         TIMEOUT 60
     )
+
+    set_tests_properties(Native114942NegativeFixture Native103774NegativeFixture
+        Native100203PrefixFixture Native103744Fixture Native100016StoreFixture
+        PROPERTIES SKIP_RETURN_CODE 77)
 
     add_test(NAME NativeDmaPipelineTests COMMAND test_dma_pipeline)
     set_tests_properties(NativeDmaPipelineTests PROPERTIES

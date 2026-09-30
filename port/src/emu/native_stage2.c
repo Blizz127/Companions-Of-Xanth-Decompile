@@ -8,6 +8,8 @@
  */
 #include "native_stage2.h"
 #include "cpu86_alu.h"
+#include "asset_check.h"
+#include <string.h>
 
 #include <stdint.h>
 
@@ -1593,236 +1595,93 @@ hook_result_t xanth_native_stage2_test_exe_103744(cpu86 *cpu) {
 }
 #endif
 
+/* Hash only caller-owned loaded bytes; metadata contains no retail byte runs.
+ * Masks reproduce the previous byte-comparison exclusions. Their relocated
+ * segment values are still checked explicitly by the install routine. */
+static bool native_extent_matches(const vm *machine, uint32_t offset, size_t length,
+        const char *expected, const uint8_t *mask, size_t mask_count) {
+    uint8_t actual[128];
+    char digest[65];
+    if (length > sizeof(actual)) return false;
+    for (size_t i = 0; i < length; i++)
+        actual[i] = mem_r8((uint32_t)machine->img.load_seg * 16u + offset + (uint32_t)i);
+    for (size_t i = 0; i < mask_count; i++) {
+        if (mask[i] >= length) return false;
+        actual[mask[i]] = 0;
+    }
+    return xanth_sha256_buffer(actual, length, digest) && strcmp(digest, expected) == 0;
+}
+
 bool xanth_native_stage2_install(vm *machine) {
-    static const uint8_t verified_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x12, 0x58,
-        0xc7, 0x06, 0x14, 0x58, 0x00, 0x00, 0x5d, 0xcb
-    };
-    static const uint8_t verified_far_ptr_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0x8b, 0x56, 0x08,
-        0xa3, 0xd8, 0x62, 0x89, 0x16, 0xda, 0x62, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_94712_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0x8b, 0x56, 0x08,
-        0x03, 0xc0, 0x13, 0xd2, 0x13, 0xc0, 0x13, 0xd2, 0x13, 0xc0,
-        0x13, 0xd2, 0x13, 0xc0, 0x13, 0xd2, 0x13, 0xc0, 0x92, 0x83,
-        0xe2, 0x0f, 0x03, 0x46, 0x0a, 0x13, 0x56, 0x0c, 0x5d, 0xcb
-    };
-    static const uint8_t verified_if0_helper_inc_fast_prefix[] = {
-        0x83, 0x3e, 0xba, 0x69, 0x00, 0x75, 0x09
-    };
-    static const uint8_t verified_exe_14360_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x5e, 0x06, 0xf6, 0x87, 0xa5, 0x56,
-        0x01, 0x74, 0x05, 0x8d, 0x47, 0x20, 0xeb, 0x02, 0x8b, 0xc3,
-        0x5d, 0xcb
-    };
-    static const uint8_t verified_set_far_arr_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x08, 0x8b, 0x56, 0x0a,
-        0x8b, 0x5e, 0x06, 0x03, 0xdb, 0x03, 0xdb, 0x89, 0x87,
-        0x64, 0x42, 0x89, 0x97, 0x66, 0x42, 0x5d, 0xcb
-    };
-    static const uint8_t verified_get_far_idx_body[] = {
-        0x55, 0x8b, 0xec, 0x56, 0x8a, 0x5e, 0x06, 0x2a, 0xff,
-        0x03, 0xdb, 0x03, 0xdb, 0xc4, 0x36, 0xba, 0x67, 0x26,
-        0x8b, 0x00, 0x26, 0x8b, 0x50, 0x02, 0x5e, 0x8b, 0xe5,
-        0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_99679_body[] = {
-        0x55, 0x8b, 0xec, 0xa0, 0x28, 0x4f, 0x25, 0x01, 0x00,
-        0x3b, 0x46, 0x06, 0x75, 0x0a, 0x8b, 0x1e, 0x28, 0x4f,
-        0xfe, 0x87, 0x2a, 0x4f, 0xeb, 0x14, 0x83, 0x3e, 0x28,
-        0x4f, 0x0f, 0x73, 0x0d, 0xff, 0x06, 0x28, 0x4f, 0x8b,
-        0x1e, 0x28, 0x4f, 0xc6, 0x87, 0x2a, 0x4f, 0x01, 0x8b,
-        0xe5, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_86810_body[] = {
-        0xa1, 0xe0, 0x42, 0xcb
-    };
-    static const uint8_t verified_exe_84866_body[] = {
-        0xa1, 0x40, 0x63, 0x8b, 0x16, 0x42, 0x63, 0xcb
-    };
-    static const uint8_t verified_set_int_pair_a_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x44, 0x63,
-        0x8b, 0x46, 0x08, 0xa3, 0xfe, 0x6d, 0x5d, 0xcb
-    };
-    static const uint8_t verified_set_int_pair_b_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x46, 0x4f,
-        0x8b, 0x46, 0x08, 0xa3, 0x48, 0x4f, 0x5d, 0xcb
-    };
-    static const uint8_t verified_set_int_a_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0x46, 0x63,
-        0x5d, 0xcb
-    };
-    static const uint8_t verified_set_int_b_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0xa3, 0xc0, 0x67,
-        0x5d, 0xcb
-    };
-    static const uint8_t verified_clear_byte_body[] = {
-        0x55, 0x8b, 0xec, 0xc4, 0x5e, 0x06, 0x26, 0xc6, 0x07,
-        0x00, 0x5d, 0xcb
-    };
-    static const uint8_t verified_swap_int_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0xec, 0x02, 0xa1, 0x52, 0x6e,
-        0x89, 0x46, 0xfe, 0x8b, 0x46, 0x06, 0xa3, 0x52, 0x6e,
-        0x8b, 0x46, 0xfe, 0x8b, 0xe5, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_115346_body[] = {
-        0x8b, 0x1e, 0xe0, 0x51, 0x03, 0xdb, 0xc7, 0x87,
-        0xc0, 0x68, 0xff, 0xff, 0xcb
-    };
-    static const uint8_t verified_arr_set_one_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0x7e, 0x06, 0x00, 0x74, 0x0c,
-        0x8b, 0x1e, 0xe0, 0x51, 0x03, 0xdb, 0xc7, 0x87, 0xd0,
-        0x68, 0x01, 0x00, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_114942_body[] = {
-        0x55, 0x8b, 0xec, 0x56, 0x83, 0x7e, 0x06, 0x00, 0x7d, 0x0a,
-        0x33, 0xc0, 0xc4, 0x5e, 0x08, 0x26, 0x89, 0x07, 0xeb, 0x13,
-        0x8b, 0x5e, 0x06, 0x03, 0xdb, 0x8b, 0x87, 0x40, 0x68, 0xc4,
-        0x76, 0x08, 0x26, 0x89, 0x04, 0x8b, 0x87, 0x50, 0x68, 0xc4,
-        0x5e, 0x0c, 0x26, 0x89, 0x07, 0x5e, 0x8b, 0xe5, 0x5d, 0xcb
-    };
-    static const uint8_t verified_store_two_globals_body[] = {
-        0x55, 0x8b, 0xec, 0xa1, 0x44, 0x63, 0xc4, 0x5e, 0x06,
-        0x26, 0x89, 0x07, 0xa1, 0xfe, 0x6d, 0xc4, 0x5e, 0x0a,
-        0x26, 0x89, 0x07, 0x5d, 0xcb
-    };
-    static const uint8_t verified_set_int_if_ge0_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0x7e, 0x06, 0x00, 0x7c, 0x06,
-        0x8b, 0x46, 0x06, 0xa3, 0x36, 0x4d, 0x5d, 0xcb
-    };
-    static const uint8_t verified_iabs_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0x99, 0x33, 0xc2,
-        0x2b, 0xc2, 0x5d, 0xcb
-    };
-    static const uint8_t verified_set_far_arr_chk_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0x7e, 0x06, 0x00, 0x7c, 0x1d,
-        0xa1, 0xb4, 0x4d, 0x39, 0x46, 0x06, 0x7d, 0x15, 0x8b,
-        0x46, 0x08, 0x8b, 0x56, 0x0a, 0x8b, 0x5e, 0x06, 0x03,
-        0xdb, 0x03, 0xdb, 0x89, 0x87, 0xe8, 0x63, 0x89, 0x97,
-        0xea, 0x63, 0x5d, 0xcb
-    };
+    static const char verified_body_sha256[] = "81c02e378fa02460494a5ab4b4cc2a52c4e533c630ee0e123431ad9d14fa850d";
+    static const char verified_far_ptr_body_sha256[] = "1864a688aea17097677a0f513034575c8b8a811dbc9e54ee9133562669c38898";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_94712_body_sha256[] = "05db804f8bbab974d30bcf6bcd5bbca6b4ad2c36fd4e5920a96a6afa8e7bf3ec";
+    static const char verified_if0_helper_inc_fast_prefix_sha256[] = "cb841d415b4630bf438e5294c5722eec07008ec97e716b6fb589c2d324a23b05";
+    static const char verified_exe_14360_body_sha256[] = "3651f67244aeb8699167a4e90f13281b8bb8c3d450728944e557ba59ad2da7c0";
+    static const char verified_set_far_arr_body_sha256[] = "c5a3f3b0a0c1facbd39499169c0fe05023c738cd48ceb1bad94f2384339d6662";
+    static const char verified_get_far_idx_body_sha256[] = "1a11f57e6cbfc02f4b239013595feb5e90d2f815acaee8dbbce2da78573cb3e3";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_99679_body_sha256[] = "8efbc35ee63565a4540b3497cc28e1e81547dd70be902ec2791624345e672c25";
+    static const char verified_exe_86810_body_sha256[] = "42e9254cc6c044c8cafe5c32a0e059e4a49493142003bf2692a3391a68d299e3";
+    static const char verified_exe_84866_body_sha256[] = "b374d005874a0e2712629399afb8d352f82a81f427835c57a9fe82a08dade96c";
+    static const char verified_set_int_pair_a_body_sha256[] = "a3f2d87bd0c0805329ab589bcf48bfdd357aeb9bd6a964b093fe827baab6ebe0";
+    static const char verified_set_int_pair_b_body_sha256[] = "bf26ead80647fd301b637d8c1b7cce68824f18a6f66c66df6381be3665116b8f";
+    static const char verified_set_int_a_body_sha256[] = "3383510bd074067c01f1a4021be5650d3c966cda294d6b638fb8fb6e74e0a7ff";
+    static const char verified_set_int_b_body_sha256[] = "e5ad45403cb7c86fd2d8891a7008311dc988c5f14f1db1747b288393879856c3";
+    static const char verified_clear_byte_body_sha256[] = "e91ad6f1975a6bc00ed3ca877c258a334c84ae635db57dcf89fc445294abd276";
+    static const char verified_swap_int_body_sha256[] = "bf999b0d726f6ca894fa7e0ac389a3156b384aebc84daf8742bbd433927c2aec";
+    static const char verified_exe_115346_body_sha256[] = "84c3b76e60f62d494f7455aa3df4e8449d77c6681318e992aedd730a3f89c37d";
+    static const char verified_arr_set_one_body_sha256[] = "3a1019e9b0eeefd69771174797f0eb7c22e73ac55f9f77f91317511b203db88f";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_114942_body_sha256[] = "9c1af8039f71389165d282228ac88fb631b875d7044d10f6974a6e8751d3f58f";
+    static const char verified_store_two_globals_body_sha256[] = "aae18fa1b8058585dc7a4cb13f939611a1cf4b81a877f4081bbaea5a0f3ea9e4";
+    static const char verified_set_int_if_ge0_body_sha256[] = "2db76bd552a7c40f7933999d24e7850c22b942b2dc32b081fdc2253effcc2d5e";
+    static const char verified_iabs_body_sha256[] = "ab0f534abac3b07d0b9e21aeb1ca0cd4c2fdc4d90c3b9637fcc63bc1aeb6f13b";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_set_far_arr_chk_body_sha256[] = "3f70cb9afdd1fcdadcf351b9a68863deb43f9ee3fae02e1a88b63cdc2489841f";
     static const uint8_t verified_set_byte_one_head[] = {
         0xc6, 0x06, 0x00, 0x00, 0x01, 0xcb
     };
-    static const uint8_t verified_exe_136552_body[] = {
-        0xb8, 0xff, 0xff, 0xcb
-    };
-    static const uint8_t verified_exe_52710_body[] = {
-        0xa1, 0x06, 0x01, 0xc7, 0x06, 0x06, 0x01, 0x00, 0x00, 0xcb
-    };
-    static const uint8_t verified_exe_112795_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0xec, 0x04, 0x8b, 0x46, 0x06,
-        0x8b, 0x1e, 0xc0, 0x67, 0x03, 0xdb, 0x39, 0x87, 0xe2,
-        0x67, 0x7e, 0x21, 0xb8, 0x14, 0x00, 0xf7, 0x6e, 0x06,
-        0x8b, 0x1e, 0xc0, 0x67, 0x03, 0xdb, 0x03, 0xdb, 0x8b,
-        0x8f, 0xc2, 0x67, 0x8b, 0x97, 0xc4, 0x67, 0x03, 0xc8,
-        0x8b, 0xd9, 0x8e, 0xc2, 0x26, 0x80, 0x4f, 0x01, 0x80,
-        0x8b, 0xe5, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_52674_body[] = {
-        0xc7, 0x06, 0x06, 0x01, 0x01, 0x00,
-        0xc7, 0x06, 0x02, 0x01, 0x00, 0x00, 0xcb
-    };
-    static const uint8_t verified_exe_112711_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0xec, 0x08, 0xc7, 0x46, 0xfa,
-        0x00, 0x00, 0x8b, 0x1e, 0xc0, 0x67, 0x03, 0xdb, 0x83,
-        0xbf, 0xe2, 0x67, 0x00, 0x7e, 0x38, 0xc7, 0x46, 0xf8,
-        0x00, 0x00, 0x8b, 0x46, 0x06, 0x8b, 0x1e, 0xc0, 0x67,
-        0x03, 0xdb, 0x03, 0xdb, 0xc4, 0x9f, 0xc2, 0x67, 0x03,
-        0x5e, 0xf8, 0x26, 0x39, 0x47, 0x0a, 0x75, 0x05, 0x26,
-        0x80, 0x4f, 0x01, 0x80, 0x83, 0x46, 0xf8, 0x14, 0xff,
-        0x46, 0xfa, 0x8b, 0x46, 0xfa, 0x8b, 0x1e, 0xc0, 0x67,
-        0x03, 0xdb, 0x39, 0x87, 0xe2, 0x67, 0x7f, 0xcd, 0x8b,
-        0xe5, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_34775_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0xec, 0x02, 0x1e, 0x06,
-        0x56, 0x57, 0xb8, 0xaf, 0x38, 0x8e, 0xd8, 0xbe,
-        0xa6, 0x52, 0x8b, 0x46, 0x06, 0x89, 0x44, 0x0c,
-        0xc7, 0x46, 0xfe, 0x00, 0x00, 0x8b, 0x46, 0xfe,
-        0x5f, 0x5e, 0x07, 0x1f, 0x8b, 0xe5, 0x5d, 0xca,
-        0x02, 0x00
-    };
-    static const uint8_t verified_add_mod_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x06, 0x01, 0x06, 0x5e, 0x02,
-        0xa1, 0x5e, 0x02, 0xb9, 0xa0, 0x05, 0x2b, 0xd2, 0xf7, 0xf1,
-        0x01, 0x06, 0x60, 0x02, 0xa1, 0x5e, 0x02, 0x2b, 0xd2, 0xf7,
-        0xf1, 0x89, 0x16, 0x5e, 0x02, 0x5d, 0xcb
-    };
-    static const uint8_t verified_set_fields_body[] = {
-        0x55, 0x8b, 0xec, 0x8b, 0x46, 0x0a, 0xc4, 0x5e, 0x06,
-        0x26, 0x89, 0x47, 0x02, 0x8b, 0x46, 0x0c, 0x26, 0x89,
-        0x47, 0x04, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_112853_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0xec, 0x04, 0xb8, 0x14, 0x00,
-        0xf7, 0x6e, 0x08, 0x8b, 0x5e, 0x06, 0x03, 0xdb, 0x03,
-        0xdb, 0xc4, 0x9f, 0xc2, 0x67, 0x03, 0xd8, 0x26, 0x8a,
-        0x07, 0x98, 0x2d, 0x03, 0x00, 0x74, 0x0a, 0x2d, 0x04,
-        0x00, 0x74, 0x05, 0x33, 0xc0, 0xeb, 0x05, 0x90, 0x26,
-        0x8b, 0x47, 0x0a, 0x8b, 0xe5, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_100016_body[] = {
-        0x55, 0x8b, 0xec, 0xa1, 0x28, 0x64, 0x39, 0x46, 0x06, 0x75,
-        0x08, 0xa1, 0x2a, 0x64, 0x39, 0x46, 0x08, 0x74, 0x31, 0xf6,
-        0x06, 0x9e, 0x4e, 0x01, 0x74, 0x1e, 0x9a, 0x34, 0xfa, 0xa7,
-        0x08, 0x8b, 0x46, 0x06, 0xa3, 0x28, 0x64, 0x8b, 0x46, 0x08,
-        0xa3, 0x2a, 0x64, 0xb8, 0x01, 0x00, 0x50, 0x9a, 0x79, 0xf9,
-        0xa7, 0x08, 0x8b, 0xe5, 0xeb, 0x0c, 0x8b, 0x46, 0x06, 0xa3,
-        0x28, 0x64, 0x8b, 0x46, 0x08, 0xa3, 0x2a, 0x64, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_103774_body[] = {
-        0x55, 0x8b, 0xec, 0x83, 0xec, 0x04, 0x83, 0x7e, 0x06, 0x00,
-        0x7d, 0x08, 0x33, 0xc0, 0xa3, 0x46, 0x4f, 0xeb, 0x1c, 0x90,
-        0x8d, 0x46, 0xfc, 0x16, 0x50, 0x8d, 0x4e, 0xfe, 0x16, 0x51,
-        0xff, 0x76, 0x06, 0x9a, 0xae, 0x36, 0xa5, 0x18, 0x8b, 0x46,
-        0xfe, 0xa3, 0x46, 0x4f, 0x8b, 0x46, 0xfc, 0xa3, 0x48, 0x4f,
-        0x8b, 0xe5, 0x5d, 0xcb
-    };
-    static const uint8_t verified_exe_100203_head[] = {
-        0x50, 0x50, 0x50, 0x50, 0x9a
-    };
-    static const uint8_t verified_exe_103744_body[] = {
-        0xa1, 0x4a, 0x4f, 0xa3, 0x46, 0x4f,
-        0xa1, 0x4c, 0x4f, 0xa3, 0x48, 0x4f, 0xcb
-    };
+    static const char verified_exe_136552_body_sha256[] = "48348b4cfb92665df981b72550054010b61add90c468e72df33d6cb3a09d49d6";
+    static const char verified_exe_52710_body_sha256[] = "8b02b29a20602452d852ce62f20ba2e6652b87344bf6245fa2e9fd7d976f36f5";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_112795_body_sha256[] = "e07100ae92b59fb11bc8728b2105c4c4b9c433d13f02b3ec94ca4d40ecf78953";
+    static const char verified_exe_52674_body_sha256[] = "c4e329c0f5188a9c5c6c7fe0bac6405dc2cb69e410b6c1fce41f7550538dc4bd";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_112711_body_sha256[] = "8505b71915bdbb5950a0b5ceba723aef93c191f17adb4b68ee9e4aff55c871e2";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_34775_body_sha256[] = "9c667f698374e7622d75b5781a9b89553bc9d3a8455e7964355f9f3a22db8ada";
+    static const uint8_t verified_exe_34775_body_mask[] = {11u, 12u};
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_add_mod_body_sha256[] = "6379a176a2d2506ea182853abaeb9ce0917c10631f1fcb12b862d8dd53a5f59d";
+    static const char verified_set_fields_body_sha256[] = "6c2777f4b2a6aa1939705c14fcbbfd8a68b97c2dbc8d4b231020b2f76eeeb5a1";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_112853_body_sha256[] = "e483c0688892cee7af33649cdba5e9575f5bdd56aae8ba9ec5090279a63e7dc2";
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_100016_body_sha256[] = "72ebbc592e4189f3aef161db85dc4be248105a0eed8233901fda010b859c7f30";
+    static const uint8_t verified_exe_100016_body_mask[] = {29u, 30u, 50u, 51u};
+    /* SHA-256 of the matched source extent; relocation bytes are zeroed. */
+    static const char verified_exe_103774_body_sha256[] = "3e9648e80a9607eaafdf23a90047c8c5e112db688ee2295fc9e22e8899df9f7f";
+    static const uint8_t verified_exe_103774_body_mask[] = {36u, 37u};
+    static const char verified_exe_100203_head_sha256[] = "a204f67ca982c0618151b4f5762248cb11cd1ef9382b196f13b50cd494fc0c7e";
+    static const char verified_exe_103744_body_sha256[] = "ccee99fef6c420fc3af43f1b422fca5d7a073671c406f82508d17d97aa703f6c";
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
 
-    for (size_t i = 0; i < sizeof(verified_exe_136552_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_136552_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_136552_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_52710_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_52710_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_52710_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_112795_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_112795_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_112795_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_52674_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_52674_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_52674_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_112711_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_112711_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_112711_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_34775_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_34775_OFFSET + (uint32_t)i;
-        /* The immediate segment at bytes 11-12 carries an MZ relocation. */
-        if (i == 11u || i == 12u) continue;
-        if (mem_r8(address) != verified_exe_34775_body[i]) return false;
-    }
+    if (!native_extent_matches(machine, EXE_136552_OFFSET, 4u,
+            verified_exe_136552_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_52710_OFFSET, 10u,
+            verified_exe_52710_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_112795_OFFSET, 58u,
+            verified_exe_112795_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_52674_OFFSET, 13u,
+            verified_exe_52674_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_112711_OFFSET, 84u,
+            verified_exe_112711_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_34775_OFFSET, 42u,
+            verified_exe_34775_body_sha256, verified_exe_34775_body_mask, sizeof(verified_exe_34775_body_mask))) return false;
     {
         uint32_t segment_word = (uint32_t)machine->img.load_seg * 16u +
                                 EXE_34775_OFFSET + 11u;
@@ -1832,28 +1691,14 @@ bool xanth_native_stage2_install(vm *machine) {
             mem_r8(segment_word + 1u) != (uint8_t)(expected_segment >> 8))
             return false;
     }
-    for (size_t i = 0; i < sizeof(verified_add_mod_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           ADD_MOD_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_add_mod_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_fields_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_FIELDS_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_fields_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_112853_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_112853_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_112853_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_100016_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_100016_OFFSET + (uint32_t)i;
-        /* Both helper-call segment words are adjusted by MZ relocations. */
-        if (i == 29u || i == 30u || i == 50u || i == 51u) continue;
-        if (mem_r8(address) != verified_exe_100016_body[i]) return false;
-    }
+    if (!native_extent_matches(machine, ADD_MOD_EXE_OFFSET, 37u,
+            verified_add_mod_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_FIELDS_EXE_OFFSET, 22u,
+            verified_set_fields_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_112853_OFFSET, 52u,
+            verified_exe_112853_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_100016_OFFSET, 70u,
+            verified_exe_100016_body_sha256, verified_exe_100016_body_mask, sizeof(verified_exe_100016_body_mask))) return false;
     for (size_t i = 0; i < 2u; i++) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            EXE_100016_OFFSET + (i == 0u ? 29u : 50u);
@@ -1863,23 +1708,12 @@ bool xanth_native_stage2_install(vm *machine) {
             mem_r8(address + 1u) != (uint8_t)(expected_segment >> 8))
             return false;
     }
-    for (size_t i = 0; i < sizeof(verified_exe_103774_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_103774_OFFSET + (uint32_t)i;
-        /* The near fast path skips this far helper, whose segment is relocated. */
-        if (i == 36u || i == 37u) continue;
-        if (mem_r8(address) != verified_exe_103774_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_100203_head); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_100203_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_100203_head[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_103744_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_103744_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_103744_body[i]) return false;
-    }
+    if (!native_extent_matches(machine, EXE_103774_OFFSET, 54u,
+            verified_exe_103774_body_sha256, verified_exe_103774_body_mask, sizeof(verified_exe_103774_body_mask))) return false;
+    if (!native_extent_matches(machine, EXE_100203_OFFSET, 5u,
+            verified_exe_100203_head_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_103744_OFFSET, 13u,
+            verified_exe_103744_body_sha256, NULL, 0u)) return false;
     {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            EXE_103774_OFFSET + 36u;
@@ -1890,51 +1724,27 @@ bool xanth_native_stage2_install(vm *machine) {
             return false;
     }
 
-    for (size_t i = 0; i < sizeof(verified_body); i++) {
-        if (seg_r8(machine->img.load_seg,
-                   (uint16_t)(SET_INT_AND_ZERO_EXE_OFFSET + i)) != verified_body[i])
-            return false;
-    }
+    if (!native_extent_matches(machine, SET_INT_AND_ZERO_EXE_OFFSET, 17u,
+            verified_body_sha256, NULL, 0u)) return false;
 
-    for (size_t i = 0; i < sizeof(verified_far_ptr_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_FAR_PTR_EXE_OFFSET + (uint32_t)i;
-        uint8_t actual = mem_r8(address);
-        if (actual != verified_far_ptr_body[i]) {
-            return false;
-        }
-    }
+    if (!native_extent_matches(machine, SET_FAR_PTR_EXE_OFFSET, 18u,
+            verified_far_ptr_body_sha256, NULL, 0u)) return false;
 
-    for (size_t i = 0; i < sizeof(verified_exe_94712_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_94712_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_94712_body[i]) return false;
-    }
+    if (!native_extent_matches(machine, EXE_94712_EXE_OFFSET, 39u,
+            verified_exe_94712_body_sha256, NULL, 0u)) return false;
 
-    for (size_t i = 0; i < sizeof(verified_if0_helper_inc_fast_prefix); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           IF0_HELPER_INC_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_if0_helper_inc_fast_prefix[i]) return false;
-    }
+    if (!native_extent_matches(machine, IF0_HELPER_INC_EXE_OFFSET, 7u,
+            verified_if0_helper_inc_fast_prefix_sha256, NULL, 0u)) return false;
     /* The skipped slow branch contains a relocated far-call segment word. */
     if (mem_r8((uint32_t)machine->img.load_seg * 16u +
                IF0_HELPER_INC_EXE_OFFSET + 16u) != 0xcb) return false;
 
-    for (size_t i = 0; i < sizeof(verified_exe_14360_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_14360_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_14360_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_far_arr_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_FAR_ARR_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_far_arr_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_get_far_idx_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           GET_FAR_IDX_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_get_far_idx_body[i]) return false;
-    }
+    if (!native_extent_matches(machine, EXE_14360_EXE_OFFSET, 22u,
+            verified_exe_14360_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_FAR_ARR_EXE_OFFSET, 26u,
+            verified_set_far_arr_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, GET_FAR_IDX_EXE_OFFSET, 29u,
+            verified_get_far_idx_body_sha256, NULL, 0u)) return false;
     for (size_t u = 0; u < sizeof(g_exe_37625_units) / sizeof(g_exe_37625_units[0]); u++) {
         const uint8_t signature[] = {
             0xc7, 0x06,
@@ -1948,86 +1758,38 @@ bool xanth_native_stage2_install(vm *machine) {
             if (mem_r8(address) != signature[i]) return false;
         }
     }
-    for (size_t i = 0; i < sizeof(verified_exe_99679_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_99679_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_99679_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_86810_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_86810_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_86810_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_84866_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_84866_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_84866_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_int_pair_a_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_INT_PAIR_A_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_int_pair_a_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_int_pair_b_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_INT_PAIR_B_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_int_pair_b_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_int_a_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_INT_A_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_int_a_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_int_b_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_INT_B_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_int_b_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_clear_byte_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           CLEAR_BYTE_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_clear_byte_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_swap_int_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SWAP_INT_EXE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_swap_int_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_115346_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_115346_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_115346_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_arr_set_one_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           ARR_SET_ONE_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_arr_set_one_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_exe_114942_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           EXE_114942_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_exe_114942_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_store_two_globals_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           STORE_TWO_GLOBALS_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_store_two_globals_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_int_if_ge0_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_INT_IF_GE0_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_int_if_ge0_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_iabs_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           IABS_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_iabs_body[i]) return false;
-    }
-    for (size_t i = 0; i < sizeof(verified_set_far_arr_chk_body); i++) {
-        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
-                           SET_FAR_ARR_CHK_OFFSET + (uint32_t)i;
-        if (mem_r8(address) != verified_set_far_arr_chk_body[i]) return false;
-    }
+    if (!native_extent_matches(machine, EXE_99679_EXE_OFFSET, 48u,
+            verified_exe_99679_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_86810_EXE_OFFSET, 4u,
+            verified_exe_86810_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_84866_EXE_OFFSET, 8u,
+            verified_exe_84866_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_INT_PAIR_A_EXE_OFFSET, 17u,
+            verified_set_int_pair_a_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_INT_PAIR_B_EXE_OFFSET, 17u,
+            verified_set_int_pair_b_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_INT_A_EXE_OFFSET, 11u,
+            verified_set_int_a_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_INT_B_EXE_OFFSET, 11u,
+            verified_set_int_b_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, CLEAR_BYTE_EXE_OFFSET, 12u,
+            verified_clear_byte_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SWAP_INT_EXE_OFFSET, 25u,
+            verified_swap_int_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_115346_OFFSET, 13u,
+            verified_exe_115346_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, ARR_SET_ONE_OFFSET, 23u,
+            verified_arr_set_one_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, EXE_114942_OFFSET, 50u,
+            verified_exe_114942_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, STORE_TWO_GLOBALS_OFFSET, 23u,
+            verified_store_two_globals_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_INT_IF_GE0_OFFSET, 17u,
+            verified_set_int_if_ge0_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, IABS_OFFSET, 13u,
+            verified_iabs_body_sha256, NULL, 0u)) return false;
+    if (!native_extent_matches(machine, SET_FAR_ARR_CHK_OFFSET, 40u,
+            verified_set_far_arr_chk_body_sha256, NULL, 0u)) return false;
     for (size_t u = 0; u < sizeof(g_set_byte_one_units) / sizeof(g_set_byte_one_units[0]); u++) {
         for (size_t i = 0; i < sizeof(verified_set_byte_one_head); i++) {
             uint8_t expected = verified_set_byte_one_head[i];
