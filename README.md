@@ -40,7 +40,8 @@ Steam's Force Compatibility Tool option disabled.
 
 Mouse and keyboard are the defaults. With `--controller`, the left stick moves
 the pointer, A clicks, X right-clicks, D-pad sends arrows, and Start sends
-Enter. Optional settings include `--pixel-perfect`, `--fit`, `--crt`,
+Enter. Controllers can be connected or reconnected while the port is running.
+Optional settings include `--pixel-perfect`, `--fit`, `--crt`,
 `--linear`, `--fullscreen`, `--handheld`, `--hotkeys`, `--soundfont <your.sf2>`,
 per-channel `--volume-* N`, and hash-keyed `--mods <directory>` with separate
 font/graphics switches. All enhancements are off by default; see

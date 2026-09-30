@@ -376,6 +376,22 @@ if(XANTH_BUILD_TESTS)
     set_target_properties(test_adversarial_dma PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
+    # SDL virtual controllers require 2.0.14; preservation stub builds omit this.
+    if(SDL2_FOUND_ANY)
+        include(CheckSymbolExists)
+        set(CMAKE_REQUIRED_LIBRARIES ${SDL2_TARGET_LIB})
+        check_symbol_exists(SDL_JoystickAttachVirtual "SDL.h" XANTH_SDL_VIRTUAL_CONTROLLER)
+        unset(CMAKE_REQUIRED_LIBRARIES)
+        if(XANTH_SDL_VIRTUAL_CONTROLLER)
+            add_executable(xanth_controller_tests tests/test_controller.c src/hal_input.c)
+            target_include_directories(xanth_controller_tests PRIVATE include)
+            target_link_libraries(xanth_controller_tests PRIVATE ${SDL2_TARGET_LIB})
+            add_test(NAME ControllerInputTests COMMAND xanth_controller_tests)
+            set_tests_properties(ControllerInputTests PROPERTIES
+                ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
+        endif()
+    endif()
+
     add_test(NAME CpuConformanceTests COMMAND xanth_cpu_tests)
     set_tests_properties(CpuConformanceTests PROPERTIES TIMEOUT 60)
 

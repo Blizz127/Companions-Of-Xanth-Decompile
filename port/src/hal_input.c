@@ -33,6 +33,7 @@ typedef struct {
 } mouse_state_t;
 
 static mouse_state_t g_mouse;
+static int g_mouse_buttons, g_gamepad_buttons;
 
 /* -------------------------------------------------------------------------
  * INT 16h BIOS Keyboard FIFO Ring Buffer
@@ -57,10 +58,93 @@ static bool g_gamepad_enabled;
 static bool g_hotkeys_enabled;
 static int g_pending_hotkey;
 #ifndef XANTH_HEADLESS_STUB
-static SDL_GameController *g_controller;
+#define MAX_GAMEPADS 16
+typedef struct {
+    SDL_GameController *controller;
+    SDL_JoystickID id;
+    unsigned buttons;
+    bool ready, steam_virtual;
+} gamepad_slot;
+static gamepad_slot g_pads[MAX_GAMEPADS];
+static int g_active_pad = -1;
+
+static void close_gamepads(void) {
+    for (int i = 0; i < MAX_GAMEPADS; ++i) {
+        if (g_pads[i].controller) SDL_GameControllerClose(g_pads[i].controller);
+        memset(&g_pads[i], 0, sizeof(g_pads[i]));
+    }
+    g_active_pad = -1;
+}
+
+static int find_gamepad(SDL_JoystickID id) {
+    for (int i = 0; i < MAX_GAMEPADS; ++i)
+        if (g_pads[i].controller && g_pads[i].id == id) return i;
+    return -1;
+}
+
+static bool gamepad_has_input(const gamepad_slot *pad) {
+    if (pad->buttons) return true;
+    for (int b = 0; b < SDL_CONTROLLER_BUTTON_MAX; ++b)
+        if (SDL_GameControllerGetButton(pad->controller, (SDL_GameControllerButton)b)) return true;
+    return abs(SDL_GameControllerGetAxis(pad->controller, SDL_CONTROLLER_AXIS_LEFTX)) > 12000 ||
+           abs(SDL_GameControllerGetAxis(pad->controller, SDL_CONTROLLER_AXIS_LEFTY)) > 12000;
+}
+
+static void reconcile_gamepads(void) {
+    for (int i = 0; i < MAX_GAMEPADS; ++i) {
+        gamepad_slot *pad = &g_pads[i];
+        if (!pad->controller) continue;
+        if (!SDL_GameControllerGetAttached(pad->controller)) {
+            SDL_GameControllerClose(pad->controller);
+            memset(pad, 0, sizeof(*pad));
+            if (g_active_pad == i) g_active_pad = -1;
+        } else if (!pad->ready && !gamepad_has_input(pad)) pad->ready = true;
+    }
+    for (int j = 0; j < SDL_NumJoysticks(); ++j) {
+        if (!SDL_IsGameController(j) || find_gamepad(SDL_JoystickGetDeviceInstanceID(j)) >= 0) continue;
+        int i;
+        for (i = 0; i < MAX_GAMEPADS && g_pads[i].controller; ++i) {}
+        if (i == MAX_GAMEPADS) break;
+        SDL_GameController *controller = SDL_GameControllerOpen(j);
+        if (!controller) continue;
+        gamepad_slot *pad = &g_pads[i];
+        pad->controller = controller;
+        pad->id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller));
+        const char *name = SDL_GameControllerName(controller);
+#if SDL_VERSION_ATLEAST(2, 0, 6)
+        pad->steam_virtual = SDL_GameControllerGetVendor(controller) == 0x28de &&
+                            SDL_GameControllerGetProduct(controller) == 0x11ff;
+#endif
+        if (name && strstr(name, "Steam Virtual")) pad->steam_virtual = true;
+        pad->ready = !gamepad_has_input(pad);
+    }
+}
+
+static bool select_gamepad(int index) {
+    gamepad_slot *pad = &g_pads[index];
+    if (!pad->ready) return false;
+    if (pad->steam_virtual) {
+        for (int i = 0; i < MAX_GAMEPADS; ++i)
+            if (i != index && g_pads[i].controller && g_pads[i].ready &&
+                !g_pads[i].steam_virtual && gamepad_has_input(&g_pads[i])) return false;
+    }
+    if (g_active_pad != index) {
+        g_active_pad = index;
+        unsigned vendor = 0, product = 0;
+#if SDL_VERSION_ATLEAST(2, 0, 6)
+        vendor = SDL_GameControllerGetVendor(pad->controller);
+        product = SDL_GameControllerGetProduct(pad->controller);
+#endif
+        fprintf(stderr, "[DEV_MENU] pad: %s vid:pid=%04x:%04x instance=%d reason=%s\n",
+                SDL_GameControllerName(pad->controller), vendor, product, (int)pad->id,
+                pad->steam_virtual ? "virtual-only" : "physical-active");
+    }
+    return true;
+}
 #endif
 
 void hal_input_init(void) {
+    g_mouse_buttons = g_gamepad_buttons = 0;
     memset(&g_mouse, 0, sizeof(g_mouse));
     g_mouse.virt_x = 320;
     g_mouse.virt_y = 100;
@@ -77,7 +161,7 @@ void hal_input_init(void) {
     g_hotkeys_enabled = false;
     g_pending_hotkey = 0;
 #ifndef XANTH_HEADLESS_STUB
-    g_controller = NULL;
+    close_gamepads();
 #endif
 }
 
@@ -91,33 +175,63 @@ int hal_input_take_hotkey(void) {
     return hotkey;
 }
 
-void hal_input_enable_gamepad(bool enabled) {
-    g_gamepad_enabled = enabled;
+void hal_input_prepare_gamepad(bool enabled) {
 #ifndef XANTH_HEADLESS_STUB
-    if (!enabled) {
-        if (g_controller) SDL_GameControllerClose(g_controller);
-        g_controller=NULL;
-        return;
-    }
-    if (g_controller) return;
-    if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
-        (void)SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
-    for (int i=0;i<SDL_NumJoysticks();++i) {
-        if (SDL_IsGameController(i)) {
-            g_controller = SDL_GameControllerOpen(i);
-            if (g_controller) break;
+    if (!enabled) return;
+    const char *keys[] = {"SDL_GAMECONTROLLER_IGNORE_DEVICES", "SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT"};
+    for (unsigned i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i) {
+        const char *value = SDL_getenv(keys[i]);
+        if (!value || !*value) continue;
+        char *before = SDL_strdup(value), *copy = SDL_strdup(value);
+        char *after = SDL_calloc(strlen(value) + 1, 1);
+        if (!before || !copy || !after) { SDL_free(before); SDL_free(copy); SDL_free(after); continue; }
+        char *cursor = copy;
+        while (cursor && *cursor) {
+            char *entry = cursor, *comma = strchr(cursor, ',');
+            if (comma) { *comma = 0; cursor = comma + 1; } else cursor = NULL;
+            unsigned vid = 0, pid = 0;
+            bool handheld = sscanf(entry, " %x/%x", &vid, &pid) == 2 &&
+                (vid == 0x17ef || (vid == 0x28de && (pid == 0x1205 || pid == 0x1206)));
+            if (!handheld) { if (*after) strcat(after, ","); strcat(after, entry); }
         }
+        if (strcmp(before, after)) {
+            SDL_setenv(keys[i], after, 1);
+            fprintf(stderr, "[DEV_MENU] %s: %s -> %s\n", keys[i], before, after);
+        }
+        SDL_free(before); SDL_free(copy); SDL_free(after);
     }
 #else
     (void)enabled;
 #endif
 }
 
-void hal_input_shutdown(void) {
-    /* Clean up input resources */
+void hal_input_enable_gamepad(bool enabled) {
+    g_gamepad_enabled = enabled;
 #ifndef XANTH_HEADLESS_STUB
-    if (g_controller) SDL_GameControllerClose(g_controller);
-    g_controller = NULL;
+    if (!enabled) {
+        close_gamepads();
+        g_gamepad_buttons = 0;
+        g_mouse.buttons = g_mouse_buttons;
+        return;
+    }
+    hal_input_prepare_gamepad(true);
+    if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0 && SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) < 0) {
+        fprintf(stderr, "[DEV_MENU] controller unavailable: %s\n", SDL_GetError());
+        return;
+    }
+    reconcile_gamepads();
+#else
+    (void)enabled;
+#endif
+}
+
+void hal_input_shutdown(void) {
+    /* Release controller-owned clicks while preserving a held physical mouse. */
+    g_gamepad_enabled = false;
+    g_gamepad_buttons = 0;
+    g_mouse.buttons = g_mouse_buttons;
+#ifndef XANTH_HEADLESS_STUB
+    close_gamepads();
 #endif
 }
 
@@ -129,6 +243,7 @@ void hal_mouse_reset(int *status, int *num_buttons) {
     g_mouse.virt_y = 100;
     g_mouse.screen_x = 160;
     g_mouse.screen_y = 100;
+    g_mouse_buttons = g_gamepad_buttons = 0;
     g_mouse.buttons = 0;
     g_mouse.visible = false;
     g_mouse.min_x = 0;
@@ -327,15 +442,11 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             break;
 
         case SDL_KEYDOWN: {
-            if (g_hotkeys_enabled && event.key.repeat == 0 &&
-                event.key.keysym.sym == SDLK_F11) {
-                g_pending_hotkey = 1; /* fullscreen */
-                break;
-            }
-            if (g_hotkeys_enabled && event.key.repeat == 0 &&
-                event.key.keysym.sym == SDLK_F10) {
-                g_pending_hotkey = 2; /* CRT scanlines */
-                break;
+            if (g_hotkeys_enabled && (event.key.keysym.sym == SDLK_F11 ||
+                                      event.key.keysym.sym == SDLK_F10)) {
+                if (event.key.repeat == 0)
+                    g_pending_hotkey = event.key.keysym.sym == SDLK_F11 ? 1 : 2;
+                break; /* Host shortcuts, including repeats, stay out of BIOS FIFO. */
             }
             uint8_t scan = 0, ascii = 0;
             translate_sdl_key(&event.key, &scan, &ascii);
@@ -358,18 +469,35 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             break;
         }
 
+        case SDL_CONTROLLERDEVICEADDED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+            if (g_gamepad_enabled) reconcile_gamepads();
+            break;
+        case SDL_CONTROLLERAXISMOTION: {
+            int index = find_gamepad(event.caxis.which);
+            if (g_gamepad_enabled && index >= 0 &&
+                (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX || event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) &&
+                abs(event.caxis.value) > 12000) (void)select_gamepad(index);
+            break;
+        }
+
         case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP: {
-            if (!g_gamepad_enabled) break;
+            int index = find_gamepad(event.cbutton.which);
+            if (!g_gamepad_enabled || index < 0 || event.cbutton.button >= SDL_CONTROLLER_BUTTON_MAX) break;
             bool down = event.type == SDL_CONTROLLERBUTTONDOWN;
+            if (down) g_pads[index].buttons |= 1u << event.cbutton.button;
+            else g_pads[index].buttons &= ~(1u << event.cbutton.button);
+            if (down) (void)select_gamepad(index);
+            if (!g_pads[index].ready || index != g_active_pad) break;
             switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_A:
-                if (down) g_mouse.buttons |= HAL_MOUSE_BTN_LEFT;
-                else g_mouse.buttons &= ~HAL_MOUSE_BTN_LEFT;
+                if (down) g_gamepad_buttons |= HAL_MOUSE_BTN_LEFT;
+                else g_gamepad_buttons &= ~HAL_MOUSE_BTN_LEFT;
                 break;
             case SDL_CONTROLLER_BUTTON_X:
-                if (down) g_mouse.buttons |= HAL_MOUSE_BTN_RIGHT;
-                else g_mouse.buttons &= ~HAL_MOUSE_BTN_RIGHT;
+                if (down) g_gamepad_buttons |= HAL_MOUSE_BTN_RIGHT;
+                else g_gamepad_buttons &= ~HAL_MOUSE_BTN_RIGHT;
                 break;
             case SDL_CONTROLLER_BUTTON_DPAD_UP:
                 if (down) (void)hal_keyboard_push(0x48,0);
@@ -426,15 +554,20 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             else if (event.button.button == SDL_BUTTON_RIGHT) btn_mask = HAL_MOUSE_BTN_RIGHT;
             else if (event.button.button == SDL_BUTTON_MIDDLE) btn_mask = HAL_MOUSE_BTN_MIDDLE;
 
-            if (down) g_mouse.buttons |= btn_mask;
-            else g_mouse.buttons &= ~btn_mask;
+            if (down) g_mouse_buttons |= btn_mask;
+            else g_mouse_buttons &= ~btn_mask;
             break;
         }
         }
     }
-    if (g_controller && SDL_GameControllerGetAttached(g_controller)) {
-        int dx=SDL_GameControllerGetAxis(g_controller,SDL_CONTROLLER_AXIS_LEFTX);
-        int dy=SDL_GameControllerGetAxis(g_controller,SDL_CONTROLLER_AXIS_LEFTY);
+    if (g_gamepad_enabled) reconcile_gamepads();
+    g_gamepad_buttons = 0;
+    if (g_active_pad >= 0 && g_pads[g_active_pad].controller) {
+        gamepad_slot *pad = &g_pads[g_active_pad];
+        if (pad->buttons & (1u << SDL_CONTROLLER_BUTTON_A)) g_gamepad_buttons |= HAL_MOUSE_BTN_LEFT;
+        if (pad->buttons & (1u << SDL_CONTROLLER_BUTTON_X)) g_gamepad_buttons |= HAL_MOUSE_BTN_RIGHT;
+        int dx=SDL_GameControllerGetAxis(pad->controller,SDL_CONTROLLER_AXIS_LEFTX);
+        int dy=SDL_GameControllerGetAxis(pad->controller,SDL_CONTROLLER_AXIS_LEFTY);
         int step_x=(dx > 12000) ? 3 : ((dx < -12000) ? -3 : 0);
         int step_y=(dy > 12000) ? 2 : ((dy < -12000) ? -2 : 0);
         if (step_x || step_y) {
@@ -443,12 +576,12 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             if (nx>=HAL_VIDEO_WIDTH) nx=HAL_VIDEO_WIDTH-1;
             if (ny<0) ny=0;
             if (ny>=HAL_VIDEO_HEIGHT) ny=HAL_VIDEO_HEIGHT-1;
-            g_mouse.screen_x=nx; g_mouse.screen_y=ny;
-            g_mouse.virt_x=nx*2; g_mouse.virt_y=ny;
+            hal_mouse_set_position(nx*2, ny);
         }
     }
 #endif
 
+    g_mouse.buttons = g_mouse_buttons | g_gamepad_buttons;
     if (mouse_x) *mouse_x = g_mouse.screen_x;
     if (mouse_y) *mouse_y = g_mouse.screen_y;
     if (mouse_buttons) *mouse_buttons = g_mouse.buttons;

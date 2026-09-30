@@ -219,6 +219,7 @@ static void print_usage(const char *prog) {
     printf("  --linear         Enable optional linear texture filtering\n");
     printf("  --enhanced-graphics Enable linear filtering and CRT scanlines\n");
     printf("  --handheld       Open at 1280x800 for Deck/Legion Go displays\n");
+    printf("  --controller     Enable SDL gamepad pointer and button input\n");
     printf("  --hotkeys        Enable F11 fullscreen and F10 scanline hotkeys\n");
     printf("  --volume-<name> <0..128>  Set master/music/sfx/voice channel volume\n");
     printf("  --soundfont <sf2>  Opt in to FluidSynth General MIDI using your soundfont\n");
@@ -393,6 +394,8 @@ int main(int argc, char **argv) {
             return 2;
         }
     }
+
+    hal_input_prepare_gamepad(gamepad);
 
     if (!have_exe) {
         int n = snprintf(cfg.exe_path, sizeof(cfg.exe_path),

@@ -91,6 +91,14 @@ available on the command line.
 
 ## Preservation verification
 
+Controller regression coverage uses SDL virtual devices, including a silent
+Steam virtual pad beside a Lenovo-identified fixture. It checks startup hint
+sanitation before SDL initializes, physical input precedence, fallback to an
+active virtual pad, hotplug by instance ID, neutral input after reconnect,
+shared mouse/button ownership, guest pointer bounds, and keyboard operation
+after removal. Physical Deck/Legion testing remains unverified. These input
+changes are available only with `--controller`; keyboard/mouse remain default.
+
 The enhancement layer calls the existing SDL2 HAL and does not modify retail
 code. The existing VM frame-hash tests remain the gate for game state and
 rendered guest output. Host presentation options such as filters affect only

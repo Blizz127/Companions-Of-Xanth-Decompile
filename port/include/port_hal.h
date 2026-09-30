@@ -83,6 +83,8 @@ void hal_audio_mpu_write_data(uint8_t data);
 #define HAL_MOUSE_BTN_MIDDLE  0x04
 
 void hal_input_init(void);
+/* Call before SDL initialization when controller input is requested. */
+void hal_input_prepare_gamepad(bool enabled);
 void hal_input_enable_gamepad(bool enabled);
 void hal_input_enable_hotkeys(bool enabled);
 int hal_input_take_hotkey(void);
