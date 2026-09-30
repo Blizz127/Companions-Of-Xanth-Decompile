@@ -6,11 +6,20 @@ This in-progress Linux port plays through Fairy Nuff's recipe and shows
 ## About this project
 This is a passion project. I'm working hard on it, but it's made for fun and for everyone's enjoyment — free, non-commercial, and made by a fan. If you enjoy it, that's the whole point.
 
+## Milestones and progress
+
+Public releases happen at milestones. The
+[Milestones](https://github.com/Blizz127/Companions-Of-Xanth-Decompile/wiki/Milestones)
+wiki page lists what each release reached, where the port honestly stands,
+the proposed next milestone and a dated changelog. Between milestones the
+port is developed privately; the decompilation stays public here, and
+releases ship the Linux package only.
+
 ## How to play
 
 1. Download the Linux x86_64 release asset named
-   `xanth-port-v0.1.0-alpha.4-linux-x86_64.tar.gz` from
-   [Releases](https://github.com/Blizz127/Companions-Of-Xanth-Decompile/releases/tag/v0.1.0-alpha.4) and extract it
+   `xanth-port-v0.1.0-alpha.5-linux-x86_64.tar.gz` from
+   [Releases](https://github.com/Blizz127/Companions-Of-Xanth-Decompile/releases/tag/v0.1.0-alpha.5) and extract it
    to `~/Games/companions-of-xanth/port/`. The package contains the port and
    checkpoint-building tools, but no game files. Linux uses your system SDL2.
 2. Supply files from your own copy: `XANTH.EXE` and the 90 runtime files listed
