@@ -1,0 +1,42 @@
+Companions of Xanth — quick start
+
+1. Download the Linux x86_64 release asset named
+   xanth-r<N>-<commit>-linux-x86_64.tar.gz from GitHub Releases and extract
+   it to ~/Games/companions-of-xanth/port/.
+2. Supply XANTH.EXE plus the 90 files listed in DATA_FILES.txt from your own
+   original disc or an installation you already own. Copy all 91 directly
+   into ~/Games/companions-of-xanth/data/. GOG currently has a Dreamlist page,
+   not a store product listing:
+   https://www.gog.com/dreamlist/game/companions-of-xanth
+3. Double-click launch.sh or run:
+   ~/Games/companions-of-xanth/port/launch.sh
+
+No game files are included. At startup the port checks SHA-256 pins for all
+91 required files. If it cannot find a valid directory, Linux opens a desktop
+folder chooser (kdialog on KDE or zenity on GNOME). A successful folder is
+remembered locally. A hash mismatch means files are missing or from a
+different release; this build supports only the pinned XANBUD set. Keep the
+files directly in one directory, not nested in a disc-parent folder.
+
+If the chooser is unavailable, install kdialog/zenity or run:
+  ./launch.sh /absolute/path/to/game-data
+You can also set XANTH_DATA to that path.
+
+STEAM DECK / GAME MODE
+In Desktop Mode add launch.sh as a non-Steam game. Set Start In to the
+extracted package folder and Launch Options to
+/home/deck/Games/companions-of-xanth/data. Add --controller to Launch Options
+to enable SDL gamepad support. Return to Game Mode and start it from Library.
+This is a native Linux app; leave Force Compatibility Tool disabled.
+
+Mouse and keyboard are the defaults. With --controller: left stick moves the
+pointer, A clicks, X right-clicks, D-pad sends arrows, and Start sends Enter.
+Optional flags: --pixel-perfect, --fit, --crt, --linear, --fullscreen,
+--handheld, --controller, --hotkeys, --soundfont <your.sf2>,
+--volume-{master,music,sfx,voice} N, and --mods <directory> with
+--replacement-fonts or --replacement-graphics. All are off or unchanged by
+default. See docs/ENHANCEMENTS.md.
+
+STATUS
+The current verified route reaches Fairy Nuff's recipe and shows 122/1000.
+The full game is not completable yet. See docs/KNOWN_DIVERGENCES.md.

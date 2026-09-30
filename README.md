@@ -1,3 +1,59 @@
+# How to play
+
+This in-progress Linux port plays through Fairy Nuff's recipe and shows
+122/1000 points. The full game is not completable yet.
+
+1. Download the Linux x86_64 release asset named
+   `xanth-r<N>-<commit>-linux-x86_64.tar.gz` from **Releases** and extract it
+   to `~/Games/companions-of-xanth/port/`. The package contains the port and
+   its SDL2 runtime/license, but no game files.
+2. Supply files from your own copy: `XANTH.EXE` and the 90 runtime files listed
+   in the package's `DATA_FILES.txt`, all directly in one folder. Copy them
+   from an original disc or an installation you already own. GOG currently
+   lists *Companions of Xanth* in its Dreamlist rather than as a store product,
+   so a GOG copy is not presently offered there:
+   [GOG Dreamlist](https://www.gog.com/dreamlist/game/companions-of-xanth).
+   Put your files in `~/Games/companions-of-xanth/data/`. If the port cannot
+   find a valid folder, Linux opens a chooser; a successful selection is
+   checked against SHA-256 pins and remembered locally.
+3. Double-click the package's `launch.sh`, or run:
+
+   ```sh
+   ~/Games/companions-of-xanth/port/launch.sh
+   ```
+
+   Pass a different data folder as its first argument, or set `XANTH_DATA`.
+
+## Steam Deck / Game Mode
+
+In Desktop Mode, add `launch.sh` from the extracted package to Steam as a
+non-Steam game. Set **Start In** to the package folder and Launch Options to
+`/home/deck/Games/companions-of-xanth/data`. Add `--controller` to enable SDL
+gamepad input, then launch it from Game Mode. This is a native Linux app; leave
+Steam's Force Compatibility Tool option disabled.
+
+Mouse and keyboard are the defaults. With `--controller`, the left stick moves
+the pointer, A clicks, X right-clicks, D-pad sends arrows, and Start sends
+Enter. Optional settings include `--pixel-perfect`, `--fit`, `--crt`,
+`--linear`, `--fullscreen`, `--handheld`, `--hotkeys`, `--soundfont <your.sf2>`,
+per-channel `--volume-* N`, and hash-keyed `--mods <directory>` with separate
+font/graphics switches. All enhancements are off by default; see
+[docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
+
+### Troubleshooting and FAQ
+
+- **Missing files:** choose the directory with `XANTH.EXE` and all 90 runtime
+  files directly inside it, not the parent disc folder.
+- **Hash mismatch:** the files are incomplete or from another release. This
+  port currently accepts only the pinned XANBUD set; see the package's
+  `DATA_FILES.txt` and select a matching installation.
+- **No folder chooser:** install `kdialog` (KDE) or `zenity` (GNOME), or run
+  `launch.sh /path/to/game-data` from a terminal.
+- **Can I finish the game?** Not yet. The tested route reaches Fairy Nuff's
+  recipe (122/1000); later regions and the ending are incomplete.
+
+---
+
 # Companions of Xanth - Byte-Verified Decompilation & Native Port
 
 *Companions of Xanth* is being reconstructed from the locally supported XANBUD
@@ -14,10 +70,10 @@ mnemonic assembly, 528 Watcom assembly, and 915 transcribed-data units. These
 figures describe the source index; they are not a semantic function-completion
 percentage.
 
-The current port uses **0/2,844 indexed decompilation units as native game
-code**. It executes the supplied retail EXE/OVL in the VM instead. The native
-source-driven port ratio is therefore 0% today; whole-image BINARY-MATCH is a
-separate decompilation/rebuild measure.
+The port executes the supplied retail EXE/OVL in its own VM, with a growing
+set of source-backed native hooks, including partial paths. Most guest code
+remains interpreted. Whole-image BINARY-MATCH is a separate
+decompilation/rebuild measure; see [the current port handoff](docs/PORT.md).
 
 The retail executable and overlay are authority. Preserve behavior, bugs,
 layouts, overlay placement, and calling conventions. A modern port must be
@@ -39,8 +95,13 @@ implementation. No game data or proprietary toolchain artifacts belong in Git.
 
 ## Native Cross-Platform Port (in progress)
 
-**Status: playable through Fairy Nuff's recipe; the full game is not yet
-completable.** The port executes the retail `XANTH.EXE` under its own 16-bit CPU and
+Experimental release packages contain the port and documentation only.
+Supply your own matching game files with `--data`. See
+[release setup instructions](releases/GETTING_STARTED.txt) and
+[prerelease notes](releases/v0.1.0-alpha.1.md) for requirements and limits.
+
+**Status: verified routes extend into the Region of Fire, including charcoal
+collection. The full 1,000-point finale remains unverified.** The port executes the retail `XANTH.EXE` under its own 16-bit CPU and
 DOS/BIOS layer. A scripted walkthrough plays Mundania, the cavern, the Isthmus
 catapult, and the eye screen. At Fairy Nuff's booth the game's own status
 panel reads **122 of 1000**, with the recipe in inventory. There is no

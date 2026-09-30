@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-EXE = ROOT / "original" / "XANTH.EXE"
 DATA = ROOT / "game_cd" / "XANTH"
+EXE = DATA / "XANTH.EXE"
 CHECKPOINT = "run 200\ncheckpoint stage2_boot\n"
 
 
@@ -20,7 +20,7 @@ class NativeStage2ParityTests(unittest.TestCase):
     def test_recovered_set_int_and_zero_matches_vm_at_boot_checkpoint(self) -> None:
         tool = Path(os.environ["XANTH_VMBOOT"])
         if not EXE.is_file() or not DATA.is_dir():
-            self.skipTest("matching retail game files are not installed")
+            self.fail(f"required retail files are missing: {EXE}")
 
         with tempfile.TemporaryDirectory(prefix="xanth-stage2-parity-") as tmp:
             base = Path(tmp)
@@ -123,7 +123,7 @@ class NativeStage2ParityTests(unittest.TestCase):
         tool = Path(os.environ["XANTH_VMBOOT"])
         interaction = ROOT / "tests" / "traces" / "interact_room.xit"
         if not EXE.is_file() or not DATA.is_dir() or not interaction.is_file():
-            self.skipTest("retail files or interaction trace are not installed")
+            self.fail(f"required retail files or interaction trace are missing: {EXE}, {interaction}")
 
         expected_hashes = {
             "room_idle": "ace8f1a3d6b858f2",

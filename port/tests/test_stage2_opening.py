@@ -13,8 +13,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-EXE = ROOT / "original" / "XANTH.EXE"
 DATA = ROOT / "game_cd" / "XANTH"
+EXE = DATA / "XANTH.EXE"
 TRACE = ROOT / "tests" / "traces" / "walkthrough_01_mundania.xit"
 EXPECTED_HASHES = {
     "wt_bedroom": "ace8f1a3d6b858f2",
@@ -40,9 +40,9 @@ METRIC_PATTERNS = {
 class OpeningNativeParityTests(unittest.TestCase):
     def test_opening_route_matches_vm_and_dispatches_recovered_record_walk(self) -> None:
         if not EXE.is_file() or not DATA.is_dir():
-            self.skipTest("matching retail game files are not installed")
+            self.fail(f"required retail files are missing: {EXE}")
         if not TRACE.is_file():
-            self.skipTest("opening walkthrough trace is not installed")
+            self.fail(f"required opening walkthrough trace is missing: {TRACE}")
 
         tool = Path(os.environ["XANTH_VMBOOT"])
         outputs: dict[str, dict[str, object]] = {}
@@ -102,7 +102,7 @@ class OpeningNativeParityTests(unittest.TestCase):
     def test_picture_replacement_is_independent_and_opt_in(self) -> None:
         """A local palette mod changes pixels only with the graphics switch."""
         if not EXE.is_file() or not DATA.is_dir():
-            self.skipTest("matching retail game files are not installed")
+            self.fail(f"required retail files are missing: {EXE}")
 
         tool = Path(os.environ["XANTH_VMBOOT"])
         with tempfile.TemporaryDirectory(prefix="xanth-picture-mod-parity-") as tmp:

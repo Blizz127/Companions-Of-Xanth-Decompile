@@ -25,6 +25,34 @@
     } \
 } while (0)
 
+/* The DMA tests need a loaded VM, not retail game code. Use a tiny,
+ * developer-authored MZ image so the same tests run on public runners. */
+static void create_dma_fixture(void) {
+    uint8_t image[96] = {0};
+    image[0] = 'M'; image[1] = 'Z';
+    image[2] = sizeof(image); /* bytes in the sole file page */
+    image[4] = 1;             /* one page */
+    image[8] = 4;             /* 64-byte header */
+    image[10] = 0x20;         /* minimum extra allocation */
+    image[12] = 0xff; image[13] = 0xff;
+    image[17] = 1;            /* initial SP = 0x100 */
+    image[24] = 0x1c;         /* empty relocation table */
+    memset(image + 64, 0x90, sizeof(image) - 64); /* NOP body */
+    FILE *file = fopen("build/dma_fixture.mz", "wb");
+    ASSERT_TRUE(file != NULL, "synthetic DMA MZ fixture must open");
+    const size_t written = fwrite(image, 1, sizeof(image), file);
+    const int closed = fclose(file);
+    ASSERT_EQ(written, sizeof(image), "synthetic DMA MZ fixture must write completely");
+    ASSERT_EQ(closed, 0, "synthetic DMA MZ fixture must close");
+}
+
+static void dma_fixture_config(vm_config *cfg) {
+    memset(cfg, 0, sizeof(*cfg));
+    snprintf(cfg->exe_path, sizeof(cfg->exe_path), "build/dma_fixture.mz");
+    snprintf(cfg->data_dir, sizeof(cfg->data_dir), ".");
+    snprintf(cfg->save_dir, sizeof(cfg->save_dir), "build/dma-fixture-saves");
+}
+
 /* Capture callback state for testing vm_audio_dma_write */
 static uint8_t  g_captured_buf[65536];
 static uint32_t g_captured_count = 0;
@@ -48,8 +76,7 @@ static void test_dma_registers(void) {
     vm machine;
     vm_config cfg;
     char err[256];
-    memset(&cfg, 0, sizeof(cfg));
-    snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
+    dma_fixture_config(&cfg);
     bool ok = vm_init(&machine, &cfg, err, sizeof(err));
     ASSERT_TRUE(ok, "vm_init must succeed");
 
@@ -132,8 +159,7 @@ static void test_pic_ports(void) {
     vm machine;
     vm_config cfg;
     char err[256];
-    memset(&cfg, 0, sizeof(cfg));
-    snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
+    dma_fixture_config(&cfg);
     bool ok = vm_init(&machine, &cfg, err, sizeof(err));
     ASSERT_TRUE(ok, "vm_init must succeed");
 
@@ -165,8 +191,7 @@ static void test_sb_dsp_commands(void) {
     vm machine;
     vm_config cfg;
     char err[256];
-    memset(&cfg, 0, sizeof(cfg));
-    snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
+    dma_fixture_config(&cfg);
     bool ok = vm_init(&machine, &cfg, err, sizeof(err));
     ASSERT_TRUE(ok, "vm_init must succeed");
 
@@ -209,8 +234,7 @@ static void test_sb_dma_transfer(void) {
     vm machine;
     vm_config cfg;
     char err[256];
-    memset(&cfg, 0, sizeof(cfg));
-    snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
+    dma_fixture_config(&cfg);
     bool ok = vm_init(&machine, &cfg, err, sizeof(err));
     ASSERT_TRUE(ok, "vm_init must succeed");
 
@@ -272,8 +296,7 @@ static void test_virtual_irq_timing_and_ack(void) {
     vm machine;
     vm_config cfg;
     char err[256];
-    memset(&cfg, 0, sizeof(cfg));
-    snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
+    dma_fixture_config(&cfg);
     bool ok = vm_init(&machine, &cfg, err, sizeof(err));
     ASSERT_TRUE(ok, "vm_init must succeed");
 
@@ -395,8 +418,7 @@ static void test_sb_direct_dac_and_autoinit(void) {
     vm machine;
     vm_config cfg;
     char err[256];
-    memset(&cfg, 0, sizeof(cfg));
-    snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
+    dma_fixture_config(&cfg);
     bool ok = vm_init(&machine, &cfg, err, sizeof(err));
     ASSERT_TRUE(ok, "vm_init must succeed");
 
@@ -474,6 +496,7 @@ static void test_sb_direct_dac_and_autoinit(void) {
 
 int main(void) {
     printf("=== Running Sound Blaster DMA Pipeline Unit Tests ===\n");
+    create_dma_fixture();
     test_dma_registers();
     test_pic_ports();
     test_sb_dsp_commands();
@@ -481,6 +504,8 @@ int main(void) {
     test_virtual_irq_timing_and_ack();
     test_audio_hal_ring_buffer();
     test_sb_direct_dac_and_autoinit();
+    remove("build/dma_fixture.mz");
+    remove("build/dma-fixture-saves/LEGEND.INI");
     printf("=== ALL SOUND BLASTER DMA TESTS PASSED [7/7] ===\n");
     return 0;
 }

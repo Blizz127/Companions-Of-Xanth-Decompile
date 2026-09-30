@@ -1,0 +1,88 @@
+name: port-release
+
+on:
+  push:
+    branches: ["release/port-v0.1.0-alpha.1"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: port-release-v0.1.0-alpha.1
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v0.1.0-alpha.1
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source contains no retail data
+        run: python3 scripts/check_no_game_data.py
+      - name: Install SDL2
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
+      - name: Build Release
+        run: |
+          cmake -S port -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j2
+      - name: Asset-free CPU, native ABI, audio and DMA checks
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          ctest --test-dir build --output-on-failure -R '^(CpuConformanceTests|ControllerInputTests|Native.*Fixture|NativeAudioStressTests|NativeDmaPipelineTests)$'
+          ./build/xanth_port --help
+          rc=0
+          ./build/xanth_port --headless --frames 1 --data nonexistent --saves "$RUNNER_TEMP/xanth-saves" > preflight.log 2>&1 || rc=$?
+          test "$rc" -eq 2
+          python3 -c 'from pathlib import Path; s=Path("preflight.log").read_text(); assert "XANTH.EXE" in s and "--data" in s, s'
+      - name: Package Linux executable and documentation
+        run: python3 scripts/package_release.py --binary build/xanth_port --version "$RELEASE_TAG" --platform linux-x86_64 --sdl-runtime /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0 --sdl-license /usr/share/doc/libsdl2-2.0-0/copyright --output dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: port-linux
+          path: dist/*
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source contains no retail data
+        run: python scripts/check_no_game_data.py
+      - name: Install SDL2
+        run: vcpkg install sdl2:x64-windows
+      - name: Build Release
+        shell: pwsh
+        run: |
+          cmake -S port -B build -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          if ($LASTEXITCODE -ne 0) { throw "CMake configure failed" }
+          cmake --build build --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { throw "Release build failed" }
+      - name: Asset-free CPU, native ABI, audio and DMA checks
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        shell: pwsh
+        run: |
+          ctest --test-dir build -C Release --output-on-failure -R '^(CpuConformanceTests|ControllerInputTests|Native.*Fixture|NativeAudioStressTests|NativeDmaPipelineTests)$'
+          if ($LASTEXITCODE -ne 0) { throw "Asset-free checks failed" }
+          .\build\Release\xanth_port.exe --help
+          if ($LASTEXITCODE -ne 0) { throw "--help failed" }
+          $out = .\build\Release\xanth_port.exe --headless --frames 1 --data nonexistent --saves "$env:RUNNER_TEMP\xanth-saves" 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 2) { throw "Expected missing-data rejection, got $LASTEXITCODE" }
+          if ($out -notmatch 'XANTH.EXE' -or $out -notmatch '--data') { throw "Missing setup guidance: $out" }
+      - name: Package Windows executable, DLLs and documentation
+        shell: pwsh
+        run: |
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin/SDL2.dll" build/Release/SDL2.dll -Force
+          python scripts/package_release.py --binary build/Release/xanth_port.exe --version $env:RELEASE_TAG --platform windows-x86_64 --output dist
+          if ($LASTEXITCODE -ne 0) { throw "Packaging failed" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: port-windows
+          path: dist/*
+          if-no-files-found: error

@@ -1,0 +1,16 @@
+# Start from the same hash-identified, guest-generated 275-point save as segment 18.
+# Resolve the hot dog, hear Mack's clue, reach the firewall, and take the coal.
+include walkthrough_18_firewall.xit
+
+# The charcoal lies on the path directly below the firewall.
+move 194 118
+run 5
+click left
+run 10
+move 14 7
+run 5
+click left
+run 90
+move 305 196
+checkpoint wt19_charcoal_taken
+shot build/frames/wt19_charcoal_taken.bmp
