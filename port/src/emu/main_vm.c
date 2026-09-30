@@ -19,6 +19,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 #define SDL_MAIN_HANDLED
 #ifndef XANTH_HEADLESS_STUB
@@ -47,6 +54,141 @@ static void report_startup_error(const char *message, bool headless) {
     (void)headless;
 #endif
     fprintf(stderr, "[FATAL] Could not display a graphical error dialog.\n");
+}
+
+/* A first-run chooser is deliberately delegated to the desktop environment's
+ * installed file chooser.  This adds no bundled UI toolkit or library and
+ * does not run for a valid data path or in headless mode. */
+#if !defined(_WIN32) && !defined(__APPLE__)
+static bool run_directory_picker(const char *tool, const char *start,
+                                 char *out, size_t out_size) {
+    int fds[2];
+    pid_t child;
+    size_t used = 0;
+    int status = 0;
+    char initial[1024];
+    if (pipe(fds) != 0) return false;
+    child = fork();
+    if (child < 0) { close(fds[0]); close(fds[1]); return false; }
+    if (child == 0) {
+        close(fds[0]);
+        if (dup2(fds[1], STDOUT_FILENO) < 0) _exit(126);
+        close(fds[1]);
+        if (!strcmp(tool, "kdialog"))
+            execlp(tool, tool, "--getexistingdirectory", start,
+                   "Choose your Companions of Xanth game-data folder", (char *)NULL);
+        else {
+            snprintf(initial, sizeof(initial), "%s/", start);
+            execlp(tool, tool, "--file-selection", "--directory",
+                   "--filename", initial, "--title",
+                   "Choose your Companions of Xanth game-data folder", (char *)NULL);
+        }
+        _exit(127);
+    }
+    close(fds[1]);
+    while (used + 1 < out_size) {
+        ssize_t n = read(fds[0], out + used, out_size - used - 1);
+        if (n <= 0) break;
+        used += (size_t)n;
+    }
+    close(fds[0]);
+    out[used] = '\0';
+    while (used && (out[used-1] == '\n' || out[used-1] == '\r'))
+        out[--used] = '\0';
+    pid_t waited;
+    do { waited = waitpid(child, &status, 0); } while (waited < 0 && errno == EINTR);
+    if (waited < 0) return false;
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0 && used > 0;
+}
+
+static bool program_in_path(const char *name) {
+    const char *path = getenv("PATH");
+    const char *at = path;
+    if (!path || !*path) return false;
+    while (*at) {
+        const char *end = strchr(at, ':');
+        size_t n = end ? (size_t)(end - at) : strlen(at);
+        char candidate[1024];
+        int written = snprintf(candidate, sizeof(candidate), "%.*s/%s",
+                               (int)(n > 900 ? 900 : n), at, name);
+        if (written > 0 && (size_t)written < sizeof(candidate) &&
+            access(candidate, X_OK) == 0) return true;
+        if (!end) break;
+        at = end + 1;
+    }
+    return false;
+}
+
+static bool pick_data_directory(const char *start, char *out, size_t out_size) {
+    if (program_in_path("kdialog"))
+        return run_directory_picker("kdialog", start, out, out_size);
+    if (program_in_path("zenity"))
+        return run_directory_picker("zenity", start, out, out_size);
+    return false;
+}
+
+static void data_directory_state_path(char *out, size_t out_size) {
+    const char *base = getenv("XDG_CONFIG_HOME");
+    const char *home = getenv("HOME");
+    char dir[768];
+    if (!base || !*base) {
+        char parent[768];
+        if (!home || !*home) { out[0] = '\0'; return; }
+        snprintf(parent, sizeof(parent), "%.700s/.config", home);
+        if (mkdir(parent, 0700) != 0 && access(parent, F_OK) != 0) {
+            out[0] = '\0'; return;
+        }
+        snprintf(dir, sizeof(dir), "%.740s/companions-of-xanth", parent);
+    } else {
+        if (mkdir(base, 0700) != 0 && access(base, F_OK) != 0) {
+            out[0] = '\0'; return;
+        }
+        snprintf(dir, sizeof(dir), "%.680s/companions-of-xanth", base);
+    }
+    if (mkdir(dir, 0700) != 0 && access(dir, F_OK) != 0) { out[0] = '\0'; return; }
+    snprintf(out, out_size, "%s/data-directory.txt", dir);
+}
+
+static void load_remembered_data_directory(char *out, size_t out_size) {
+    char path[1024], line[1024];
+    FILE *f;
+    data_directory_state_path(path, sizeof(path));
+    if (!path[0] || !(f = fopen(path, "r"))) return;
+    if (fgets(line, sizeof(line), f)) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (line[0] && out_size) {
+            snprintf(out, out_size, "%.*s", (int)(out_size - 1), line);
+        }
+    }
+    fclose(f);
+}
+
+static bool remember_data_directory(const char *directory) {
+    char path[1024];
+    FILE *f;
+    data_directory_state_path(path, sizeof(path));
+    if (!path[0] || !(f = fopen(path, "w"))) return false;
+    fprintf(f, "%s\n", directory);
+    return fclose(f) == 0;
+}
+#endif
+
+static void make_friendly_asset_error(const char *detail, char *out,
+                                      size_t out_size) {
+    if (strstr(detail, "SHA-256 mismatch")) {
+        snprintf(out, out_size,
+                 "These files do not match the supported XANBUD game release. "
+                 "They may be from another version or an incomplete install. "
+                 "Choose the folder containing XANTH.EXE and the 90 runtime "
+                 "files, all directly inside it.");
+    } else if (strstr(detail, "missing or unreadable")) {
+        snprintf(out, out_size,
+                 "The game-data folder is missing required files. Choose the "
+                 "folder containing XANTH.EXE and the 90 runtime files, all "
+                 "directly inside it.");
+    } else {
+        snprintf(out, out_size, "%s", detail);
+    }
 }
 
 /*
@@ -172,6 +314,15 @@ int main(int argc, char **argv) {
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.data_dir, sizeof(cfg.data_dir), "game_cd/XANTH");
+#if !defined(_WIN32) && !defined(__APPLE__)
+    {
+        const char *home = getenv("HOME");
+        if (home && *home)
+            snprintf(cfg.data_dir, sizeof(cfg.data_dir),
+                     "%.470s/Games/companions-of-xanth/data", home);
+        load_remembered_data_directory(cfg.data_dir, sizeof(cfg.data_dir));
+    }
+#endif
     snprintf(cfg.save_dir, sizeof(cfg.save_dir), "build/saves");
 
     for (int i=1;i<argc;++i)
@@ -254,10 +405,74 @@ int main(int argc, char **argv) {
 
     {
         char asset_error[1024];
+        bool selected_new_directory = false;
         if (!xanth_check_assets(cfg.exe_path,cfg.data_dir,asset_error,sizeof(asset_error))) {
-            report_startup_error(asset_error, headless);
+#if !defined(_WIN32) && !defined(__APPLE__)
+            if (!headless) {
+                char chosen[512];
+                const char *home = getenv("HOME");
+                char start[512];
+                if (home && *home)
+                    snprintf(start, sizeof(start),
+                             "%.455s/Games/companions-of-xanth/data", home);
+                else
+                    snprintf(start, sizeof(start), "%s", cfg.data_dir);
+                if (pick_data_directory(start, chosen, sizeof(chosen))) {
+                    snprintf(cfg.data_dir, sizeof(cfg.data_dir), "%s", chosen);
+                    if (!have_exe) {
+                        int n = snprintf(cfg.exe_path, sizeof(cfg.exe_path),
+                                         "%.480s/XANTH.EXE", cfg.data_dir);
+                        if (n < 0 || (size_t)n >= sizeof(cfg.exe_path)) {
+                            snprintf(asset_error, sizeof(asset_error),
+                                     "The selected game-data folder path is too long.");
+                            report_startup_error(asset_error, headless);
+                            return 2;
+                        }
+                    }
+                    selected_new_directory = true;
+                    if (!xanth_check_assets(cfg.exe_path, cfg.data_dir,
+                                            asset_error, sizeof(asset_error))) {
+                        char friendly[1024];
+                        make_friendly_asset_error(asset_error, friendly, sizeof(friendly));
+                        report_startup_error(friendly, headless);
+                        return 2;
+                    }
+                } else {
+                    char friendly[1024];
+                    make_friendly_asset_error(asset_error, friendly, sizeof(friendly));
+                    char message[1400];
+                    snprintf(message, sizeof(message),
+                             "%s\n\nIf the folder chooser is unavailable, install "
+                             "kdialog or zenity, or start with --data <folder>.",
+                             friendly);
+                    report_startup_error(message, headless);
+                    return 2;
+                }
+            } else {
+                char friendly[1024];
+                make_friendly_asset_error(asset_error, friendly, sizeof(friendly));
+                char message[1400];
+                snprintf(message, sizeof(message),
+                         "%s\nSupply the folder with --data <directory> or "
+                         "XANTH_DATA. No game files are included.", friendly);
+                report_startup_error(message, headless);
+                return 2;
+            }
+#else
+            char friendly[1024];
+            make_friendly_asset_error(asset_error, friendly, sizeof(friendly));
+            report_startup_error(friendly, headless);
             return 2;
+#endif
         }
+#if !defined(_WIN32) && !defined(__APPLE__)
+        if (selected_new_directory && !remember_data_directory(cfg.data_dir))
+            fprintf(stderr,
+                    "[WARN] game folder works for this session, but could not "
+                    "be remembered; pass it with --data next time.\n");
+#else
+        (void)selected_new_directory;
+#endif
     }
 
     if (headless) {
