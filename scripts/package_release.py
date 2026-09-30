@@ -23,6 +23,8 @@ def main() -> None:
     parser.add_argument("--system-sdl", action="store_true", help="Use installed Linux SDL2 rather than bundle a library")
     parser.add_argument("--sdl-runtime", type=Path, help="Linux SDL2 shared library to bundle")
     parser.add_argument("--sdl-license", type=Path, help="Copyright/license for the bundled SDL2 library")
+    parser.add_argument("--with-checkpoint-tools", action="store_true",
+                        help="Include authored checkpoint tools and tool_vmboot, never checkpoint saves")
     parser.add_argument("--output", default=Path("dist"), type=Path)
     args = parser.parse_args()
     if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?", args.version):
@@ -69,6 +71,16 @@ def main() -> None:
             (ROOT / "docs" / "ENHANCEMENTS.md", "ENHANCEMENTS.md"),
         ):
             shutil.copy2(source, package / target)
+        if args.with_checkpoint_tools:
+            vmboot = binary.parent / ("tool_vmboot.exe" if windows else "tool_vmboot")
+            if not vmboot.is_file():
+                parser.error("checkpoint tools require tool_vmboot beside xanth_port")
+            (package / "tools").mkdir()
+            shutil.copy2(vmboot, package / "tools" / vmboot.name)
+            for name in ("xanth_dev_checkpoints.py", "xanth_dev_warp_sweep.py"):
+                shutil.copy2(ROOT / "tools" / name, package / "tools" / name)
+            shutil.copytree(ROOT / "tests" / "traces", package / "tests" / "traces")
+            shutil.copy2(ROOT / "docs" / "DEV_MENU.md", package / "DEV_MENU.md")
         manifest = "".join(
             f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(package).as_posix()}\n"
             for p in sorted(package.rglob("*")) if p.is_file()
@@ -77,8 +89,9 @@ def main() -> None:
         if windows:
             archive = args.output / f"{stem}.zip"
             with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as output:
-                for path in sorted(package.iterdir()):
-                    output.write(path, f"{stem}/{path.name}")
+                for path in sorted(package.rglob("*")):
+                    if path.is_file():
+                        output.write(path, f"{stem}/{path.relative_to(package).as_posix()}")
         else:
             archive = args.output / f"{stem}.tar.gz"
             with tarfile.open(archive, "w:gz") as output:

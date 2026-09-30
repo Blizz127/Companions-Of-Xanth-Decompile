@@ -5,15 +5,11 @@ contract is `~/release-staging/port-dev-menu/DEV_MENU_SPEC.md` (v1,
 2026-09-30). The owner additionally requires Xanth checkpoints to use the
 game's own save/restore path, with no host memory pokes.
 
-The requested keyboard map is F8 menu, F11 quick save, F12 quick load,
-F9 video recording, F10 screenshot, and held Backspace fast-forward. The
-controller opens with Back/View + Start on the same pad. The root categories
-are Warp, Finish Area, Cheats, and Options. The host overlay must leave guest
-VRAM untouched, keep simulation running, consume its inputs while open, and
-wait for neutral input before returning control to gameplay. The existing
-optional F11 fullscreen/F10 scanline shortcuts will need collision handling
-under the dev-menu opt-in. Normal launches must retain retail inputs and
-frame hashes. No replacement hotkey mapping has shipped yet.
+Xanth uses F12 or Back/View + Start on the same controller to open the menu.
+F1-F10 and Backspace remain game inputs while the menu is closed. The menu
+is a host overlay: it leaves guest VRAM untouched and keeps simulation running.
+Warp and Finish Area use verified user-local saves through the game's own
+Restore dialog. No cheats or direct guest-memory writes are included.
 
 ## Menu shell
 
@@ -145,6 +141,12 @@ Warps use the game's own Restore dialog and make no memory writes:
    warp with a "Warp refused"/"Warp failed" toast and removes the slot; the
    menu presses no further keys.
 
+The recorded SHA-256 must match both the local checkpoint and its temporary
+copy; changed saves are refused. The temporary slot is created exclusively,
+so an existing player save is never overwritten. Player inputs are captured
+throughout the Restore macro. Shutdown removes an unfinished temporary slot.
+
+
 `tools/xanth_dev_warp_sweep.py` verifies every checkpoint live in
 `xanth_port`'s own real-time loop from a fresh boot, driving the menu with
 its harness keys. A target passes when the warp reports arrival, never a
@@ -178,8 +180,27 @@ game-state path yet.
 The controller backend now has virtual-device regression coverage for Steam
 hint sanitation, active-pad selection, removal and neutral reconnects. The
 same-pad menu combo, menu input drain, menu navigation and all-off identity
-remain dev-menu integration work. Physical handheld testing is separate and
+have automated coverage. Physical handheld testing is separate and
 has not been performed.
 
 HD presentation fixes and font verification drafts remain queued behind the
 dev-menu phase. They do not supply a higher-resolution art or font pack.
+
+## Building your local checkpoint list
+
+The Linux package includes Python tools, authored route traces and
+`tools/tool_vmboot`. It contains no checkpoint saves or game data. From the
+extracted package directory, with Python 3 installed, run:
+
+```sh
+python3 tools/xanth_dev_checkpoints.py --vmboot tools/tool_vmboot --data /path/to/your/data
+python3 tools/xanth_dev_warp_sweep.py --port ./xanth_port --data /path/to/your/data
+python3 tools/xanth_dev_warp_sweep.py --port ./xanth_port --data /path/to/your/data --steps
+./launch.sh /path/to/your/data --dev-menu
+```
+
+Building replays the verified route and can take substantial time. The sweep
+runs headlessly. Eight warp spots and seven Finish Current Step entries become
+available after successful local verification. Before that, those menu pages
+explain that checkpoints are missing. Saves, reference frames and verification
+logs remain in your local data directory and must not be redistributed.

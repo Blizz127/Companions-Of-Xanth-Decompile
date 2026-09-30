@@ -112,7 +112,7 @@ def sweep_one(port: Path, data: Path, ckdir: Path, rows, row, evidence: Path, st
         saves.mkdir()
         final = evidence / f"{cid}.{'step' if steps else 'final'}.bmp"
         keys = [f"{f}:GAME_SPACE" for f in BOOT_KEYS] + (step_keys(rows, row) if steps else menu_keys(rows, row))
-        env = {**os.environ, "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy",
+        env = {**{k: v for k, v in os.environ.items() if k not in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY")}, "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy",
                "XANTH_DEV_CHECKPOINTS": str(ckdir), "XANTH_DEV_WARP_UNVERIFIED": "1",
                "XANTH_DEV_KEYS": ",".join(keys)}
         proc = subprocess.run(

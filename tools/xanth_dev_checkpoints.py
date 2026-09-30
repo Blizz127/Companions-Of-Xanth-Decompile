@@ -133,7 +133,7 @@ def build(cp, vmboot: Path, data: Path, out: Path, budget: int) -> list[str]:
         proc = subprocess.run(
             [str(vmboot), "--exe", str(data / "XANTH.EXE"), "--data", str(data),
              "--saves", str(saves), "--script", str(script), "--insns", str(budget)],
-            cwd=work, env={**os.environ, "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"},
+            cwd=work, env={**{k: v for k, v in os.environ.items() if k not in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY")}, "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"},
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         log = proc.stdout + proc.stderr
         (out / f"{cid}.build.log").write_text(log[-20000:])

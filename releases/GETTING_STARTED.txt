@@ -1,7 +1,7 @@
 Companions of Xanth — quick start
 
 1. Download the Linux x86_64 release asset named
-   xanth-port-v0.1.0-alpha.2-linux-x86_64.tar.gz from GitHub Releases and extract
+   xanth-port-v0.1.0-alpha.4-linux-x86_64.tar.gz from GitHub Releases and extract
    it to ~/Games/companions-of-xanth/port/.
 2. Supply XANTH.EXE plus the 90 files listed in DATA_FILES.txt from your own
    original disc or an installation you already own. Copy all 91 directly
@@ -42,3 +42,14 @@ The current verified route reaches Fairy Nuff's recipe and shows 122/1000.
 The full game is not completable yet. See docs/KNOWN_DIVERGENCES.md.
 
 Linux requires system SDL2 (libSDL2-2.0.so.0) and glibc 2.34 or newer. SDL2 is already installed on the verified Bazzite Alienware. On Debian/Ubuntu, the runtime package is libsdl2-2.0-0; on Fedora, SDL2. This release does not bundle SDL2.
+
+DEV MENU (OFF BY DEFAULT)
+Launch with --dev-menu, or set dev_menu=1 in the port config passed with
+--config. Open with F12 or Back+Start on the same controller. F1-F10 and
+Backspace stay with the game while the menu is closed. XANTH_CHEATS=0
+hard-disables the menu. No cheats are included.
+
+The package includes authored tools to build and verify 8 warps and 7
+finish-step entries using your own data. No checkpoint saves are shipped.
+See DEV_MENU.md for the Python commands. Until local checkpoints have passed
+verification, Warp and Finish Area show no selectable entries.
