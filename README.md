@@ -1,7 +1,12 @@
-# How to play
+# Companions of Xanth
 
 This in-progress Linux port plays through Fairy Nuff's recipe and shows
 122/1000 points. The full game is not completable yet.
+
+## About this project
+This is a passion project. I'm working hard on it, but it's made for fun and for everyone's enjoyment — free, non-commercial, and made by a fan. If you enjoy it, that's the whole point.
+
+# How to play
 
 1. Download the Linux x86_64 release asset named
    `xanth-r<N>-<commit>-linux-x86_64.tar.gz` from **Releases** and extract it
