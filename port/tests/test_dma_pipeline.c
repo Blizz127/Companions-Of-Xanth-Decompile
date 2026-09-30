@@ -38,7 +38,7 @@ static void create_dma_fixture(void) {
     image[17] = 1;            /* initial SP = 0x100 */
     image[24] = 0x1c;         /* empty relocation table */
     memset(image + 64, 0x90, sizeof(image) - 64); /* NOP body */
-    FILE *file = fopen("build/dma_fixture.mz", "wb");
+    FILE *file = fopen("dma_fixture.mz", "wb");
     ASSERT_TRUE(file != NULL, "synthetic DMA MZ fixture must open");
     const size_t written = fwrite(image, 1, sizeof(image), file);
     const int closed = fclose(file);
@@ -48,9 +48,9 @@ static void create_dma_fixture(void) {
 
 static void dma_fixture_config(vm_config *cfg) {
     memset(cfg, 0, sizeof(*cfg));
-    snprintf(cfg->exe_path, sizeof(cfg->exe_path), "build/dma_fixture.mz");
+    snprintf(cfg->exe_path, sizeof(cfg->exe_path), "dma_fixture.mz");
     snprintf(cfg->data_dir, sizeof(cfg->data_dir), ".");
-    snprintf(cfg->save_dir, sizeof(cfg->save_dir), "build/dma-fixture-saves");
+    snprintf(cfg->save_dir, sizeof(cfg->save_dir), "dma-fixture-saves");
 }
 
 /* Capture callback state for testing vm_audio_dma_write */
@@ -504,8 +504,8 @@ int main(void) {
     test_virtual_irq_timing_and_ack();
     test_audio_hal_ring_buffer();
     test_sb_direct_dac_and_autoinit();
-    remove("build/dma_fixture.mz");
-    remove("build/dma-fixture-saves/LEGEND.INI");
+    remove("dma_fixture.mz");
+    remove("dma-fixture-saves/LEGEND.INI");
     printf("=== ALL SOUND BLASTER DMA TESTS PASSED [7/7] ===\n");
     return 0;
 }

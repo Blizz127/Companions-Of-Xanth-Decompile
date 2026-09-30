@@ -418,7 +418,7 @@ if(XANTH_BUILD_TESTS)
 
     add_test(NAME NativeDmaPipelineTests COMMAND test_dma_pipeline)
     set_tests_properties(NativeDmaPipelineTests PROPERTIES
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
         ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy"
         TIMEOUT 60
     )
