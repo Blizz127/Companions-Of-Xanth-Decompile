@@ -14,6 +14,8 @@
 #include "native_stage2.h"
 #include "port_hal.h"
 #include "asset_check.h"
+#include "guest_state.h"
+#include "controller_guest_actions.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -544,6 +546,11 @@ int main(int argc, char **argv) {
         hal_video_shutdown();
         return 1;
     }
+    const char *input_trace_env = getenv("XANTH_TRACE_INPUT");
+    bool trace_input = input_trace_env && !strcmp(input_trace_env, "1");
+    bool state_observer = (gamepad || trace_input) && guest_state_install(&machine);
+    bool controller_ui = gamepad && state_observer;
+    hal_input_enable_guest_ui_actions(controller_ui);
     machine.cycles_per_second = cpu_speed;
     machine.pit_period_cycles = cpu_speed * 10 / 182;
     machine.next_tick_cycles  = machine.cpu.cycles + machine.pit_period_cycles;
@@ -557,6 +564,7 @@ int main(int argc, char **argv) {
         hal_pointer_event pending_pointer;
         bool have_pending_pointer = false, pointer_edge_waiting = false;
         uint64_t pointer_poll_sequence = machine.mouse_poll_sequence;
+        guest_idle_state trace_last_state = GUEST_IDLE_UNKNOWN;
 
 #ifndef XANTH_HEADLESS_STUB
         uint64_t perf_freq = SDL_GetPerformanceFrequency();
@@ -569,6 +577,7 @@ int main(int argc, char **argv) {
             int mx = 0, my = 0, btn = 0, key = 0;
             uint16_t k;
             uint64_t target;
+            bool pointer_activity = false, keyboard_activity = false;
 
             if (max_frames && frame >= max_frames) break;
 
@@ -581,6 +590,15 @@ int main(int argc, char **argv) {
             default: break;
             }
             if (key == 27) { running = false; break; }   /* Escape quits */
+
+            if (pointer_edge_waiting && machine.mouse_poll_sequence != pointer_poll_sequence) {
+                pointer_edge_waiting = false;
+                if (trace_input)
+                    fprintf(stderr, "[input] mouse state=%d observed frame=%lld guest=%d,%d field=%s polls=%llu\n",
+                        last_btn, frame, machine.mouse_x, machine.mouse_y,
+                        guest_state_name(guest_state_classify()),
+                        (unsigned long long)machine.mouse_poll_sequence);
+            }
 
             /* Keep a quick press until the retail INT33 poll observes it.
              * Callback delivery alone cannot satisfy a game polling BX. */
@@ -595,6 +613,7 @@ int main(int argc, char **argv) {
                 pointer_edge_waiting = false;
                 have_pending_pointer = false;
                 if (pointer.x != last_mx || pointer.y != last_my) {
+                    pointer_activity = true;
                     vm_post_mouse_move(&machine, pointer.x, pointer.y);
                     last_mx = pointer.x; last_my = pointer.y;
                 }
@@ -603,15 +622,67 @@ int main(int argc, char **argv) {
                         vm_post_mouse_button(&machine, b, (pointer.buttons & (1 << b)) != 0);
                 last_btn = pointer.buttons;
                 if (changed) {
+                    pointer_activity = true;
                     pointer_poll_sequence = machine.mouse_poll_sequence;
                     pointer_edge_waiting = true;
+                    if (trace_input)
+                        fprintf(stderr, "[input] post mouse state=%d frame=%lld logical=%d,%d field=%s caller=%08lX event=%04X keys=%d\n",
+                            pointer.buttons, frame, pointer.x, pointer.y,
+                            guest_state_name(guest_state_classify()),
+                            (unsigned long)guest_state_last_caller_csip(),
+                            guest_state_last_event_type(),
+                            (machine.keyq_tail - machine.keyq_head + VM_KEY_QUEUE) % VM_KEY_QUEUE);
                     break;
                 }
             }
 
             while (hal_keyboard_peek(&k)) {
                 k = hal_keyboard_read();
+                keyboard_activity = true;
                 vm_post_key(&machine, (uint8_t)(k >> 8), (uint8_t)(k & 0xFF));
+            }
+
+            /* Gestures use the guest's returned idle event and live tables.
+             * Drop busy/conflicting gestures; never defer them into another room.
+             * Only one gesture may post a normal movement in a host frame. */
+            bool allow_ui = controller_ui && guest_state_field_idle() &&
+                !pointer_activity && !keyboard_activity && !pointer_edge_waiting &&
+                !have_pending_pointer && !last_btn && !machine.mouse_buttons &&
+                machine.keyq_head == machine.keyq_tail && !machine.pending_ext;
+            bool can_verbs = false, can_snap = false;
+            controller_guest_ui_view ui_view = {g_dos_mem, DOS_MEM_SIZE, guest_state_dgroup()};
+            if (allow_ui && seg_r16(ui_view.dgroup_segment, 0x0050) != 0) allow_ui = false;
+            if (allow_ui) {
+                size_t row_count = 0;
+                can_verbs = controller_guest_ui_verb_rows(&ui_view, NULL, 0, &row_count) == CONTROLLER_GUEST_UI_HIT;
+                uint16_t ds = ui_view.dgroup_segment;
+                controller_guest_ui_region hit;
+                can_snap = controller_guest_ui_hit(&ui_view,
+                    (int16_t)seg_r16(ds, 0x69e4), (int16_t)seg_r16(ds, 0x69e6), &hit) == CONTROLLER_GUEST_UI_HIT &&
+                    (hit.type == 3 || hit.type == 7) && hit.object_id && hit.object_id == seg_r16(ds, 0x0062);
+            }
+            hal_video_set_controller_capabilities(can_verbs, can_snap);
+            hal_controller_action action;
+            bool action_posted = false;
+            while ((action = hal_input_take_controller_action()) != HAL_CONTROLLER_NONE) {
+                if (!allow_ui || action_posted) continue;
+                controller_guest_action mapped;
+                switch (action) {
+                case HAL_CONTROLLER_SNAP: mapped = CONTROLLER_GUEST_ACTION_SNAP; break;
+                case HAL_CONTROLLER_PREVIOUS_VERB: mapped = CONTROLLER_GUEST_ACTION_PREVIOUS_VERB; break;
+                case HAL_CONTROLLER_NEXT_VERB: mapped = CONTROLLER_GUEST_ACTION_NEXT_VERB; break;
+                default: continue;
+                }
+                controller_guest_action_target destination;
+                if (controller_guest_action_resolve(&ui_view, mapped, &destination) != CONTROLLER_GUEST_UI_HIT) continue;
+                hal_mouse_set_position(destination.x * 2, destination.y);
+                vm_post_mouse_move(&machine, destination.x, destination.y);
+                last_mx = destination.x; last_my = destination.y;
+                action_posted = true;
+                if (trace_input)
+                    fprintf(stderr, "[controller] action=%d frame=%lld target=%d,%d field=%s\n",
+                        (int)action, frame, destination.x, destination.y,
+                        guest_state_name(guest_state_classify()));
             }
 
             /* ---- run one frame of guest time ---- */
@@ -625,6 +696,19 @@ int main(int argc, char **argv) {
                     break;
                 }
                 if (machine.waiting_for_input) break;
+            }
+
+            if (trace_input) {
+                guest_idle_state observed = guest_state_classify();
+                if (observed != trace_last_state || frame % 70 == 0) {
+                    fprintf(stderr, "[input] guest field=%s frame=%lld polls=%llu caller=%08lX event=%04X keys=%d\n",
+                        guest_state_name(observed), frame,
+                        (unsigned long long)guest_state_poll_count(),
+                        (unsigned long)guest_state_last_caller_csip(),
+                        guest_state_last_event_type(),
+                        (machine.keyq_tail - machine.keyq_head + VM_KEY_QUEUE) % VM_KEY_QUEUE);
+                    trace_last_state = observed;
+                }
             }
 
             /* ---- present ---- */
@@ -732,6 +816,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "[native] exe_103744 hits: %llu\n",
             (unsigned long long)xanth_native_exe_103744_hits());
     vm_report(&machine, stderr);
+    if (state_observer) guest_state_uninstall();
     vm_shutdown(&machine);
     hal_audio_shutdown();
     hal_input_shutdown();

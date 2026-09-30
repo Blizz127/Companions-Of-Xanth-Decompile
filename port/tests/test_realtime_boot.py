@@ -5,8 +5,8 @@ Runs xanth_port's own real-time frame loop (not tool_vmboot's scheduler)
 headless for a fixed number of frames, with no keyboard, mouse or pad input,
 and checks the final guest frame (written from VRAM through the DAC) is not
 black. The retail logo fades in against a music clock advanced by the game's
-own INT 08h handler while it polls DOS with interrupts masked; a VM that never
-takes a timer tick inside a DOS service leaves the logo drawn but the palette
+own INT 08h handler. BIOS keyboard status polling must return with IF enabled;
+retaining the caller's masked flags starves the timer and leaves the palette
 unlit, which is the black window players saw in alpha.1 and alpha.2.
 
 Requires owned data via XANTH_DATA or game_cd/XANTH; nothing is written to git.
@@ -41,7 +41,11 @@ def main():
         return 77
     with tempfile.TemporaryDirectory(prefix="xanth-boot-") as work:
         shot = os.path.join(work, "boot.bmp")
-        env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy")
+        env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy",
+                   XDG_CONFIG_HOME=os.path.join(work, "config"),
+                   XDG_DATA_HOME=os.path.join(work, "data"),
+                   XDG_STATE_HOME=os.path.join(work, "state"),
+                   XDG_CACHE_HOME=os.path.join(work, "cache"))
         for name in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY"):
             env.pop(name, None)
         proc = subprocess.run(

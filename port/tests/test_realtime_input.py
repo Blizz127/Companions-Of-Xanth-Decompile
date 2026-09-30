@@ -7,8 +7,9 @@ through SDL at fixed frames, as a player would at the logo, the opening and
 the title. The final guest frame must be the first room: the verb panel lit
 and a full scene, not the logo.
 
-Requires the retail data in game_cd/XANTH and a Linux build with the shim.
+Requires owned retail data via XANTH_DATA or game_cd/XANTH and a Linux build with the shim.
 """
+import hashlib
 import os
 import subprocess
 import sys
@@ -17,7 +18,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PORT = os.environ.get("XANTH_PORT_BIN", os.path.join(ROOT, "build", "xanth_port"))
 SHIM = os.environ.get("XANTH_KEY_SHIM", os.path.join(ROOT, "build", "sdl_key_shim.so"))
-DATA = os.path.join(ROOT, "game_cd", "XANTH")
+DATA = os.environ.get("XANTH_DATA", os.path.join(ROOT, "game_cd", "XANTH"))
 KEYS = "300,1500,2700"
 FRAMES = 3600
 
@@ -32,12 +33,21 @@ def frame(bmp):
 
 def main():
     if not os.path.exists(os.path.join(DATA, "XANTH.EXE")):
+        if "XANTH_DATA" in os.environ:
+            print("FAIL: explicitly selected owned data is missing")
+            return 1
         print("SKIP: retail data not present")
-        return 0
+        return 77
     with tempfile.TemporaryDirectory(prefix="xanth-input-") as work:
         shot = os.path.join(work, "final.bmp")
         env = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy",
-                   SHIM_KEY_FRAMES=KEYS, LD_PRELOAD=SHIM)
+                   SHIM_KEY_FRAMES=KEYS, LD_PRELOAD=SHIM,
+                   XDG_CONFIG_HOME=os.path.join(work, "config"),
+                   XDG_DATA_HOME=os.path.join(work, "data"),
+                   XDG_STATE_HOME=os.path.join(work, "state"),
+                   XDG_CACHE_HOME=os.path.join(work, "cache"))
+        for name in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY"):
+            env.pop(name, None)
         proc = subprocess.run(
             [PORT, "--headless", "--frames", str(FRAMES), "--data", DATA,
              "--saves", work, "--shot", shot],
@@ -53,7 +63,9 @@ def main():
         if verbs < 400 or scene < 25000:
             print(f"FAIL: not in the first room (verb panel {verbs} px, scene {scene} px)")
             return 1
-        print(f"PASS: bedroom reached (verb panel {verbs} px, scene {scene} px)")
+        with open(shot, "rb") as image:
+            digest = hashlib.sha256(image.read()).hexdigest()
+        print(f"PASS: bedroom reached (verb panel {verbs} px, scene {scene} px); BMP SHA256 {digest}")
         return 0
 
 

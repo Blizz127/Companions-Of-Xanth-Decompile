@@ -189,6 +189,8 @@ set(XANTH_COMMON_SOURCES
 # replacement implementation.
 set(XANTH_PORT_SOURCES
     src/emu/main_vm.c
+    src/controller_guest_ui.c
+    src/controller_guest_actions.c
     src/emu/native_stage2.c
     src/dos_mem.c
     src/hal_video.c
@@ -397,12 +399,37 @@ if(XANTH_BUILD_TESTS)
     add_executable(xanth_controller_guest_ui_tests tests/test_controller_guest_ui.c src/controller_guest_ui.c)
     target_include_directories(xanth_controller_guest_ui_tests PRIVATE include)
     add_test(NAME ControllerGuestUiTests COMMAND xanth_controller_guest_ui_tests)
+    add_executable(xanth_controller_guest_action_tests tests/test_controller_guest_actions.c
+        src/controller_guest_ui.c src/controller_guest_actions.c)
+    target_include_directories(xanth_controller_guest_action_tests PRIVATE include)
+    add_test(NAME ControllerGuestActionTests COMMAND xanth_controller_guest_action_tests)
+
+
+    if(UNIX AND SDL2_FOUND_ANY)
+        add_library(sdl_key_shim MODULE tests/sdl_key_shim.c)
+        target_link_libraries(sdl_key_shim PRIVATE ${SDL2_TARGET_LIB} ${CMAKE_DL_LIBS})
+        set_target_properties(sdl_key_shim PROPERTIES PREFIX ""
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+        add_library(sdl_controller_shim MODULE tests/sdl_controller_shim.c)
+        target_link_libraries(sdl_controller_shim PRIVATE ${SDL2_TARGET_LIB} ${CMAKE_DL_LIBS})
+        set_target_properties(sdl_controller_shim PROPERTIES PREFIX ""
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+    endif()
 
     # Owned assets may be kept outside the public checkout.
     set(XANTH_TEST_DATA_DIR "$ENV{XANTH_DATA}" CACHE PATH "Owned retail data directory for integration tests")
     if(EXISTS "${XANTH_TEST_DATA_DIR}/XANTH.EXE")
         find_package(Python3 COMPONENTS Interpreter QUIET)
         if(Python3_Interpreter_FOUND)
+            if(TARGET sdl_controller_shim)
+                add_test(NAME ControllerBlackboxTests
+                    COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_GAME_DATA=${XANTH_TEST_DATA_DIR}"
+                        "XANTH_PORT=$<TARGET_FILE:xanth_port>"
+                        "XANTH_CONTROLLER_SHIM=$<TARGET_FILE:sdl_controller_shim>"
+                        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_controller_blackbox.py)
+                set_tests_properties(ControllerBlackboxTests PROPERTIES TIMEOUT 180)
+            endif()
             if(TARGET tool_vmclick)
                 add_test(NAME RetailMouseQuickTapTests
                     COMMAND ${CMAKE_COMMAND} -E env
@@ -426,6 +453,21 @@ if(XANTH_BUILD_TESTS)
                         "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
                         ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_realtime_boot.py)
                 set_tests_properties(RealTimeBootLogoTest PROPERTIES TIMEOUT 300 SKIP_RETURN_CODE 77)
+                add_test(NAME GuestStateModalTest
+                    COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                        "XANTH_VMBOOT=$<TARGET_FILE:tool_vmboot>"
+                        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_guest_state_modal.py)
+                set_tests_properties(GuestStateModalTest PROPERTIES TIMEOUT 900 SKIP_RETURN_CODE 77)
+                if(TARGET sdl_key_shim)
+                    add_test(NAME RealTimeInputBedroomTest
+                        COMMAND ${CMAKE_COMMAND} -E env
+                            "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                            "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                            "XANTH_KEY_SHIM=$<TARGET_FILE:sdl_key_shim>"
+                            ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_realtime_input.py)
+                    set_tests_properties(RealTimeInputBedroomTest PROPERTIES TIMEOUT 300 SKIP_RETURN_CODE 77)
+                endif()
                 foreach(suite IN ITEMS mzload vmboot vmplay contextverbs hotspots
                         overlay saveload navigate soundblaster soak realsound)
                     add_test(NAME Vm_${suite}
@@ -599,10 +641,6 @@ if(XANTH_BUILD_TESTS)
         find_package(Python3 COMPONENTS Interpreter QUIET)
         if(Python3_Interpreter_FOUND)
             if(UNIX AND SDL2_FOUND_ANY)
-                add_library(sdl_key_shim MODULE tests/sdl_key_shim.c)
-                target_link_libraries(sdl_key_shim PRIVATE ${SDL2_TARGET_LIB} ${CMAKE_DL_LIBS})
-                set_target_properties(sdl_key_shim PROPERTIES PREFIX ""
-                    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
                 add_test(NAME RealTimeInputBedroomTest
                     COMMAND ${CMAKE_COMMAND} -E env
                             "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"

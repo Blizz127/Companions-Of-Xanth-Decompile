@@ -358,10 +358,18 @@ void hal_video_set_overlay(void (*fn)(SDL_Renderer *, const hal_video_viewport *
     g_overlay = fn; g_overlay_user = user;
 }
 static bool g_controller_help;
+static bool g_help_can_verb_cycle, g_help_can_snap;
 #ifndef XANTH_HEADLESS_STUB
 static SDL_Texture *g_help_texture;
 #endif
 void hal_video_toggle_controller_help(void) { g_controller_help = !g_controller_help; }
+void hal_video_set_controller_capabilities(bool can_verb_cycle, bool can_snap) {
+    if (can_verb_cycle == g_help_can_verb_cycle && can_snap == g_help_can_snap) return;
+    g_help_can_verb_cycle = can_verb_cycle; g_help_can_snap = can_snap;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_help_texture) { SDL_DestroyTexture(g_help_texture); g_help_texture = NULL; }
+#endif
+}
 void hal_video_shutdown(void) {
 #ifndef XANTH_HEADLESS_STUB
     if (g_video.host_cursor_hidden) {
@@ -532,7 +540,7 @@ void hal_video_flip(void) {
             if (g_controller_help) {
                 if (!g_help_texture) {
                     uint32_t *panel = malloc(CONTROLLER_HELP_PIXELS * sizeof(*panel));
-                    if (panel && controller_help_render(panel, CONTROLLER_HELP_PIXELS, false, false)) {
+                    if (panel && controller_help_render(panel, CONTROLLER_HELP_PIXELS, g_help_can_verb_cycle, g_help_can_snap)) {
                         g_help_texture = SDL_CreateTexture(g_video.renderer, SDL_PIXELFORMAT_RGBA8888,
                             SDL_TEXTUREACCESS_STATIC, CONTROLLER_HELP_WIDTH, CONTROLLER_HELP_HEIGHT);
                         if (g_help_texture) {

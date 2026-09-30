@@ -26,10 +26,14 @@ class RetailMouseQuickTapTests(unittest.TestCase):
         output = proc.stdout + proc.stderr
         self.assertEqual(proc.returncode, 0, output[-3000:])
         hashes = dict(re.findall(r"\[script\] hash (\S+) = ([0-9a-f]+)", output))
+        # BIOS keyboard-status IF correction advances the retail rain clock.
+        # Old vs corrected frames differ only inside the verified rain window
+        # (51,4)-(136,75): 834 bedroom pixels and 13 envelope pixels. Scene,
+        # inventory, text and cursor pixels outside that window are identical.
         self.assertEqual(hashes, {
-            "mouse_bedroom": "ace8f1a3d6b858f2",
+            "mouse_bedroom": "fc53131750c9cb17",
             # Rendered result: the envelope is now in the guest inventory.
-            "mouse_envelope_taken": "ad4549a362779925",
+            "mouse_envelope_taken": "414a6798f54903b3",
         }, output[-3000:])
         self.assertIn("fault                 : ok", output)
         self.assertIn("MCB chain valid       : yes", output)

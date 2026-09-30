@@ -33,6 +33,7 @@ void hal_video_toggle_fullscreen(void);
 void hal_video_toggle_crt(void);
 void hal_video_shutdown(void);
 void hal_video_toggle_controller_help(void);
+void hal_video_set_controller_capabilities(bool can_verb_cycle, bool can_snap);
 void hal_video_set_active_buffer(int target); /* 0: screen 0xA000, 1: backbuffer */
 uint8_t *hal_video_get_screen_buffer(void);
 uint8_t *hal_video_get_back_buffer(void);
