@@ -222,13 +222,17 @@ class NativeStage2ParityTests(unittest.TestCase):
                 {key: value for key, value in outputs["native"].items()
                  if not key.endswith("_hits")},
             )
-            self.assertEqual(outputs["native"]["exe_86810_hits"], "517")
+            # Read-only entry probes reproduce the old pins exactly, then
+            # measure the fixed-clock route. Alpha.4 matches the pre-menu
+            # BIOS-fixed baseline in every native counter and checkpoint.
+            # Getter:715 interpreted calls,714 native returns,1 timer fallback.
+            self.assertEqual(outputs["native"]["exe_86810_hits"], "714")
             self.assertEqual(outputs["native"]["exe_84866_hits"], "17")
             pair_a_hits = int(outputs["native"]["set_int_pair_a_hits"])
             pair_b_hits = int(outputs["native"]["set_int_pair_b_hits"])
             # These hooks intentionally fall back to the interpreter at timer/DMA edges.
             self.assertGreater(pair_a_hits, 0)
-            self.assertLessEqual(pair_a_hits, 988)
+            self.assertLessEqual(pair_a_hits, 1473)
             self.assertGreater(pair_b_hits, 0)
             self.assertLessEqual(pair_b_hits, 66)
             set_a_hits = int(outputs["native"]["set_int_a_hits"])
@@ -251,7 +255,7 @@ class NativeStage2ParityTests(unittest.TestCase):
             self.assertLessEqual(arr_set_one_hits, 1)
             exe_114942_hits = int(outputs["native"]["exe_114942_hits"])
             self.assertGreater(exe_114942_hits, 0)
-            self.assertLessEqual(exe_114942_hits, 3731)
+            self.assertLessEqual(exe_114942_hits, 4396)
             # The pinned interaction trace uses only nonnegative indices; it
             # verifies parity for that route but does not exercise this branch.
             self.assertEqual(int(outputs["native"]["exe_114942_negative_hits"]), 0)
@@ -261,8 +265,9 @@ class NativeStage2ParityTests(unittest.TestCase):
             self.assertGreater(store_two_globals_hits, 0)
             self.assertLessEqual(store_two_globals_hits, 17)
             set_int_if_ge0_hits = int(outputs["native"]["set_int_if_ge0_hits"])
-            self.assertGreater(set_int_if_ge0_hits, 0)
-            self.assertLessEqual(set_int_if_ge0_hits, 3)
+            # The clock-corrected intro makes no calls at this entry;
+            # independently observed --vm-only entry count is also zero.
+            self.assertEqual(set_int_if_ge0_hits, 0)
             iabs_hits = int(outputs["native"]["iabs_hits"])
             self.assertGreater(iabs_hits, 0)
             self.assertLessEqual(iabs_hits, 3)
@@ -274,9 +279,10 @@ class NativeStage2ParityTests(unittest.TestCase):
             self.assertLessEqual(set_byte_one_hits, 6)
             exe_37625_hits = int(outputs["native"]["exe_37625_hits"])
             self.assertGreater(exe_37625_hits, 0)
-            # The five source-backed entries hit 4,609 times in this VM profile.
+            # The five source-backed entries are called 5,324 times in the
+            # clock-corrected interpreter profile (1+1+27+5295).
             # Native hooks can fall back near timer/DMA boundaries.
-            self.assertLessEqual(exe_37625_hits, 4609)
+            self.assertLessEqual(exe_37625_hits, 5324)
 
 
 if __name__ == "__main__":
