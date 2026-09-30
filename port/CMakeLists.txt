@@ -601,10 +601,18 @@ if(XANTH_BUILD_TESTS)
         TIMEOUT 60
     )
 
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME RetailByteGuardTests COMMAND ${Python3_EXECUTABLE}
+            -m unittest discover -s tests -p test_retail_byte_guard.py)
+        set_tests_properties(RetailByteGuardTests PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.." TIMEOUT 60)
+    endif()
+
     # Boot smoke against the real retail image. Requires the disc, so it is
     # only registered when the assets are actually present -- an absent disc
     # must not look like a failure in asset-free CI.
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH/XANTH.EXE")
+    if(EXISTS "${XANTH_TEST_DATA_DIR}/XANTH.EXE")
         find_package(Python3 COMPONENTS Interpreter QUIET)
         if(Python3_Interpreter_FOUND)
             add_test(NAME Stage2NativeParityTest
@@ -629,6 +637,7 @@ if(XANTH_BUILD_TESTS)
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 360
             )
+            if(NOT TEST GuestStateModalTest)
             add_test(NAME GuestStateModalTest
                 COMMAND ${CMAKE_COMMAND} -E env
                         "XANTH_VMBOOT=$<TARGET_FILE:tool_vmboot>"
@@ -640,9 +649,11 @@ if(XANTH_BUILD_TESTS)
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 900
             )
+            endif()
             add_test(NAME DevMenuRetailIdentityTest
                 COMMAND ${CMAKE_COMMAND} -E env
                         "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                        "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
                         "XANTH_DEV_EVIDENCE=${CMAKE_BINARY_DIR}/dev_menu_evidence"
                         "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
                         ${Python3_EXECUTABLE}
@@ -688,9 +699,11 @@ if(XANTH_BUILD_TESTS)
         find_package(Python3 COMPONENTS Interpreter QUIET)
         if(Python3_Interpreter_FOUND)
             if(UNIX AND SDL2_FOUND_ANY)
+                if(NOT TEST RealTimeInputBedroomTest)
                 add_test(NAME RealTimeInputBedroomTest
                     COMMAND ${CMAKE_COMMAND} -E env
                             "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                        "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
                             "XANTH_KEY_SHIM=$<TARGET_FILE:sdl_key_shim>"
                             ${Python3_EXECUTABLE}
                             ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_realtime_input.py
@@ -699,10 +712,13 @@ if(XANTH_BUILD_TESTS)
                     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                     TIMEOUT 300
                 )
+                endif()
             endif()
+            if(NOT TEST RealTimeBootLogoTest)
             add_test(NAME RealTimeBootLogoTest
                 COMMAND ${CMAKE_COMMAND} -E env
                         "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                        "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
                         ${Python3_EXECUTABLE}
                         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_realtime_boot.py
             )
@@ -710,11 +726,12 @@ if(XANTH_BUILD_TESTS)
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 300
             )
+            endif()
         endif()
 
         add_test(NAME HeadlessBootSmokeTest
             COMMAND xanth_port --headless --frames 600
-                    --data ${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH
+                    --data ${XANTH_TEST_DATA_DIR}
                     --saves ${CMAKE_BINARY_DIR}/saves
         )
         set_tests_properties(HeadlessBootSmokeTest PROPERTIES
@@ -724,17 +741,22 @@ if(XANTH_BUILD_TESTS)
         )
 
         # Asset-gated suites. Each drives the real game; see tests/*.py.
-        foreach(suite IN ITEMS vmplay contextverbs hotspots walkthrough overlay
-                       saveload navigate soundblaster soak)
+        foreach(suite IN ITEMS mzload vmboot vmplay contextverbs hotspots walkthrough overlay
+                       saveload navigate soundblaster soak realsound)
+            if(NOT TEST Vm_${suite})
             add_test(NAME Vm_${suite}
                 COMMAND ${CMAKE_COMMAND} -E env
-                        python3 -m unittest discover -s tests
+                        "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                        "XANTH_VM_TOOL=$<TARGET_FILE:tool_vmboot>"
+                        "XANTH_MZ_TOOL=$<TARGET_FILE:tool_mzdump>"
+                        ${Python3_EXECUTABLE} -m unittest discover -s tests
                                 -p "test_${suite}.py"
             )
             set_tests_properties(Vm_${suite} PROPERTIES
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 1800
             )
+            endif()
         endforeach()
 
         # The walkthrough is the long pole and grows as segments are added:
