@@ -46,7 +46,7 @@ def main():
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     def git(*argv, **kwargs):
-        return run(['git', '-C', str(args.repo), *argv], **kwargs).decode().strip()
+        return run(['git', '-c', 'credential.interactive=true', '-C', str(args.repo), *argv], **kwargs).decode().strip()
     if not re.fullmatch(r'[0-9a-f]{40}', args.commit):
         parser.error('--commit must be the full tested commit SHA')
     git('check-ref-format', 'refs/heads/' + args.branch)

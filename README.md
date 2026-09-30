@@ -40,7 +40,8 @@ Steam's Force Compatibility Tool option disabled.
 
 Mouse and keyboard are the defaults. With `--controller`, the left stick moves
 the pointer, A clicks, X right-clicks, D-pad sends arrows, and Start sends
-Enter. Controllers can be connected or reconnected while the port is running.
+Enter. Current source builds also support controller reconnection and the
+Steam/InputPlumber hint fix; the alpha download predates these changes.
 Optional settings include `--pixel-perfect`, `--fit`, `--crt`,
 `--linear`, `--fullscreen`, `--handheld`, `--hotkeys`, `--soundfont <your.sf2>`,
 per-channel `--volume-* N`, and hash-keyed `--mods <directory>` with separate
@@ -66,8 +67,7 @@ font/graphics switches. All enhancements are off by default; see
 *Companions of Xanth* is being reconstructed from the locally supported XANBUD
 release. The EXE and OVL rebuild have documented byte-match evidence; that does
 not establish that every function has semantic source or that the port is 1:1.
-The native port is in progress on Linux, with Windows support unverified on a
-real runner. See [known divergences](docs/KNOWN_DIVERGENCES.md) before treating
+The native port is in progress on Linux, with the Windows MSVC build currently failing its CI gate. See [known divergences](docs/KNOWN_DIVERGENCES.md) before treating
 any behavior or platform as complete. Retail game assets are required.
 
 `tools/verify.py` reports whole-program BINARY-MATCH for this disc’s
