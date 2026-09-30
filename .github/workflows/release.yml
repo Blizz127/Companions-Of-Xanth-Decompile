@@ -2,18 +2,18 @@ name: port-release
 
 on:
   push:
-    branches: ["release/port-v0.1.0-alpha.1"]
+    branches: ["release/port-v0.1.0-alpha.2"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: port-release-v0.1.0-alpha.1
+  group: port-release-v0.1.0-alpha.2
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: v0.1.0-alpha.1
+  RELEASE_TAG: v0.1.0-alpha.2
 
 jobs:
   linux:
@@ -40,7 +40,7 @@ jobs:
           test "$rc" -eq 2
           python3 -c 'from pathlib import Path; s=Path("preflight.log").read_text(); assert "XANTH.EXE" in s and "--data" in s, s'
       - name: Package Linux executable and documentation
-        run: python3 scripts/package_release.py --binary build/xanth_port --version "$RELEASE_TAG" --platform linux-x86_64 --sdl-runtime /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0 --sdl-license /usr/share/doc/libsdl2-2.0-0/copyright --output dist
+        run: python3 scripts/package_release.py --binary build/xanth_port --version "$RELEASE_TAG" --platform linux-x86_64 --system-sdl --output dist
       - uses: actions/upload-artifact@v4
         with:
           name: port-linux

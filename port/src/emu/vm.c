@@ -607,8 +607,35 @@ static int clampi(int x, int lo, int hi) {
 #define M33_MUP         0x0040
 
 static void m33_raise(vm *v, uint16_t cond) {
-    if (v->m33_handler_seg || v->m33_handler_off)
-        v->m33_pending |= (uint16_t)(cond & v->m33_mask);
+    unsigned index;
+    cond &= v->m33_mask;
+    if (!cond || (!v->m33_handler_seg && !v->m33_handler_off)) return;
+
+    /* Preserve normal move+click packets, and collapse consecutive motion
+     * samples, but never combine button edges or append motion to an edge. */
+    if (v->m33_event_count) {
+        index = (v->m33_event_head + v->m33_event_count - 1) % VM_MOUSE_QUEUE;
+        if (v->m33_events[index].condition == M33_MOVE &&
+            (cond == M33_MOVE ||
+             (v->m33_events[index].x == v->mouse_x &&
+              v->m33_events[index].y == v->mouse_y))) {
+            cond |= M33_MOVE;
+            goto snapshot;
+        }
+    }
+    if (v->m33_event_count == VM_MOUSE_QUEUE) {
+        fprintf(stderr, "[mouse] callback queue full; input event refused\n");
+        return;
+    }
+    index = (v->m33_event_head + v->m33_event_count++) % VM_MOUSE_QUEUE;
+snapshot:
+    v->m33_events[index].condition = cond;
+    v->m33_events[index].buttons = (uint16_t)v->mouse_buttons;
+    v->m33_events[index].x = v->mouse_x;
+    v->m33_events[index].y = v->mouse_y;
+    v->m33_events[index].dx = v->mickey_dx;
+    v->m33_events[index].dy = v->mickey_dy;
+    v->m33_pending |= cond;
 }
 
 void vm_post_mouse_move(vm *v, int x, int y) {
@@ -1393,6 +1420,8 @@ static void svc_int33(vm *v) {
         v->mouse_min_y = 0; v->mouse_max_y = 199;
         v->mouse_x = 160; v->mouse_y = 100;
         v->mouse_buttons = 0;
+        v->m33_pending = 0;
+        v->m33_event_head = v->m33_event_count = 0;
         memset(v->press_count, 0, sizeof(v->press_count));
         memset(v->release_count, 0, sizeof(v->release_count));
         c->r[CPU_AX] = 0xFFFF;   /* driver installed */
@@ -1403,6 +1432,7 @@ static void svc_int33(vm *v) {
     case 0x0002: v->mouse_visible = false; break;
 
     case 0x0003:  /* get position and button state */
+        v->mouse_poll_sequence++;
         c->r[CPU_BX] = (uint16_t)v->mouse_buttons;
         c->r[CPU_CX] = (uint16_t)(v->mouse_x * 2);
         c->r[CPU_DX] = (uint16_t)v->mouse_y;
@@ -1524,12 +1554,16 @@ static void svc_int33(vm *v) {
 /* ------------------------------------------------------------------ */
 static void m33_dispatch(vm *v) {
     cpu86 *c = &v->cpu;
-    uint16_t cond = v->m33_pending;
+    unsigned index = v->m33_event_head;
+    uint16_t cond;
 
-    if (!cond || v->m33_in_callback) return;
+    if (!v->m33_event_count || v->m33_in_callback) return;
     if (!v->m33_handler_seg && !v->m33_handler_off) return;
 
-    v->m33_pending = 0;
+    cond = v->m33_events[index].condition;
+    v->m33_event_head = (index + 1) % VM_MOUSE_QUEUE;
+    v->m33_event_count--;
+    v->m33_pending = v->m33_event_count ? 1 : 0;
     v->m33_in_callback = true;
 
     memcpy(v->m33_saved.r, c->r, sizeof(c->r));
@@ -1542,18 +1576,19 @@ static void m33_dispatch(vm *v) {
     cpu86_push16(c, VM_TRAMP_MOUSE_RET);
 
     c->r[CPU_AX] = cond;
-    c->r[CPU_BX] = (uint16_t)v->mouse_buttons;
-    c->r[CPU_CX] = (uint16_t)(v->mouse_x * 2);   /* virtual 640-wide space */
-    c->r[CPU_DX] = (uint16_t)v->mouse_y;
-    c->r[CPU_SI] = (uint16_t)(int16_t)v->mickey_dx;
-    c->r[CPU_DI] = (uint16_t)(int16_t)v->mickey_dy;
+    c->r[CPU_BX] = v->m33_events[index].buttons;
+    c->r[CPU_CX] = (uint16_t)(v->m33_events[index].x * 2); /* virtual 640-wide */
+    c->r[CPU_DX] = (uint16_t)v->m33_events[index].y;
+    c->r[CPU_SI] = (uint16_t)(int16_t)v->m33_events[index].dx;
+    c->r[CPU_DI] = (uint16_t)(int16_t)v->m33_events[index].dy;
 
     c->s[CPU_CS] = v->m33_handler_seg;
     c->ip        = v->m33_handler_off;
     v->m33_calls++;
     if (v->cfg.trace_dos)
         fprintf(stderr, "[mouse] callback cond=%04X buttons=%04X at %d,%d\n",
-                cond, (unsigned)v->mouse_buttons, v->mouse_x, v->mouse_y);
+                cond, (unsigned)v->m33_events[index].buttons,
+                v->m33_events[index].x, v->m33_events[index].y);
 }
 
 static void m33_return(vm *v) {
@@ -1648,7 +1683,7 @@ static bool on_hlt(cpu86 *c, uint32_t lin) {
          * EMS. Deliberately NOT provided in Stage 1: the picture allocator
          * has a conventional-memory fallback that every EMS-less 1993 machine
          * exercised, and our memory map is more generous than a typical DOS 6
-         * box. If "[retail bytes removed]" ever appears, this
+         * box. If picture loading fails because memory cannot be allocated, this
          * is the switch to flip.
          */
         cpu_set_r8(c, CPU_AH, 0x84);   /* EMM not installed */

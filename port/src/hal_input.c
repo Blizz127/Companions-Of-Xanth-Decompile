@@ -33,7 +33,45 @@ typedef struct {
 } mouse_state_t;
 
 static mouse_state_t g_mouse;
-static int g_mouse_buttons, g_gamepad_buttons;
+static int g_mouse_buttons, g_gamepad_buttons, g_touch_buttons;
+/* Keep complete presses even when SDL delivers DOWN and UP in one poll. */
+#define POINTER_QUEUE_CAPACITY 1024
+static hal_pointer_event g_pointer_queue[POINTER_QUEUE_CAPACITY];
+static bool g_pointer_motion[POINTER_QUEUE_CAPACITY];
+static unsigned g_pointer_head, g_pointer_count;
+static bool g_pointer_events;
+static hal_pointer_event g_pointer_last;
+void hal_input_enable_pointer_events(bool enabled) {
+    g_pointer_events = enabled;
+    g_pointer_head = g_pointer_count = 0;
+    g_pointer_last = (hal_pointer_event){g_mouse.screen_x,g_mouse.screen_y,g_mouse.buttons};
+    if (enabled) { g_pointer_queue[0] = g_pointer_last; g_pointer_motion[0] = false; g_pointer_count = 1; }
+}
+bool hal_input_take_pointer_event(hal_pointer_event *event) {
+    if (!event || !g_pointer_count) return false;
+    *event = g_pointer_queue[g_pointer_head];
+    g_pointer_head = (g_pointer_head + 1) % POINTER_QUEUE_CAPACITY;
+    --g_pointer_count;
+    return true;
+}
+static void record_pointer(void) {
+    g_mouse.buttons = g_mouse_buttons | g_gamepad_buttons | g_touch_buttons;
+    hal_pointer_event now = {g_mouse.screen_x,g_mouse.screen_y,g_mouse.buttons};
+    if (!g_pointer_events || (now.x == g_pointer_last.x && now.y == g_pointer_last.y &&
+                              now.buttons == g_pointer_last.buttons)) return;
+    bool motion = now.buttons == g_pointer_last.buttons;
+    unsigned tail = (g_pointer_head + g_pointer_count - 1) % POINTER_QUEUE_CAPACITY;
+    if (motion && g_pointer_count && g_pointer_motion[tail]) {
+        g_pointer_queue[tail] = now;
+        g_pointer_last = now;
+    } else if (g_pointer_count < POINTER_QUEUE_CAPACITY) {
+        tail = (g_pointer_head + g_pointer_count++) % POINTER_QUEUE_CAPACITY;
+        g_pointer_queue[tail] = now;
+        g_pointer_motion[tail] = motion;
+        g_pointer_last = now;
+    }
+}
+
 
 /* -------------------------------------------------------------------------
  * INT 16h BIOS Keyboard FIFO Ring Buffer
@@ -54,6 +92,13 @@ typedef struct {
 } keyboard_state_t;
 
 static keyboard_state_t g_keyboard;
+static bool (*g_event_filter)(const SDL_Event *, void *);
+static void *g_event_filter_user;
+static uint32_t g_pad_button_mask;
+void hal_input_set_event_filter(bool (*fn)(const SDL_Event *, void *), void *user) {
+    g_event_filter = fn; g_event_filter_user = user;
+}
+void hal_input_set_pad_button_mask(uint32_t mask) { g_pad_button_mask = mask; }
 static bool g_gamepad_enabled;
 static bool g_hotkeys_enabled;
 static int g_pending_hotkey;
@@ -67,6 +112,21 @@ typedef struct {
 } gamepad_slot;
 static gamepad_slot g_pads[MAX_GAMEPADS];
 static int g_active_pad = -1;
+static SDL_FingerID g_touch_finger;
+static SDL_TouchID g_touch_device;
+static bool g_touch_active;
+static Uint32 g_pad_ticks;
+static int g_pad_fraction_x, g_pad_fraction_y;
+static int axis_step(int value, int maximum_speed, Uint32 elapsed, int *fraction) {
+    int magnitude = abs(value) - 12000;
+    if (magnitude <= 0) { *fraction = 0; return 0; }
+    int velocity = (int)((int64_t)magnitude * magnitude * maximum_speed / (20768LL * 20768LL));
+    if (value < 0) velocity = -velocity;
+    *fraction += velocity * (int)elapsed;
+    int step = *fraction / 1000;
+    *fraction -= step * 1000;
+    return step;
+}
 
 static void close_gamepads(void) {
     for (int i = 0; i < MAX_GAMEPADS; ++i) {
@@ -145,6 +205,7 @@ static bool select_gamepad(int index) {
 
 void hal_input_init(void) {
     g_mouse_buttons = g_gamepad_buttons = 0;
+    g_event_filter = NULL; g_event_filter_user = NULL; g_pad_button_mask = 0;
     memset(&g_mouse, 0, sizeof(g_mouse));
     g_mouse.virt_x = 320;
     g_mouse.virt_y = 100;
@@ -158,6 +219,12 @@ void hal_input_init(void) {
 
     memset(&g_keyboard, 0, sizeof(g_keyboard));
     g_gamepad_enabled = false;
+    g_touch_buttons = 0;
+#ifndef XANTH_HEADLESS_STUB
+    g_touch_active = false;
+    g_pad_ticks = SDL_GetTicks(); g_pad_fraction_x = g_pad_fraction_y = 0;
+#endif
+    hal_input_enable_pointer_events(false);
     g_hotkeys_enabled = false;
     g_pending_hotkey = 0;
 #ifndef XANTH_HEADLESS_STUB
@@ -178,6 +245,8 @@ int hal_input_take_hotkey(void) {
 void hal_input_prepare_gamepad(bool enabled) {
 #ifndef XANTH_HEADLESS_STUB
     if (!enabled) return;
+    SDL_setenv("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1", 1);
+    SDL_SetHintWithPriority(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1", SDL_HINT_OVERRIDE);
     const char *keys[] = {"SDL_GAMECONTROLLER_IGNORE_DEVICES", "SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT"};
     for (unsigned i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i) {
         const char *value = SDL_getenv(keys[i]);
@@ -191,7 +260,7 @@ void hal_input_prepare_gamepad(bool enabled) {
             if (comma) { *comma = 0; cursor = comma + 1; } else cursor = NULL;
             unsigned vid = 0, pid = 0;
             bool handheld = sscanf(entry, " %x/%x", &vid, &pid) == 2 &&
-                (vid == 0x17ef || (vid == 0x28de && (pid == 0x1205 || pid == 0x1206)));
+                (vid == 0x17ef || (vid == 0x28de && (pid == 0x1205 || pid == 0x1206 || (pid >= 0x12f0 && pid <= 0x12ff))));
             if (!handheld) { if (*after) strcat(after, ","); strcat(after, entry); }
         }
         if (strcmp(before, after)) {
@@ -435,7 +504,8 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
 
 #ifndef XANTH_HEADLESS_STUB
     SDL_Event event;
-    while (SDL_PollEvent(&event)) {
+    while ((!g_pointer_events || g_pointer_count < POINTER_QUEUE_CAPACITY - 2) && SDL_PollEvent(&event)) {
+        if (g_event_filter && g_event_filter(&event, g_event_filter_user)) continue;
         switch (event.type) {
         case SDL_QUIT:
             last_key = 27; /* Escape */
@@ -489,7 +559,11 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             if (down) g_pads[index].buttons |= 1u << event.cbutton.button;
             else g_pads[index].buttons &= ~(1u << event.cbutton.button);
             if (down) (void)select_gamepad(index);
-            if (!g_pads[index].ready || index != g_active_pad) break;
+            if (!g_pads[index].ready || index != g_active_pad ||
+                (g_pad_button_mask & (1u << event.cbutton.button))) break;
+            unsigned held = g_pads[index].buttons & ~g_pad_button_mask;
+            g_gamepad_buttons = ((held & (1u << SDL_CONTROLLER_BUTTON_A)) ? HAL_MOUSE_BTN_LEFT : 0) |
+                                ((held & (1u << SDL_CONTROLLER_BUTTON_X)) ? HAL_MOUSE_BTN_RIGHT : 0);
             switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_A:
                 if (down) g_gamepad_buttons |= HAL_MOUSE_BTN_LEFT;
@@ -511,6 +585,9 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
                 if (down) (void)hal_keyboard_push(0x4D,0);
                 break;
+            case SDL_CONTROLLER_BUTTON_BACK:
+                if (down) g_pending_hotkey = 3;
+                break;
             case SDL_CONTROLLER_BUTTON_START:
                 if (down) (void)hal_keyboard_push(0x1C,0x0D);
                 break;
@@ -519,36 +596,52 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             break;
         }
 
-        case SDL_MOUSEMOTION: {
-            int vp_x = 0, vp_y = 0, vp_w = 0, vp_h = 0;
-            hal_video_get_viewport(&vp_x, &vp_y, &vp_w, &vp_h);
-
-            if (vp_w > 0 && vp_h > 0) {
-                int vx = event.motion.x - vp_x;
-                int vy = event.motion.y - vp_y;
-                if (vx < 0) vx = 0;
-                if (vy < 0) vy = 0;
-                if (vx >= vp_w) vx = vp_w - 1;
-                if (vy >= vp_h) vy = vp_h - 1;
-
-                int sx = (vx * HAL_VIDEO_WIDTH) / vp_w;
-                int sy = (vy * HAL_VIDEO_HEIGHT) / vp_h;
-                if (sx < 0) sx = 0;
-                if (sx >= HAL_VIDEO_WIDTH) sx = HAL_VIDEO_WIDTH - 1;
-                if (sy < 0) sy = 0;
-                if (sy >= HAL_VIDEO_HEIGHT) sy = HAL_VIDEO_HEIGHT - 1;
-
-                g_mouse.screen_x = sx;
-                g_mouse.screen_y = sy;
-                g_mouse.virt_x = sx * 2;
-                g_mouse.virt_y = sy;
+        case SDL_WINDOWEVENT:
+            if (event.window.event == SDL_WINDOWEVENT_ENTER)
+                hal_video_mouse_window_event(event.window.windowID, true);
+            else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED &&
+                     SDL_GetMouseFocus() == SDL_GetWindowFromID(event.window.windowID))
+                hal_video_mouse_window_event(event.window.windowID, true);
+            else if (event.window.event == SDL_WINDOWEVENT_LEAVE || event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+                hal_video_mouse_window_event(event.window.windowID, false);
+                if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+                    g_mouse_buttons = g_touch_buttons = 0;
+                    g_touch_active = false;
+                }
             }
+            break;
+        case SDL_FINGERDOWN:
+        case SDL_FINGERMOTION:
+        case SDL_FINGERUP: {
+            if (event.type == SDL_FINGERDOWN && !g_touch_active) {
+                g_touch_active = true; g_touch_finger = event.tfinger.fingerId;
+                g_touch_device = event.tfinger.touchId;
+            }
+            if (!g_touch_active || g_touch_finger != event.tfinger.fingerId ||
+                g_touch_device != event.tfinger.touchId) break;
+            int sx, sy;
+            if (hal_video_map_touch(event.tfinger.x, event.tfinger.y, &sx, &sy))
+                hal_mouse_set_position(sx * 2, sy);
+            g_touch_buttons = event.type == SDL_FINGERUP ? 0 : HAL_MOUSE_BTN_LEFT;
+            if (event.type == SDL_FINGERUP) g_touch_active = false;
+            break;
+        }
+        case SDL_MOUSEMOTION: {
+            if (event.motion.which == SDL_TOUCH_MOUSEID) break;
+            g_pad_fraction_x = g_pad_fraction_y = 0;
+            int sx, sy;
+            if (hal_video_map_mouse(event.motion.x, event.motion.y, &sx, &sy))
+                hal_mouse_set_position(sx * 2, sy);
             break;
         }
 
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP: {
+            if (event.button.which == SDL_TOUCH_MOUSEID) break;
             bool down = (event.type == SDL_MOUSEBUTTONDOWN);
+            int sx, sy;
+            if (hal_video_map_mouse(event.button.x, event.button.y, &sx, &sy))
+                hal_mouse_set_position(sx * 2, sy);
             uint8_t btn_mask = 0;
             if (event.button.button == SDL_BUTTON_LEFT) btn_mask = HAL_MOUSE_BTN_LEFT;
             else if (event.button.button == SDL_BUTTON_RIGHT) btn_mask = HAL_MOUSE_BTN_RIGHT;
@@ -559,17 +652,22 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             break;
         }
         }
+        record_pointer();
     }
+    Uint32 now = SDL_GetTicks();
+    Uint32 elapsed = now - g_pad_ticks;
+    g_pad_ticks = now;
+    if (elapsed > 50) elapsed = 50;
     if (g_gamepad_enabled) reconcile_gamepads();
     g_gamepad_buttons = 0;
-    if (g_active_pad >= 0 && g_pads[g_active_pad].controller) {
+    if (g_active_pad >= 0 && g_pads[g_active_pad].controller && g_pad_button_mask != UINT32_MAX) {
         gamepad_slot *pad = &g_pads[g_active_pad];
-        if (pad->buttons & (1u << SDL_CONTROLLER_BUTTON_A)) g_gamepad_buttons |= HAL_MOUSE_BTN_LEFT;
-        if (pad->buttons & (1u << SDL_CONTROLLER_BUTTON_X)) g_gamepad_buttons |= HAL_MOUSE_BTN_RIGHT;
+        if ((pad->buttons & ~g_pad_button_mask) & (1u << SDL_CONTROLLER_BUTTON_A)) g_gamepad_buttons |= HAL_MOUSE_BTN_LEFT;
+        if ((pad->buttons & ~g_pad_button_mask) & (1u << SDL_CONTROLLER_BUTTON_X)) g_gamepad_buttons |= HAL_MOUSE_BTN_RIGHT;
         int dx=SDL_GameControllerGetAxis(pad->controller,SDL_CONTROLLER_AXIS_LEFTX);
         int dy=SDL_GameControllerGetAxis(pad->controller,SDL_CONTROLLER_AXIS_LEFTY);
-        int step_x=(dx > 12000) ? 3 : ((dx < -12000) ? -3 : 0);
-        int step_y=(dy > 12000) ? 2 : ((dy < -12000) ? -2 : 0);
+        int step_x = axis_step(dx, 300, elapsed, &g_pad_fraction_x);
+        int step_y = axis_step(dy, 240, elapsed, &g_pad_fraction_y);
         if (step_x || step_y) {
             int nx=g_mouse.screen_x+step_x, ny=g_mouse.screen_y+step_y;
             if (nx<0) nx=0;
@@ -581,7 +679,7 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
     }
 #endif
 
-    g_mouse.buttons = g_mouse_buttons | g_gamepad_buttons;
+    record_pointer();
     if (mouse_x) *mouse_x = g_mouse.screen_x;
     if (mouse_y) *mouse_y = g_mouse.screen_y;
     if (mouse_buttons) *mouse_buttons = g_mouse.buttons;

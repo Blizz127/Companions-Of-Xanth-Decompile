@@ -32,6 +32,7 @@ void hal_video_set_window_size(int width, int height);
 void hal_video_toggle_fullscreen(void);
 void hal_video_toggle_crt(void);
 void hal_video_shutdown(void);
+void hal_video_toggle_controller_help(void);
 void hal_video_set_active_buffer(int target); /* 0: screen 0xA000, 1: backbuffer */
 uint8_t *hal_video_get_screen_buffer(void);
 uint8_t *hal_video_get_back_buffer(void);
@@ -43,6 +44,12 @@ void hal_video_set_palette(const uint8_t *rgb_triplets, int start, int count);
 void hal_video_cycle_palette(int start_reg, int count);
 void hal_video_wait_vsync(void);
 void hal_video_get_viewport(int *x, int *y, int *w, int *h);
+/* SDL mouse points are window coordinates; presentation uses drawable pixels. */
+bool hal_video_map_window_point(int window_w, int window_h, int output_w, int output_h,
+    hal_video_present_mode mode, int window_x, int window_y, int *screen_x, int *screen_y);
+bool hal_video_map_touch(float x, float y, int *screen_x, int *screen_y);
+bool hal_video_map_mouse(int window_x, int window_y, int *screen_x, int *screen_y);
+void hal_video_mouse_window_event(uint32_t window_id, bool inside);
 uint64_t hal_video_get_frame_count(void);
 bool hal_video_save_bmp(const char *path);
 
@@ -82,6 +89,14 @@ void hal_audio_mpu_write_data(uint8_t data);
 #define HAL_MOUSE_BTN_RIGHT   0x02
 #define HAL_MOUSE_BTN_MIDDLE  0x04
 
+/* SDL types are opaque here, so stub clients need no SDL dependency. */
+typedef union SDL_Event SDL_Event;
+typedef struct SDL_Renderer SDL_Renderer;
+void hal_input_set_event_filter(bool (*fn)(const SDL_Event *, void *), void *user);
+/* Mask uses SDL_CONTROLLER_BUTTON_* bit indices, not DOS mouse bits.
+ * UINT32_MAX captures the entire pad, including analog pointer movement. */
+void hal_input_set_pad_button_mask(uint32_t mask);
+void hal_video_set_overlay(void (*fn)(SDL_Renderer *, const hal_video_viewport *, void *), void *user);
 void hal_input_init(void);
 /* Call before SDL initialization when controller input is requested. */
 void hal_input_prepare_gamepad(bool enabled);
@@ -89,6 +104,9 @@ void hal_input_enable_gamepad(bool enabled);
 void hal_input_enable_hotkeys(bool enabled);
 int hal_input_take_hotkey(void);
 void hal_input_shutdown(void);
+typedef struct { int x, y, buttons; } hal_pointer_event;
+void hal_input_enable_pointer_events(bool enabled);
+bool hal_input_take_pointer_event(hal_pointer_event *event);
 void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_code);
 
 /* Mouse API (INT 33h) */

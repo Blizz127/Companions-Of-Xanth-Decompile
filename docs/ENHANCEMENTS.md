@@ -23,7 +23,7 @@ runtime-selected music backend; the current OPL/AdLib path remains the default.
 | Linear filter | `--linear` or `linear_filter=true` | Optional SDL linear texture sampling. Off by default. It softens pixels and is not a pixel-art reconstruction filter. |
 | CRT scanlines | `--crt` or `crt=true` | Optional host-side scanline overlay. This is a lightweight overlay, not a programmable CRT shader. |
 | Enhanced graphics preset | `--enhanced-graphics` or `enhanced_graphics=true` | Opts into both linear texture sampling and the CRT scanline overlay from the first presented frame. It affects only SDL presentation; the guest framebuffer, logic, and saved screenshots stay unchanged. Off by default. |
-| Gamepad | `--controller` or `controller=true` | SDL GameController: left stick moves the pointer, A clicks, X right-clicks, D-pad moves with guest arrow keys, Start presses Enter. Off by default. |
+| Gamepad | `--controller` or `controller=true` | SDL GameController: left stick moves the pointer, A clicks, X right-clicks, D-pad moves with guest arrow keys, Start presses Enter, and Back opens help. Supports hotplug and analog pointer speed. Automatically detects controllers; use `--no-controller` or `controller=false` to disable. |
 | Host hotkeys | `--hotkeys` or `hotkeys=true` | Opt-in F11 fullscreen toggle and F10 scanline toggle. These host shortcuts are not sent to the guest when enabled. |
 | Per-channel volume | `--volume-master`, `--volume-music`, `--volume-sfx`, `--volume-voice` | Each accepts 0–128. Existing defaults are retained when omitted. |
 | Mixed audio capture | `--audio-dump <file.wav>` | Optional 44.1 kHz, 16-bit stereo WAV capture of the final SDL mixer output. Disabled by default; the file is written only when requested. |
@@ -97,7 +97,7 @@ sanitation before SDL initializes, physical input precedence, fallback to an
 active virtual pad, hotplug by instance ID, neutral input after reconnect,
 shared mouse/button ownership, guest pointer bounds, and keyboard operation
 after removal. Physical Deck/Legion testing remains unverified. These input
-changes are available only with `--controller`; keyboard/mouse remain default.
+changes are automatically enabled; `--no-controller` disables them. Back opens a host-only help overlay.
 
 The enhancement layer calls the existing SDL2 HAL and does not modify retail
 code. The existing VM frame-hash tests remain the gate for game state and

@@ -1,0 +1,29 @@
+# Real guest quick-tap regression: SDL receives DOWN and UP in the same poll.
+# The host bridge holds each state until retail INT33 AX3 observes it.
+# Coordinates and route come from walkthrough_01_mundania.xit.
+# --- boot: logo, demon cutscene, title ---
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15
+checkpoint mouse_bedroom
+
+# --- take the envelope from the desk ---
+move 105 103
+run 5
+down left
+up left
+run 20
+move 14 7
+run 5
+down left
+up left
+run 50
+move 305 196
+run 12
+checkpoint mouse_envelope_taken

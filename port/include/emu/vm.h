@@ -37,6 +37,7 @@ extern "C" {
 
 #define VM_MAX_FILES      40
 #define VM_KEY_QUEUE      32
+#define VM_MOUSE_QUEUE    1024
 
 typedef struct {
     bool  used;
@@ -191,6 +192,7 @@ typedef struct vm {
 
     int        mouse_x, mouse_y;          /* logical 320x200 space */
     int        mouse_buttons;             /* bit 0 left, 1 right, 2 middle */
+    uint64_t   mouse_poll_sequence;        /* host observation: guest INT33 AX3 reads */
     bool       mouse_visible;
     int        mouse_min_x, mouse_max_x;
     int        mouse_min_y, mouse_max_y;
@@ -206,7 +208,14 @@ typedef struct vm {
      * the driver calling it; it does not poll for movement. */
     uint16_t   m33_handler_seg, m33_handler_off;
     uint16_t   m33_mask;
-    uint16_t   m33_pending;        /* condition bits waiting to be delivered */
+    uint16_t   m33_pending;        /* nonzero while callback records await delivery */
+    /* Host edges can arrive together in one poll. Keep their state at the
+     * edge instead of reporting every callback with the final button mask. */
+    struct {
+        uint16_t condition, buttons;
+        int x, y, dx, dy;
+    } m33_events[VM_MOUSE_QUEUE];
+    unsigned m33_event_head, m33_event_count;
     bool       m33_in_callback;
     uint32_t   m33_calls;
     struct {                        /* guest state saved across the callback */

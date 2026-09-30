@@ -20,6 +20,7 @@ def main() -> None:
     parser.add_argument("--version", required=True)
     parser.add_argument("--platform", required=True,
                         choices=("linux-x86_64", "windows-x86_64"))
+    parser.add_argument("--system-sdl", action="store_true", help="Use installed Linux SDL2 rather than bundle a library")
     parser.add_argument("--sdl-runtime", type=Path, help="Linux SDL2 shared library to bundle")
     parser.add_argument("--sdl-license", type=Path, help="Copyright/license for the bundled SDL2 library")
     parser.add_argument("--output", default=Path("dist"), type=Path)
@@ -34,7 +35,7 @@ def main() -> None:
     dlls = sorted(binary.parent.glob("*.dll")) if windows else []
     if windows and not any(p.name.lower() == "sdl2.dll" for p in dlls):
         parser.error("Windows package requires SDL2.dll beside xanth_port.exe")
-    if not windows and (args.sdl_runtime is None or args.sdl_license is None):
+    if not windows and not args.system_sdl and (args.sdl_runtime is None or args.sdl_license is None):
         parser.error("Linux packaging requires --sdl-runtime and --sdl-license")
     stem = f"xanth-port-{args.version}-{args.platform}"
     args.output.mkdir(parents=True, exist_ok=True)
@@ -43,10 +44,11 @@ def main() -> None:
         package.mkdir()
         shutil.copy2(binary, package / expected)
         if not windows:
-            (package / "lib").mkdir()
-            (package / "licenses").mkdir()
-            shutil.copy2(args.sdl_runtime, package / "lib" / "libSDL2-2.0.so.0")
-            shutil.copy2(args.sdl_license, package / "licenses" / "SDL2-copyright")
+            if not args.system_sdl:
+                (package / "lib").mkdir()
+                (package / "licenses").mkdir()
+                shutil.copy2(args.sdl_runtime, package / "lib" / "libSDL2-2.0.so.0")
+                shutil.copy2(args.sdl_license, package / "licenses" / "SDL2-copyright")
             shutil.copy2(ROOT / "scripts" / "launch.sh", package / "launch.sh")
             (package / "launch.sh").chmod(0o755)
         pins = (ROOT / "port" / "include" / "retail_asset_manifest.h").read_text()

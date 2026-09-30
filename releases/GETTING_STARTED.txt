@@ -1,7 +1,7 @@
 Companions of Xanth — quick start
 
 1. Download the Linux x86_64 release asset named
-   xanth-r<N>-<commit>-linux-x86_64.tar.gz from GitHub Releases and extract
+   xanth-port-v0.1.0-alpha.2-linux-x86_64.tar.gz from GitHub Releases and extract
    it to ~/Games/companions-of-xanth/port/.
 2. Supply XANTH.EXE plus the 90 files listed in DATA_FILES.txt from your own
    original disc or an installation you already own. Copy all 91 directly
@@ -40,3 +40,5 @@ default. See docs/ENHANCEMENTS.md.
 STATUS
 The current verified route reaches Fairy Nuff's recipe and shows 122/1000.
 The full game is not completable yet. See docs/KNOWN_DIVERGENCES.md.
+
+Linux requires system SDL2 (libSDL2-2.0.so.0) and glibc 2.34 or newer. SDL2 is already installed on the verified Bazzite Alienware. On Debian/Ubuntu, the runtime package is libsdl2-2.0-0; on Fedora, SDL2. This release does not bundle SDL2.

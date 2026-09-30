@@ -1,7 +1,9 @@
+#include "controller_help.h"
 #include "port_hal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #define SDL_MAIN_HANDLED
 #ifndef XANTH_HEADLESS_STUB
@@ -61,6 +63,8 @@ typedef struct {
     hal_video_present_mode present_mode;
     bool crt_scanlines;
     bool linear_filter;
+    int saved_host_cursor;
+    bool host_cursor_hidden;
     uint64_t frame_count;
 } hal_video_ctx_t;
 
@@ -79,12 +83,12 @@ hal_video_viewport hal_video_compute_viewport(int win_w, int win_h,
         viewport.width = HAL_VIDEO_WIDTH * factor;
         viewport.height = HAL_VIDEO_HEIGHT * factor;
     } else {
-        if (win_w * 3 > win_h * 4) {
+        if ((int64_t)win_w * 3 > (int64_t)win_h * 4) {
             viewport.height = win_h;
-            viewport.width = (win_h * 4) / 3;
+            viewport.width = (int)(((int64_t)win_h * 4) / 3);
         } else {
             viewport.width = win_w;
-            viewport.height = (win_w * 3) / 4;
+            viewport.height = (int)(((int64_t)win_w * 3) / 4);
         }
     }
     viewport.x = (win_w - viewport.width) / 2;
@@ -108,8 +112,69 @@ static void update_viewport(void) {
     g_video.viewport_h = viewport.height;
 }
 
+bool hal_video_map_window_point(int window_w, int window_h, int output_w, int output_h,
+    hal_video_present_mode mode, int window_x, int window_y, int *screen_x, int *screen_y) {
+    if (window_w <= 0 || window_h <= 0 || output_w <= 0 || output_h <= 0)
+        return false;
+    hal_video_viewport viewport = hal_video_compute_viewport(output_w, output_h, mode);
+    if (viewport.width <= 0 || viewport.height <= 0) return false;
+    int64_t x = (int64_t)window_x * output_w / window_w - viewport.x;
+    int64_t y = (int64_t)window_y * output_h / window_h - viewport.y;
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x >= viewport.width) x = viewport.width - 1;
+    if (y >= viewport.height) y = viewport.height - 1;
+    if (screen_x) *screen_x = (int)(x * HAL_VIDEO_WIDTH / viewport.width);
+    if (screen_y) *screen_y = (int)(y * HAL_VIDEO_HEIGHT / viewport.height);
+    return true;
+}
+
+bool hal_video_map_mouse(int window_x, int window_y, int *screen_x, int *screen_y) {
+    int window_w = g_video.window_width, window_h = g_video.window_height;
+    int output_w = window_w, output_h = window_h;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_video.window && !g_video.headless)
+        SDL_GetWindowSize(g_video.window, &window_w, &window_h);
+    if (g_video.renderer && !g_video.headless)
+        SDL_GetRendererOutputSize(g_video.renderer, &output_w, &output_h);
+#endif
+    return hal_video_map_window_point(window_w, window_h, output_w, output_h,
+        g_video.present_mode, window_x, window_y, screen_x, screen_y);
+}
+
+bool hal_video_map_touch(float x, float y, int *screen_x, int *screen_y) {
+    int w = g_video.window_width, h = g_video.window_height;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_video.window && !g_video.headless) SDL_GetWindowSize(g_video.window, &w, &h);
+#endif
+    if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) return false;
+    return hal_video_map_mouse((int)(x * w), (int)(y * h), screen_x, screen_y);
+}
+
+void hal_video_mouse_window_event(uint32_t window_id, bool inside) {
+#ifndef XANTH_HEADLESS_STUB
+    if (!g_video.window || g_video.headless || window_id != SDL_GetWindowID(g_video.window))
+        return;
+    if (inside && !g_video.host_cursor_hidden) {
+        g_video.saved_host_cursor = SDL_ShowCursor(SDL_QUERY);
+        SDL_ShowCursor(SDL_DISABLE);
+        g_video.host_cursor_hidden = true;
+    } else if (!inside && g_video.host_cursor_hidden) {
+        SDL_ShowCursor(g_video.saved_host_cursor);
+        g_video.host_cursor_hidden = false;
+    }
+#else
+    (void)window_id;
+    (void)inside;
+#endif
+}
+
 bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycling) {
     memset(&g_video, 0, sizeof(g_video));
+    if (scale > INT_MAX / HAL_VIDEO_WIDTH) {
+        fprintf(stderr, "[HAL_VIDEO] Window scale is too large\n");
+        return false;
+    }
 
     g_video.screen_buffer = g_dos_mem + 0xA0000;
     g_video.back_buffer = (uint8_t *)calloc(1, HAL_VIDEO_FRAME_SIZE);
@@ -166,6 +231,10 @@ bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycli
     g_video.window_height = HAL_VIDEO_HEIGHT * scale;
 
 #ifndef XANTH_HEADLESS_STUB
+    /* Let the first click activate and reach the game in the same event. */
+#ifdef SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+#endif
     if (headless) {
         /* Headless mode: configure SDL dummy video driver if not already set */
         setenv("SDL_VIDEODRIVER", "dummy", 0);
@@ -219,6 +288,10 @@ bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycli
 #endif
 
     update_viewport();
+#ifndef XANTH_HEADLESS_STUB
+    if (g_video.window && SDL_GetMouseFocus() == g_video.window)
+        hal_video_mouse_window_event(SDL_GetWindowID(g_video.window), true);
+#endif
 
     return true;
 }
@@ -237,7 +310,20 @@ void hal_video_set_filter(bool crt_scanlines, bool linear_filter) {
         SDL_SetTextureScaleMode(g_video.texture,
             linear_filter ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
 #else
+        /* Older SDL reads this hint only when creating a texture. Setting
+         * it on the existing texture leaves filtering unchanged. */
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, linear_filter ? "linear" : "nearest");
+        SDL_Texture *replacement = SDL_CreateTexture(g_video.renderer,
+            SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+            HAL_VIDEO_WIDTH, HAL_VIDEO_HEIGHT);
+        if (replacement) {
+            SDL_SetTextureBlendMode(replacement, SDL_BLENDMODE_NONE);
+            SDL_DestroyTexture(g_video.texture);
+            g_video.texture = replacement;
+        } else {
+            fprintf(stderr, "[HAL_VIDEO] Failed to change texture filtering: %s\n",
+                    SDL_GetError());
+        }
 #endif
     }
 #endif
@@ -266,8 +352,23 @@ void hal_video_toggle_crt(void) {
     g_video.crt_scanlines = !g_video.crt_scanlines;
 }
 
+static void (*g_overlay)(SDL_Renderer *, const hal_video_viewport *, void *);
+static void *g_overlay_user;
+void hal_video_set_overlay(void (*fn)(SDL_Renderer *, const hal_video_viewport *, void *), void *user) {
+    g_overlay = fn; g_overlay_user = user;
+}
+static bool g_controller_help;
+#ifndef XANTH_HEADLESS_STUB
+static SDL_Texture *g_help_texture;
+#endif
+void hal_video_toggle_controller_help(void) { g_controller_help = !g_controller_help; }
 void hal_video_shutdown(void) {
 #ifndef XANTH_HEADLESS_STUB
+    if (g_video.host_cursor_hidden) {
+        SDL_ShowCursor(g_video.saved_host_cursor);
+        g_video.host_cursor_hidden = false;
+    }
+    if (g_help_texture) { SDL_DestroyTexture(g_help_texture); g_help_texture = NULL; }
     if (g_video.texture) {
         SDL_DestroyTexture(g_video.texture);
         g_video.texture = NULL;
@@ -428,6 +529,26 @@ void hal_video_flip(void) {
                     SDL_RenderDrawLine(g_video.renderer, off_x, y, off_x + target_w - 1, y);
                 SDL_SetRenderDrawBlendMode(g_video.renderer, SDL_BLENDMODE_NONE);
             }
+            if (g_controller_help) {
+                if (!g_help_texture) {
+                    uint32_t *panel = malloc(CONTROLLER_HELP_PIXELS * sizeof(*panel));
+                    if (panel && controller_help_render(panel, CONTROLLER_HELP_PIXELS, false, false)) {
+                        g_help_texture = SDL_CreateTexture(g_video.renderer, SDL_PIXELFORMAT_RGBA8888,
+                            SDL_TEXTUREACCESS_STATIC, CONTROLLER_HELP_WIDTH, CONTROLLER_HELP_HEIGHT);
+                        if (g_help_texture) {
+                            SDL_UpdateTexture(g_help_texture, NULL, panel, CONTROLLER_HELP_WIDTH * sizeof(*panel));
+                            SDL_SetTextureBlendMode(g_help_texture, SDL_BLENDMODE_BLEND);
+                        }
+                    }
+                    free(panel);
+                }
+                if (g_help_texture) {
+                    SDL_Rect help_rect = {off_x, off_y + target_h * 12 / 200,
+                                          target_w, target_h * CONTROLLER_HELP_HEIGHT / 200};
+                    SDL_RenderCopy(g_video.renderer, g_help_texture, NULL, &help_rect);
+                }
+            }
+            if (g_overlay) g_overlay(g_video.renderer, &viewport, g_overlay_user);
             SDL_RenderPresent(g_video.renderer);
         }
     }

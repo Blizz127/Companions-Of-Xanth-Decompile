@@ -23,7 +23,7 @@ class FireCharcoalRouteTests(unittest.TestCase):
         tool = Path(os.environ.get("XANTH_VM_TOOL", ROOT / "build" / "tool_vmboot")).resolve()
         anchor = Path(os.environ.get("XANTH_FIRE_ANCHOR", ROOT / "build" / "agent_dungeon_test")).resolve()
         slot = anchor / "XANTH000.SAV"
-        for path in (tool, ROOT / "original" / "XANTH.EXE", DATA, slot):
+        for path in (tool, DATA / "XANTH.EXE", DATA, slot):
             if not path.exists():
                 self.skipTest(f"retail walkthrough prerequisite unavailable: {path}")
         before = slot.read_bytes()
@@ -44,7 +44,7 @@ class FireCharcoalRouteTests(unittest.TestCase):
                 source = ROOT / "tests" / "traces" / relative
                 target.write_text(source.read_text().replace("shot build/frames/", f"shot {frames}/"))
             proc = subprocess.run(
-                [str(tool), "--exe", str(ROOT / "original" / "XANTH.EXE"),
+                [str(tool), "--exe", str(DATA / "XANTH.EXE"),
                  "--data", str(DATA), "--saves", str(saves),
                  "--script", str(traces / "walkthrough_19_charcoal.xit"),
                  "--insns", "6000000000"],

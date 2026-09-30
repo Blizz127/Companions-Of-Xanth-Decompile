@@ -171,6 +171,7 @@ set(XANTH_COMMON_SOURCES
     src/dos_mem.c
     src/asset_oracle.c
     src/hal_video.c
+    src/controller_help.c
     src/hal_audio.c
     src/hal_input.c
     src/hal_fs.c
@@ -190,6 +191,7 @@ set(XANTH_PORT_SOURCES
     src/emu/native_stage2.c
     src/dos_mem.c
     src/hal_video.c
+    src/controller_help.c
     src/hal_audio.c
     src/hal_input.c
     src/hal_fs.c
@@ -333,6 +335,18 @@ if(XANTH_BUILD_TESTS)
     set_target_properties(tool_vmboot PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
+    if(SDL2_FOUND_ANY)
+        add_executable(tool_vmclick tests/tool_vmclick.c src/emu/native_stage2.c
+            src/dos_mem.c src/hal_audio.c src/midi_player.c src/hal_fs.c
+            src/hal_input.c src/hal_video.c src/controller_help.c $<TARGET_OBJECTS:xanth_emu>)
+        target_include_directories(tool_vmclick PRIVATE include include/emu)
+        target_compile_definitions(tool_vmclick PRIVATE XANTH_NATIVE_STAGE2_TESTING=1)
+        target_link_libraries(tool_vmclick PRIVATE ${SDL2_TARGET_LIB})
+        if(UNIX AND NOT APPLE)
+            target_link_libraries(tool_vmclick PRIVATE m)
+        endif()
+    endif()
+
     # Sound Blaster DMA Pipeline and Virtual Cycle Timing test
     add_executable(test_dma_pipeline
         tests/test_dma_pipeline.c
@@ -378,6 +392,23 @@ if(XANTH_BUILD_TESTS)
 
     add_executable(xanth_native_guard_tests tests/test_native_guards.c src/dos_mem.c $<TARGET_OBJECTS:xanth_emu>)
     target_include_directories(xanth_native_guard_tests PRIVATE include include/emu)
+
+    add_executable(xanth_controller_help_tests tests/test_controller_help.c src/controller_help.c src/dos_mem.c)
+    target_include_directories(xanth_controller_help_tests PRIVATE include)
+    add_test(NAME ControllerHelpTests COMMAND xanth_controller_help_tests)
+    if(UNIX)
+        add_executable(xanth_vm_mouse_tests tests/test_vm_mouse_events.c src/dos_mem.c $<TARGET_OBJECTS:xanth_emu>)
+        target_include_directories(xanth_vm_mouse_tests PRIVATE include include/emu)
+        add_test(NAME VmMouseEventsTests COMMAND xanth_vm_mouse_tests)
+    endif()
+    if(SDL2_FOUND_ANY)
+        add_executable(xanth_mouse_video_tests tests/test_mouse_video.c src/dos_mem.c src/controller_help.c)
+        target_include_directories(xanth_mouse_video_tests PRIVATE include)
+        target_link_libraries(xanth_mouse_video_tests PRIVATE ${SDL2_TARGET_LIB})
+        add_test(NAME MouseVideoTests COMMAND xanth_mouse_video_tests)
+        set_tests_properties(MouseVideoTests PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
+    endif()
+
     # SDL virtual controllers require 2.0.14; preservation stub builds omit this.
     if(SDL2_FOUND_ANY)
         include(CheckSymbolExists)

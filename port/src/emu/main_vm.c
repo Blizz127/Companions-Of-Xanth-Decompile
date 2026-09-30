@@ -219,7 +219,8 @@ static void print_usage(const char *prog) {
     printf("  --linear         Enable optional linear texture filtering\n");
     printf("  --enhanced-graphics Enable linear filtering and CRT scanlines\n");
     printf("  --handheld       Open at 1280x800 for Deck/Legion Go displays\n");
-    printf("  --controller     Enable SDL gamepad pointer and button input\n");
+    printf("  --controller     Enable SDL gamepad input (automatic by default)\n");
+    printf("  --no-controller  Disable automatic controller input\n");
     printf("  --hotkeys        Enable F11 fullscreen and F10 scanline hotkeys\n");
     printf("  --volume-<name> <0..128>  Set master/music/sfx/voice channel volume\n");
     printf("  --soundfont <sf2>  Opt in to FluidSynth General MIDI using your soundfont\n");
@@ -302,7 +303,7 @@ int main(int argc, char **argv) {
     int scale = 3;
     bool fullscreen = false, headless = false;
     bool pixel_perfect = false, crt = false, linear = false, handheld = false;
-    bool gamepad = false, hotkeys = false;
+    bool gamepad = true, hotkeys = false;
     bool enhanced_graphics = false;
     bool replacement_fonts = false;
     bool replacement_graphics = false;
@@ -369,6 +370,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--enhanced-graphics")) crt = linear = true;
         else if (!strcmp(argv[i], "--handheld")) handheld = true;
         else if (!strcmp(argv[i], "--controller")) gamepad = true;
+        else if (!strcmp(argv[i], "--no-controller")) gamepad = false;
         else if (!strcmp(argv[i], "--hotkeys")) hotkeys = true;
         else if (!strcmp(argv[i], "--volume-master") && i + 1 < argc) volume_master = parse_volume(argv[++i]);
         else if (!strcmp(argv[i], "--volume-music") && i + 1 < argc) volume_music = parse_volume(argv[++i]);
@@ -499,6 +501,7 @@ int main(int argc, char **argv) {
     if (handheld) hal_video_set_window_size(1280,800);
     hal_input_init();
     hal_input_enable_gamepad(gamepad);
+    hal_input_enable_pointer_events(true);
     hal_input_enable_hotkeys(hotkeys);
     if (!hal_audio_init())
         fprintf(stderr, "[WARN] audio unavailable; continuing silently\n");
@@ -551,6 +554,9 @@ int main(int argc, char **argv) {
         long long frame = 0;
         bool running = true;
         int last_mx = -1, last_my = -1, last_btn = 0;
+        hal_pointer_event pending_pointer;
+        bool have_pending_pointer = false, pointer_edge_waiting = false;
+        uint64_t pointer_poll_sequence = machine.mouse_poll_sequence;
 
 #ifndef XANTH_HEADLESS_STUB
         uint64_t perf_freq = SDL_GetPerformanceFrequency();
@@ -571,20 +577,37 @@ int main(int argc, char **argv) {
             switch (hal_input_take_hotkey()) {
             case 1: hal_video_toggle_fullscreen(); break;
             case 2: hal_video_toggle_crt(); break;
+            case 3: hal_video_toggle_controller_help(); break;
             default: break;
             }
             if (key == 27) { running = false; break; }   /* Escape quits */
 
-            if (mx != last_mx || my != last_my) {
-                vm_post_mouse_move(&machine, mx, my);
-                last_mx = mx; last_my = my;
+            /* Keep a quick press until the retail INT33 poll observes it.
+             * Callback delivery alone cannot satisfy a game polling BX. */
+            for (;;) {
+                if (!have_pending_pointer)
+                    have_pending_pointer = hal_input_take_pointer_event(&pending_pointer);
+                if (!have_pending_pointer) break;
+                hal_pointer_event pointer = pending_pointer;
+                int changed = pointer.buttons ^ last_btn;
+                if (pointer_edge_waiting && machine.mouse_poll_sequence == pointer_poll_sequence)
+                    break;
+                pointer_edge_waiting = false;
+                have_pending_pointer = false;
+                if (pointer.x != last_mx || pointer.y != last_my) {
+                    vm_post_mouse_move(&machine, pointer.x, pointer.y);
+                    last_mx = pointer.x; last_my = pointer.y;
+                }
+                for (int b = 0; b < 3; ++b)
+                    if (changed & (1 << b))
+                        vm_post_mouse_button(&machine, b, (pointer.buttons & (1 << b)) != 0);
+                last_btn = pointer.buttons;
+                if (changed) {
+                    pointer_poll_sequence = machine.mouse_poll_sequence;
+                    pointer_edge_waiting = true;
+                    break;
+                }
             }
-            for (int b = 0; b < 3; b++) {
-                int mask = 1 << b;
-                if ((btn & mask) != (last_btn & mask))
-                    vm_post_mouse_button(&machine, b, (btn & mask) != 0);
-            }
-            last_btn = btn;
 
             while (hal_keyboard_peek(&k)) {
                 k = hal_keyboard_read();
