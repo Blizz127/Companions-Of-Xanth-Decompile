@@ -1,0 +1,128 @@
+# Soak: exercise verbs, objects, the compass and the widgets to surface
+# any host service the game has not needed yet, and to prove the machine
+# stays healthy under sustained play. Deterministic seed, so a failure
+# is reproducible.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 14 60
+run 3
+click left
+run 4
+move 18 140
+run 3
+click left
+run 6
+move 14 6
+run 3
+click left
+run 4
+move 215 60
+run 3
+click left
+run 6
+move 14 6
+run 3
+click left
+run 4
+move 95 35
+run 3
+click left
+run 6
+move 14 51
+run 3
+click left
+run 4
+move 146 70
+run 3
+click left
+run 6
+move 14 6
+run 3
+click left
+run 4
+move 18 150
+run 3
+click left
+run 6
+move 14 15
+run 3
+click left
+run 4
+move 215 60
+run 3
+click left
+run 6
+move 14 6
+run 3
+click left
+run 4
+move 215 60
+run 3
+click left
+run 6
+move 14 24
+run 3
+click left
+run 4
+move 18 160
+run 3
+click left
+run 6
+move 14 42
+run 3
+click left
+run 4
+move 18 140
+run 3
+click left
+run 6
+move 14 15
+run 3
+click left
+run 4
+move 146 70
+run 3
+click left
+run 6
+move 14 15
+run 3
+click left
+run 4
+move 243 72
+run 3
+click left
+run 6
+move 14 60
+run 3
+click left
+run 4
+move 215 60
+run 3
+click left
+run 6
+move 14 42
+run 3
+click left
+run 4
+move 18 160
+run 3
+click left
+run 6
+move 14 15
+run 3
+click left
+run 4
+move 146 70
+run 3
+click left
+run 6
+move 305 196
+run 15
+shot build/frames/soak.bmp
+checkpoint soak_end

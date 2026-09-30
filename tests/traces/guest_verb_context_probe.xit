@@ -1,0 +1,76 @@
+# Boot into the game and park the cursor out of the way.
+#
+# Three space bars: Legend logo, demon cutscene, title screen. Each is a
+# "press any key" gate, and the run counts between them are the animation
+# lengths -- pressing too early is swallowed rather than skipping ahead.
+#
+# The cursor is parked at (305,196), outside the picture window and clear of
+# every hotspot, so that a checkpoint hash taken afterwards records the room
+# rather than whatever the mouse happened to be hovering over.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15
+
+move 200 55
+run 10
+click left
+run 30
+move 305 196
+run 10
+checkpoint context_computer
+shot build/frames/context_fresh.bmp
+move 14 7
+run 15
+checkpoint context_hover_7
+shot build/frames/context_row_7.bmp
+move 14 17
+run 15
+checkpoint context_hover_17
+shot build/frames/context_row_17.bmp
+move 14 27
+run 15
+checkpoint context_hover_27
+shot build/frames/context_row_27.bmp
+move 14 37
+run 15
+checkpoint context_hover_37
+shot build/frames/context_row_37.bmp
+move 14 47
+run 15
+checkpoint context_hover_47
+shot build/frames/context_row_47.bmp
+move 14 57
+run 15
+checkpoint context_hover_57
+shot build/frames/context_row_57.bmp
+move 14 67
+run 15
+checkpoint context_hover_67
+shot build/frames/context_row_67.bmp
+move 14 87
+run 15
+checkpoint context_hover_87
+shot build/frames/context_row_87.bmp
+move 14 97
+run 15
+checkpoint context_hover_97
+shot build/frames/context_row_97.bmp
+move 14 107
+run 15
+checkpoint context_hover_107
+shot build/frames/context_row_107.bmp
+move 200 55
+run 20
+move 140 78
+run 20
+move 95 35
+run 20
+move 100 165
+run 20

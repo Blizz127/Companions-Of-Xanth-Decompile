@@ -1,0 +1,16 @@
+# Boot the retail game and reach the first Mundania room (Dug's computer desk).
+#
+# `run N` executes N scheduler slices; a slice is a chunk of guest compute or
+# one timer tick. Three keypresses carry the Legend logo, the animated demon
+# cutscene, and the title into the game proper.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+
+checkpoint first_room
+shot build/frames/first_room.bmp

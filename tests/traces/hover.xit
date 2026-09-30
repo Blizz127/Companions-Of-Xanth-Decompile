@@ -1,0 +1,144 @@
+# Hover sweep: the game names the object under the cursor.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 60 20
+run 3
+shot build/frames/hv_00.bmp
+move 90 20
+run 3
+shot build/frames/hv_01.bmp
+move 120 20
+run 3
+shot build/frames/hv_02.bmp
+move 150 20
+run 3
+shot build/frames/hv_03.bmp
+move 180 20
+run 3
+shot build/frames/hv_04.bmp
+move 210 20
+run 3
+shot build/frames/hv_05.bmp
+move 240 20
+run 3
+shot build/frames/hv_06.bmp
+move 270 20
+run 3
+shot build/frames/hv_07.bmp
+move 300 20
+run 3
+shot build/frames/hv_08.bmp
+move 60 40
+run 3
+shot build/frames/hv_09.bmp
+move 90 40
+run 3
+shot build/frames/hv_10.bmp
+move 120 40
+run 3
+shot build/frames/hv_11.bmp
+move 150 40
+run 3
+shot build/frames/hv_12.bmp
+move 180 40
+run 3
+shot build/frames/hv_13.bmp
+move 210 40
+run 3
+shot build/frames/hv_14.bmp
+move 240 40
+run 3
+shot build/frames/hv_15.bmp
+move 270 40
+run 3
+shot build/frames/hv_16.bmp
+move 300 40
+run 3
+shot build/frames/hv_17.bmp
+move 60 60
+run 3
+shot build/frames/hv_18.bmp
+move 90 60
+run 3
+shot build/frames/hv_19.bmp
+move 120 60
+run 3
+shot build/frames/hv_20.bmp
+move 150 60
+run 3
+shot build/frames/hv_21.bmp
+move 180 60
+run 3
+shot build/frames/hv_22.bmp
+move 210 60
+run 3
+shot build/frames/hv_23.bmp
+move 240 60
+run 3
+shot build/frames/hv_24.bmp
+move 270 60
+run 3
+shot build/frames/hv_25.bmp
+move 300 60
+run 3
+shot build/frames/hv_26.bmp
+move 60 80
+run 3
+shot build/frames/hv_27.bmp
+move 90 80
+run 3
+shot build/frames/hv_28.bmp
+move 120 80
+run 3
+shot build/frames/hv_29.bmp
+move 150 80
+run 3
+shot build/frames/hv_30.bmp
+move 180 80
+run 3
+shot build/frames/hv_31.bmp
+move 210 80
+run 3
+shot build/frames/hv_32.bmp
+move 240 80
+run 3
+shot build/frames/hv_33.bmp
+move 270 80
+run 3
+shot build/frames/hv_34.bmp
+move 300 80
+run 3
+shot build/frames/hv_35.bmp
+move 60 100
+run 3
+shot build/frames/hv_36.bmp
+move 90 100
+run 3
+shot build/frames/hv_37.bmp
+move 120 100
+run 3
+shot build/frames/hv_38.bmp
+move 150 100
+run 3
+shot build/frames/hv_39.bmp
+move 180 100
+run 3
+shot build/frames/hv_40.bmp
+move 210 100
+run 3
+shot build/frames/hv_41.bmp
+move 240 100
+run 3
+shot build/frames/hv_42.bmp
+move 270 100
+run 3
+shot build/frames/hv_43.bmp
+move 300 100
+run 3
+shot build/frames/hv_44.bmp

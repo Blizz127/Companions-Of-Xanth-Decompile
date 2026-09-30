@@ -1,0 +1,40 @@
+# Multi-room navigation.
+#
+# Measured compass inputs take the player northwest from the bedroom into
+# the foyer and southeast back to the bedroom. The
+# compass is a 3x3 arrow grid at x 4..44, y 128..168; centres are x 11/24/37
+# and y 135/148/161.
+#
+# Note the Foyer lives in the same XANTH_02.PIC as the bedroom, so a room
+# change shows up as a scene change rather than a new file being opened.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15
+checkpoint bedroom
+
+# NW -> Foyer
+move 11 135
+run 5
+click left
+run 30
+move 305 196
+run 12
+checkpoint foyer
+shot build/frames/nav_foyer.bmp
+
+# SE -> back to the bedroom
+move 37 161
+run 5
+click left
+run 30
+move 305 196
+run 12
+checkpoint back_in_bedroom
+shot build/frames/nav_back.bmp

@@ -1,0 +1,75 @@
+# Boot into the game and park the cursor out of the way.
+#
+# Three space bars: Legend logo, demon cutscene, title screen. Each is a
+# "press any key" gate, and the run counts between them are the animation
+# lengths -- pressing too early is swallowed rather than skipping ahead.
+#
+# The cursor is parked at (305,196), outside the picture window and clear of
+# every hotspot, so that a checkpoint hash taken afterwards records the room
+# rather than whatever the mouse happened to be hovering over.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15
+
+move 105 103
+run 10
+key 103
+run 50
+move 305 196
+run 12
+checkpoint key_g_take
+shot build/frames/g_take.bmp
+
+move 92 162
+run 10
+key 111
+run 50
+move 305 196
+run 12
+checkpoint key_o_open
+shot build/frames/o_open.bmp
+
+move 152 162
+run 10
+key 99
+run 50
+move 305 196
+run 12
+checkpoint key_c_close
+shot build/frames/c_close.bmp
+
+move 200 55
+run 10
+key 116
+run 50
+move 305 196
+run 12
+checkpoint key_t_talk
+shot build/frames/t_talk.bmp
+
+move 92 162
+run 10
+key 108
+run 50
+move 305 196
+run 12
+checkpoint key_l_look
+shot build/frames/l_look.bmp
+
+key 32
+run 30
+move 132 162
+run 10
+key 112
+run 50
+move 305 196
+run 12
+checkpoint key_p_put
+shot build/frames/p_put.bmp

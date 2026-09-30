@@ -1,0 +1,101 @@
+# Save / restore round trip, checked by comparing save files.
+#
+# Save the game, advance time with WAIT, restore, then
+# save again. If the restore truly reproduced the saved state, the second
+# save file must match the first apart from its name field. That is a far
+# stronger check than comparing screenshots, which can match while the
+# underlying state differs.
+#
+# System menu item centres, measured from the rendered menu:
+#   Help 40  Save 56  Restore 72  Restart 88
+#   Music/Voice 104  Status/Score 120  Quit 136  Cancel 152
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15
+checkpoint before_save
+
+# --- Save as "AAAA" -------------------------------------------------------
+move 35 174
+run 10
+click left
+run 40
+move 160 56
+run 10
+click left
+run 50
+key 65
+run 6
+key 65
+run 6
+key 65
+run 6
+key 65
+run 6
+run 20
+move 65 168
+run 10
+click left
+run 70
+move 305 196
+run 15
+checkpoint after_save
+
+# --- Change the world -----------------------------------------------------
+key 0 59
+run 40
+move 305 196
+run 15
+checkpoint after_wait
+
+# --- Restore --------------------------------------------------------------
+move 35 174
+run 10
+click left
+run 40
+move 160 72
+run 10
+click left
+run 60
+move 100 78
+run 10
+click left
+run 30
+move 65 168
+run 10
+click left
+run 90
+move 305 196
+run 20
+checkpoint after_restore
+shot build/frames/rs_done.bmp
+
+# --- Save again as "BBBB" -------------------------------------------------
+move 35 174
+run 10
+click left
+run 40
+move 160 56
+run 10
+click left
+run 50
+key 66
+run 6
+key 66
+run 6
+key 66
+run 6
+key 66
+run 6
+run 20
+move 65 168
+run 10
+click left
+run 70
+checkpoint after_resave

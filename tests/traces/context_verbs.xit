@@ -1,0 +1,51 @@
+# Measured verb rows: Take 7, Put 17, Look at 27, Open 37, Close 47,
+# Talk to 57, Look 67; context verbs Read 87, Touch 97.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15
+move 215 60
+run 5
+click left
+run 20
+move 14 87
+run 5
+click left
+run 40
+move 305 196
+run 10
+shot build/frames/cv_read.bmp
+checkpoint read
+move 215 60
+run 5
+click left
+run 20
+move 14 97
+run 5
+click left
+run 50
+move 305 196
+run 10
+shot build/frames/cv_touch.bmp
+checkpoint touch
+
+# Opening the CD-ROM drive changes persistent object state AND the artwork:
+# the game draws an "open tray" sprite over the closed-drive background.
+move 270 100
+run 5
+click left
+run 20
+move 14 37
+run 5
+click left
+run 50
+move 305 196
+run 12
+checkpoint cd_open
+shot build/frames/cv_cdopen.bmp

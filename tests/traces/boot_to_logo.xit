@@ -1,0 +1,6 @@
+# Minimal boot: RTLink pages its overlays, the game loads its databases and
+# the Legend logo, and lands at the first input prompt.
+
+run 200
+checkpoint logo
+shot build/frames/boot_logo.bmp

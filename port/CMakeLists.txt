@@ -393,6 +393,40 @@ if(XANTH_BUILD_TESTS)
     add_executable(xanth_native_guard_tests tests/test_native_guards.c src/dos_mem.c $<TARGET_OBJECTS:xanth_emu>)
     target_include_directories(xanth_native_guard_tests PRIVATE include include/emu)
 
+    add_executable(xanth_controller_guest_ui_tests tests/test_controller_guest_ui.c src/controller_guest_ui.c)
+    target_include_directories(xanth_controller_guest_ui_tests PRIVATE include)
+    add_test(NAME ControllerGuestUiTests COMMAND xanth_controller_guest_ui_tests)
+
+    # Owned assets may be kept outside the public checkout.
+    set(XANTH_TEST_DATA_DIR "$ENV{XANTH_DATA}" CACHE PATH "Owned retail data directory for integration tests")
+    if(EXISTS "${XANTH_TEST_DATA_DIR}/XANTH.EXE")
+        find_package(Python3 COMPONENTS Interpreter QUIET)
+        if(Python3_Interpreter_FOUND)
+            add_test(NAME GuestVerbSemanticsTests
+                COMMAND ${CMAKE_COMMAND} -E env
+                    "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                    "XANTH_VMBOOT=$<TARGET_FILE:tool_vmboot>"
+                    ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_guest_verb_semantics.py)
+            set_tests_properties(GuestVerbSemanticsTests PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 420 ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
+            if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH/XANTH.EXE")
+                foreach(suite IN ITEMS mzload vmboot vmplay contextverbs hotspots
+                        overlay saveload navigate soundblaster soak realsound)
+                    add_test(NAME Vm_${suite}
+                        COMMAND ${CMAKE_COMMAND} -E env
+                            "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                            "XANTH_VM_TOOL=$<TARGET_FILE:tool_vmboot>"
+                            "XANTH_MZ_TOOL=$<TARGET_FILE:tool_mzdump>"
+                            ${Python3_EXECUTABLE} -m unittest discover -s tests -p "test_${suite}.py")
+                    set_tests_properties(Vm_${suite} PROPERTIES
+                        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                        TIMEOUT 1800 ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
+                endforeach()
+            endif()
+        endif()
+    endif()
+
     add_executable(xanth_controller_help_tests tests/test_controller_help.c src/controller_help.c src/dos_mem.c)
     target_include_directories(xanth_controller_help_tests PRIVATE include)
     add_test(NAME ControllerHelpTests COMMAND xanth_controller_help_tests)

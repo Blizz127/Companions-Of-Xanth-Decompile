@@ -1,0 +1,37 @@
+# Prove the game is interactive: select a verb, click an object, and get the
+# parser's response.
+#
+# Selecting Take and then the computer elicits a refusal from the game's own
+# parser and story database. The checkpoint hash verifies that response.
+
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+
+# Park the cursor away from any hotspot so the baseline is stable.
+move 305 196
+run 15
+checkpoint room_idle
+
+# Select the Take verb.
+move 14 6
+run 10
+click left
+run 40
+move 305 196
+run 15
+checkpoint verb_take
+
+# Click the computer.
+move 215 60
+run 10
+click left
+run 40
+move 305 196
+run 15
+checkpoint took_computer
+shot build/frames/interact_result.bmp
