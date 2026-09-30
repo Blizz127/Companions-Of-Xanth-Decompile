@@ -39,7 +39,9 @@ On in this preview: press F12 or Back+Start on one controller. Set
 `XANTH_CHEATS=0` hard-disables it. The menu offers
 8 verified warps and 7 finish-step entries after you build and verify your
 own local checkpoints. See [DEV_MENU.md](docs/DEV_MENU.md) for the packaged
-tools and instructions. No cheats are included.
+tools and instructions. No cheats are included. A lone Back or Start acts
+on release. With the menu on, fullscreen and CRT scanlines are in Options
+instead of the `--hotkeys` F10/F11 shortcuts.
 
 ## Steam Deck / Game Mode
 
@@ -53,19 +55,11 @@ A clicks, X right-clicks, D-pad sends guest arrows, Start sends Enter, and Back
 opens help. Alpha.2 includes reconnection and Steam/InputPlumber handheld fixes.
 Use `--no-controller` or `controller=false` to disable controller input.
 
-A playtest dev menu is on by default for now: F12, or Back+Start on the same
-pad, opens it (fast-forward, screenshots, display options; warps need locally
-built checkpoints). A lone Back or Start acts on release. While it is on,
-fullscreen and CRT scanlines are on its Options page instead of the
-`--hotkeys` F10/F11 shortcuts. The game is unchanged while the menu is closed.
-Turn it off with `--no-dev-menu`, `dev_menu=0` in the config, or
-`XANTH_DEV_MENU=0`; `XANTH_CHEATS=0` disables it completely. See
-[docs/DEV_MENU.md](docs/DEV_MENU.md).
-
 Optional settings include `--pixel-perfect`, `--fit`, `--crt`,
 `--linear`, `--fullscreen`, `--handheld`, `--hotkeys`, `--soundfont <your.sf2>`,
 per-channel `--volume-* N`, and hash-keyed `--mods <directory>` with separate
-font/graphics switches. Controller input is automatic; other enhancements are off by default; see
+font/graphics switches. Controller input and the preview dev menu are automatic;
+graphics and audio enhancements are off by default; see
 [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
 
 ### Troubleshooting and FAQ

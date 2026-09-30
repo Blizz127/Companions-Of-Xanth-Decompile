@@ -125,6 +125,12 @@ static int queued_replays(void) {
     return n < 0 ? 0 : n;
 }
 
+static void write_cfg(const char *text) {
+    FILE *f = fopen("dev_menu_test.cfg", "w");
+    CHECK(f);
+    if (f) { fputs(text, f); fclose(f); }
+}
+
 static void test_resolution(void) {
     SDL_setenv("XANTH_DEV_MENU", "", 1); SDL_setenv("XANTH_CHEATS", "", 1);
     dev_menu_reset_for_tests();
