@@ -35,6 +35,20 @@
   #endif
 #endif
 
+static void report_startup_error(const char *message, bool headless) {
+    fprintf(stderr, "[FATAL] %s\n", message);
+#ifndef XANTH_HEADLESS_STUB
+    if (!headless &&
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                                 "Companions of Xanth could not start",
+                                 message, NULL) == 0)
+        return;
+#else
+    (void)headless;
+#endif
+    fprintf(stderr, "[FATAL] Could not display a graphical error dialog.\n");
+}
+
 /*
  * Guest time per host frame.
  *
@@ -241,7 +255,7 @@ int main(int argc, char **argv) {
     {
         char asset_error[1024];
         if (!xanth_check_assets(cfg.exe_path,cfg.data_dir,asset_error,sizeof(asset_error))) {
-            fprintf(stderr,"[FATAL] %s\n",asset_error);
+            report_startup_error(asset_error, headless);
             return 2;
         }
     }
