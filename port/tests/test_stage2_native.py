@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+# BIOS-status fix goldens: old/new pixels independently audited on 2026-09-30;
+# all differences are inside the live bedroom rain bounds (56,4)-(135,58).
+# verb_take779px, took_computer658px; retail/mirrored-font opening834px each.
+# Evidence: release-staging/xanth-work/alpha4-review (task940bcebbfcda).
+
 import os
 import re
 import subprocess
@@ -11,7 +16,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "game_cd" / "XANTH"
+DATA = Path(os.environ.get("XANTH_DATA", ROOT / "game_cd" / "XANTH"))
 EXE = DATA / "XANTH.EXE"
 CHECKPOINT = "run 200\ncheckpoint stage2_boot\n"
 
@@ -126,9 +131,9 @@ class NativeStage2ParityTests(unittest.TestCase):
             self.fail(f"required retail files or interaction trace are missing: {EXE}, {interaction}")
 
         expected_hashes = {
-            "room_idle": "ace8f1a3d6b858f2",
-            "verb_take": "0c26affc320f0d17",
-            "took_computer": "e8ae412501bc4d7c",
+            "room_idle": "fc53131750c9cb17",
+            "verb_take": "f4d01e0db56a202b",
+            "took_computer": "b14d4ebce73cb2d4",
         }
         source = "\n".join(
             line for line in interaction.read_text(encoding="ascii").splitlines()

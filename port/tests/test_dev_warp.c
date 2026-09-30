@@ -70,10 +70,10 @@ int main(void) {
     CHECK(mkdtemp(g_ck) && mkdtemp(g_saves));
     write_file(g_ck, "checkpoints.txt",
         "# id\tlabel\tregion\tarea\tspot\tverified\tsha256\n"
-        "home\thome\tMundania\tYour house\tBedroom\t1\t-\n"
-        "cave\tcave\tXanth\tCavern\tCavern (with Nada)\t1\t-\n"
-        "spring\tspr\tXanth\tCavern\tSpring\t1\t-\n"
-        "draft\tdrf\tXanth\tVoid\tShimmer\t0\t-\n"
+        "home\thome\tMundania\tYour house\tBedroom\t1\taaa9402664f1a41f40ebbc52c9993eb66aeb366602958fdfaa283b71e64db123\n"
+        "cave\tcave\tXanth\tCavern\tCavern (with Nada)\t1\t2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6\n"
+        "spring\tspr\tXanth\tCavern\tSpring\t1\t043a718774c572bd8a25adbeb1bfcd5c0256ae11cecf9f9c3f925d0e52beaf89\n"
+        "draft\tdrf\tXanth\tVoid\tShimmer\t0\t18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4\n"
         "missing\tmis\tXanth\tVoid\tGone\t1\t-\n");
     write_file(g_ck, "home.SAV", "h"); write_file(g_ck, "cave.SAV", "c");
     write_file(g_ck, "spring.SAV", "s"); write_file(g_ck, "draft.SAV", "d");
@@ -103,6 +103,18 @@ int main(void) {
     CHECK(!exists(g_saves, "XANTH000.SAV"));
     CHECK(dev_warp_used() && strstr(dev_warp_message(), "Warped to Cavern"));
     CHECK(exists(g_saves, "xanth-dev-menu.log"));
+
+    /* Changes after list verification cannot reach the Restore dialog. */
+    load();
+    write_file(g_ck, "home.SAV", "changed");
+    CHECK(!dev_warp_request(dev_warp_find("home"), msg, sizeof(msg)));
+    CHECK(strstr(msg, "changed since verification") && g_nkeys == 0);
+    write_file(g_ck, "home.SAV", "h");
+    load();
+    CHECK(dev_warp_request(dev_warp_find("home"), msg, sizeof(msg)));
+    CHECK(exists(g_saves, "XANTH000.SAV"));
+    dev_warp_shutdown();
+    CHECK(!dev_warp_active() && !exists(g_saves, "XANTH000.SAV"));
 
     /* Never idle: refused, nothing typed, slot removed. */
     load();
@@ -140,11 +152,11 @@ int main(void) {
      * s2 scores 15; s3 scores nothing but adds items; s4 scores nothing and
      * changes nothing observable (never offered); s5 scores again. */
     write_file(g_ck, "checkpoints.txt",
-        "s1\ta\tMundania\tHouse\tKitchen\t1\t-\t64\t5\t1\tFind the kitchen\t2\n"
-        "s2\tb\tMundania\tHouse\tKitchen\t1\t-\t64\t20\t2\tPhone\t2\n"
-        "s3\tc\tMundania\tHouse\tKitchen\t1\t-\t64\t20\t3\tSupplies\t5\n"
-        "s4\td\tMundania\tHouse\tKitchen\t1\t-\t64\t20\t4\tIdle\t5\n"
-        "s5\te\tXanth\tCavern\tCave\t1\t-\t9\t40\t5\tCavern\t5\n");
+        "s1\ta\tMundania\tHouse\tKitchen\t1\t6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\t64\t5\t1\tFind the kitchen\t2\n"
+        "s2\tb\tMundania\tHouse\tKitchen\t1\td4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35\t64\t20\t2\tPhone\t2\n"
+        "s3\tc\tMundania\tHouse\tKitchen\t1\t4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce\t64\t20\t3\tSupplies\t5\n"
+        "s4\td\tMundania\tHouse\tKitchen\t1\t4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a\t64\t20\t4\tIdle\t5\n"
+        "s5\te\tXanth\tCavern\tCave\t1\tef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d\t9\t40\t5\tCavern\t5\n");
     write_file(g_ck, "s1.SAV", "1"); write_file(g_ck, "s2.SAV", "2");
     write_file(g_ck, "s3.SAV", "3"); write_file(g_ck, "s4.SAV", "4"); write_file(g_ck, "s5.SAV", "5");
     load();

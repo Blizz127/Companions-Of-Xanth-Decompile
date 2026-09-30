@@ -22,7 +22,7 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PORT = os.environ.get("XANTH_PORT_BIN", os.path.join(ROOT, "build", "xanth_port"))
-DATA = os.path.join(ROOT, "game_cd", "XANTH")
+DATA = os.environ.get("XANTH_DATA", os.path.join(ROOT, "game_cd", "XANTH"))
 FRAMES = int(os.environ.get("XANTH_DEV_IDENTITY_FRAMES", "1500"))
 BASE = 1000   # script starts once the title art is on screen
 
@@ -74,8 +74,11 @@ def run(label, workdir, extra_args, extra_env):
 
 def main():
     if not os.path.exists(os.path.join(DATA, "XANTH.EXE")):
+        if "XANTH_DATA" in os.environ:
+            print("FAIL: explicitly selected owned data is missing")
+            return 1
         print("SKIP: retail data not present")
-        return 0
+        return 77
     evidence = os.environ.get("XANTH_DEV_EVIDENCE")
     with tempfile.TemporaryDirectory(prefix="xanth-devmenu-") as work:
         keys = ",".join(f"{BASE + f}:{k}" for f, k in SCRIPT)

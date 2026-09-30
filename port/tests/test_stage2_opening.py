@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+# BIOS-status fix goldens: old/new pixels independently audited on 2026-09-30;
+# all differences are inside the live bedroom rain bounds (56,4)-(135,58).
+# verb_take779px, took_computer658px; retail/mirrored-font opening834px each.
+# Evidence: release-staging/xanth-work/alpha4-review (task940bcebbfcda).
+
 import os
 import hashlib
 import re
@@ -13,13 +18,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "game_cd" / "XANTH"
+DATA = Path(os.environ.get("XANTH_DATA", ROOT / "game_cd" / "XANTH"))
 EXE = DATA / "XANTH.EXE"
 TRACE = ROOT / "tests" / "traces" / "walkthrough_01_mundania.xit"
 EXPECTED_HASHES = {
-    "wt_bedroom": "ace8f1a3d6b858f2",
+    "wt_bedroom": "fc53131750c9cb17",
     "wt_envelope_taken": "3d1d3d0cc740a586",
-    "wt_envelope_opened": "960b3613f65c7a7b",
+    "wt_envelope_opened": "a50c05cbb541c80c",
     "wt_letter_read": "d42f3bbea8fba840",
     "wt_postit_taken": "c8b44c4bf818789a",
     "wt_hall_dark": "e588dc6d2b9310d3",

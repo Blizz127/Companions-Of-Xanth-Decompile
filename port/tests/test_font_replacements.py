@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+# BIOS-status fix goldens: old/new pixels independently audited on 2026-09-30;
+# all differences are inside the live bedroom rain bounds (56,4)-(135,58).
+# verb_take779px, took_computer658px; retail/mirrored-font opening834px each.
+# Evidence: release-staging/xanth-work/alpha4-review (task940bcebbfcda).
+
 import hashlib
 import os
 import re
@@ -14,9 +19,9 @@ from pathlib import Path
 from test_stage2_opening import DATA, EXPECTED_HASHES, ROOT, TRACE
 
 EXE = DATA / "XANTH.EXE"
-RETAIL_BMP_SHA256 = "719c68af9d67f6d1b8d146bde9d2877799cd4ef846943f1db72692f6e2bda96e"
-MIRRORED_FRAME_HASH = "0d7b760b986313c2"
-MIRRORED_BMP_SHA256 = "f410c27ad6decb29bcb576dc5c75680476ee31d6af8fe25cf2ccdd62e8214736"
+RETAIL_BMP_SHA256 = "7cb6bcffb8b38e6f7319700fe23d8b7539a958a3ddf6bcf8c710aa7b688f785f"
+MIRRORED_FRAME_HASH = "1998707c7c199697"
+MIRRORED_BMP_SHA256 = "34500bd2be1e0f90624caf3b655dfb7b04b8181e7270e897a6a1b4d1c827be81"
 
 
 def mirror_ui_font(original: bytes) -> bytes:

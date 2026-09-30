@@ -36,6 +36,7 @@ typedef struct {
     char area[48];
     char spot[48];
     bool verified;
+    char sha256[65];
     int room, score, items;   /* -1 when not recorded */
     int step;                 /* 0: plain warp spot */
     char step_name[48];
@@ -90,6 +91,7 @@ int  dev_warp_area_end(const char *region, const char *area);
 /* The step entry with the given order, or -1. */
 int  dev_warp_step(int order);
 
+void dev_warp_shutdown(void);
 void dev_warp_reset_for_tests(void);
 
 #ifdef __cplusplus

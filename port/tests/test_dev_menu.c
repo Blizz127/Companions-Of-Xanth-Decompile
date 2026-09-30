@@ -2,6 +2,8 @@
  * all-off identity, navigation, input capture and neutral drain, the same-pad
  * combo, fast-forward, refusals, the harness key script and virtual pads. */
 #include "dev_menu.h"
+#include "dev_warp.h"
+#include <unistd.h>
 #include "port_hal.h"
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -600,6 +602,68 @@ static void test_virtual_pad_hotplug(void) {
 }
 #endif
 
+
+static bool review_idle, review_modal;
+static bool review_field(void) { return review_idle; }
+static bool review_dialog(void) { return review_modal; }
+static void review_key(uint8_t scan, uint8_t ascii) { (void)scan; (void)ascii; }
+static SDL_Event touch_ev(Uint32 type, SDL_FingerID finger) {
+    SDL_Event e; memset(&e, 0, sizeof(e)); e.type = type;
+    e.tfinger.touchId = 1; e.tfinger.fingerId = finger; return e;
+}
+static void test_touch_capture(void) {
+    begin(true);
+    CHECK(!filt(touch_ev(SDL_FINGERDOWN, 1)));
+    OPEN();
+    CHECK(!filt(touch_ev(SDL_FINGERUP, 1))); /* game-owned release */
+    CHECK(filt(touch_ev(SDL_FINGERDOWN, 2)));
+    CHECK(filt(touch_ev(SDL_FINGERMOTION, 2)));
+    ESC();
+    CHECK(filt(touch_ev(SDL_FINGERUP, 2))); /* menu-owned release after closing */
+    CHECK(!filt(touch_ev(SDL_FINGERDOWN, 3)));
+    CHECK(!filt(touch_ev(SDL_FINGERUP, 3)));
+}
+static void test_restore_capture_and_same_second_save(void) {
+    char ck[] = "/tmp/xanth-menu-ck-XXXXXX", sv[] = "/tmp/xanth-menu-sv-XXXXXX";
+    char path[256], msg[160]; FILE *f;
+    CHECK(mkdtemp(ck) && mkdtemp(sv));
+    snprintf(path, sizeof(path), "%s/home.SAV", ck); f = fopen(path, "w"); CHECK(f); fputs("h", f); fclose(f);
+    snprintf(path, sizeof(path), "%s/checkpoints.txt", ck); f = fopen(path, "w"); CHECK(f);
+    fputs("home\thome\tMundania\tHouse\tBedroom\t1\t"
+          "aaa9402664f1a41f40ebbc52c9993eb66aeb366602958fdfaa283b71e64db123\n", f); fclose(f);
+    begin(true); dev_menu_shutdown();
+    dev_menu_host host = {0}; host.field_idle = review_field; host.game_modal = review_dialog;
+    host.post_key = review_key; host.set_pad_mask = stub_mask;
+    snprintf(host.checkpoint_dir, sizeof(host.checkpoint_dir), "%s", ck);
+    snprintf(host.save_dir, sizeof(host.save_dir), "%s", sv);
+    dev_menu_start(&host); review_idle = true; review_modal = false;
+    CHECK(dev_warp_request(0, msg, sizeof(msg)));
+    CHECK(key(SDLK_w, SDL_SCANCODE_W, true));
+    CHECK(filt(mouse_ev(SDL_BUTTON_LEFT, true)));
+    CHECK(filt(btn_ev(123, SDL_CONTROLLER_BUTTON_A, true)));
+    CHECK(filt(touch_ev(SDL_FINGERDOWN, 4)));
+    SDL_Event motion = {0}; motion.type = SDL_MOUSEMOTION; CHECK(filt(motion));
+    dev_menu_frame(0); CHECK(g_pad_mask == 0xFFFFFFFFu);
+    review_idle = false; review_modal = true;
+    for (int i = 1; i <= 40; ++i) dev_menu_frame(i);
+    review_idle = true; review_modal = false;
+    for (int i = 41; i <= 70; ++i) dev_menu_frame(i);
+    CHECK(!dev_warp_active() && dev_warp_used());
+    CHECK(key(SDLK_w, SDL_SCANCODE_W, false));
+    CHECK(filt(mouse_ev(SDL_BUTTON_LEFT, false)));
+    CHECK(filt(btn_ev(123, SDL_CONTROLLER_BUTTON_A, false)));
+    CHECK(filt(touch_ev(SDL_FINGERUP, 4)));
+    snprintf(path, sizeof(path), "%s/XANTH000.SAV", sv); CHECK(access(path, F_OK) != 0);
+    f = fopen(path, "w"); CHECK(f); fputs("new player save", f); fclose(f);
+    for (int i = 71; i <= 150; ++i) dev_menu_frame(i);
+    CHECK(strstr(dev_menu_toast(), "this save may not match"));
+    dev_menu_shutdown();
+    remove(path); snprintf(path, sizeof(path), "%s/xanth-dev-menu.log", sv); remove(path);
+    snprintf(path, sizeof(path), "%s/home.SAV", ck); remove(path);
+    snprintf(path, sizeof(path), "%s/checkpoints.txt", ck); remove(path);
+    rmdir(ck); rmdir(sv);
+}
+
 int main(void) {
     SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
     SDL_setenv("XANTH_DEV_KEYS", "", 1);
@@ -610,6 +674,8 @@ int main(void) {
     test_navigation();
     test_keyboard_capture_and_drain();
     test_mouse_capture_and_drain();
+    test_touch_capture();
+    test_restore_capture_and_same_second_save();
     test_same_pad_combo();
     test_pad_navigation_and_drain();
     test_fast_forward();

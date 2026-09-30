@@ -23,6 +23,7 @@
 #include "dev_menu.h"
 #include "dev_menu_font.h"
 #include "dev_warp.h"
+#include "asset_check.h"
 #include "port_hal.h"
 
 #include <ctype.h>
@@ -148,6 +149,7 @@ static struct {
     time_t dev_used_since;          /* first warp this session; 0 if none */
     bool save_warned;
     int save_scan_frames;
+    char save_baseline[100][65];
     char warp_region[32], warp_area[48];
     int action_param;
     char toast[96];
@@ -164,6 +166,7 @@ static struct {
     bool kb_drain[SDL_NUM_SCANCODES];
     int kb_drain_count;
     unsigned mouse_consumed, mouse_drain;
+    struct { bool used; SDL_TouchID device; SDL_FingerID finger; } touches[8];
 #endif
 } s_dm;
 
@@ -712,6 +715,11 @@ static bool filter_pad_button(const SDL_ControllerButtonEvent *e, bool down) {
     }
     if (!down) return false;   /* the game saw this press, so it gets the release */
 
+    if (dev_warp_active()) {
+        p->consumed |= bit;
+        p->drain |= bit;
+        return true;
+    }
     if (bit & COMBO_BITS) {
         unsigned other = COMBO_BITS & ~bit;
         p->consumed |= bit;
@@ -758,6 +766,7 @@ static bool filter_pad_button(const SDL_ControllerButtonEvent *e, bool down) {
 static bool filter_pad_axis(const SDL_ControllerAxisEvent *e) {
     dm_pad *p = find_pad(e->which, true);
     int dir;
+    if (dev_warp_active()) return true;
     if (!s_dm.open || !p) return false;
     if (p->needs_neutral) return true;
     if (e->axis == SDL_CONTROLLER_AXIS_LEFTY) {
@@ -796,6 +805,11 @@ static bool filter_key(const SDL_KeyboardEvent *e, bool down) {
         /* No auto-repeat; repeats of a key the game owns still reach it. */
         return s_dm.kb_consumed[sc] || s_dm.open;
     }
+    if (dev_warp_active()) {
+        s_dm.kb_consumed[sc] = true;
+        if (!s_dm.kb_drain[sc]) { s_dm.kb_drain[sc] = true; ++s_dm.kb_drain_count; }
+        return true;
+    }
     if (host_key_input(e->keysym.sym, &in)) {
         s_dm.kb_consumed[sc] = true;
         dev_menu_input_event(in);
@@ -827,11 +841,33 @@ static bool filter_mouse_button(const SDL_MouseButtonEvent *e, bool down) {
         s_dm.mouse_drain &= ~bit;
         return true;
     }
-    if (s_dm.open || s_dm.mouse_drain) {
+    if (s_dm.open || s_dm.mouse_drain || dev_warp_active()) {
+        if (dev_warp_active()) s_dm.mouse_drain |= bit;
         s_dm.mouse_consumed |= bit;
         return true;
     }
     return false;
+}
+
+static bool filter_touch(const SDL_TouchFingerEvent *e, Uint32 type) {
+    int free_slot = -1;
+    for (int i = 0; i < 8; ++i) {
+        if (!s_dm.touches[i].used) { free_slot = i; continue; }
+        if (s_dm.touches[i].device == e->touchId && s_dm.touches[i].finger == e->fingerId) {
+            if (type == SDL_FINGERUP) s_dm.touches[i].used = false;
+            return true;
+        }
+    }
+    if (type == SDL_FINGERDOWN && (s_dm.open || dev_warp_active())) {
+        if (free_slot >= 0) {
+            s_dm.touches[free_slot].used = true;
+            s_dm.touches[free_slot].device = e->touchId;
+            s_dm.touches[free_slot].finger = e->fingerId;
+        }
+        return true;
+    }
+    /* A touch the game saw before opening still receives its release. */
+    return type == SDL_FINGERMOTION && (s_dm.open || dev_warp_active());
 }
 
 static bool filter_event(const SDL_Event *event);
@@ -853,7 +889,13 @@ static bool filter_event(const SDL_Event *event) {
     case SDL_TEXTINPUT:
     case SDL_TEXTEDITING:
     case SDL_MOUSEWHEEL:
-        return s_dm.open;
+        return s_dm.open || dev_warp_active();
+    case SDL_MOUSEMOTION:
+        return s_dm.open || dev_warp_active() || s_dm.mouse_drain;
+    case SDL_FINGERDOWN:
+    case SDL_FINGERUP:
+    case SDL_FINGERMOTION:
+        return filter_touch(&event->tfinger, event->type);
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
         return filter_mouse_button(&event->button, event->type == SDL_MOUSEBUTTONDOWN);
@@ -929,7 +971,7 @@ static void reconcile_pads(void) {
 static void update_pad_mask(void) {
     uint32_t mask = 0;
     static uint32_t last = 0xFFFFFFFEu;
-    if (s_dm.open) {
+    if (s_dm.open || dev_warp_active()) {
         mask = 0xFFFFFFFFu;
     } else {
         for (int i = 0; i < DM_MAX_PADS; ++i) {
@@ -989,6 +1031,7 @@ void dev_menu_start(const dev_menu_host *host) {
 
 void dev_menu_shutdown(void) {
     if (!s_dm.started) return;
+    dev_warp_shutdown();
 #ifndef XANTH_HEADLESS_STUB
     if (s_layer_tex) SDL_DestroyTexture(s_layer_tex);
     s_layer_tex = NULL;
@@ -1004,32 +1047,24 @@ void dev_menu_shutdown(void) {
 /* Section 9: the first game save after a warp gets a warning. The save
  * format is untouched; the menu notices a save file written after the warp
  * and says so once, recording it in the side file too. */
-static bool newer_save_exists(const char *dir, time_t since) {
-#if defined(_WIN32)
-    char pattern[600];
-    struct _finddata_t fd;
-    intptr_t h;
-    bool found = false;
-    snprintf(pattern, sizeof(pattern), "%s\\XANTH*.SAV", dir);
-    if ((h = _findfirst(pattern, &fd)) == -1) return false;
-    do { if (fd.time_write > since) found = true; } while (!found && _findnext(h, &fd) == 0);
-    _findclose(h);
-    return found;
-#else
-    DIR *d = opendir(dir);
-    struct dirent *e;
-    bool found = false;
-    if (!d) return false;
-    while (!found && (e = readdir(d)) != NULL) {
-        char path[1100];
-        struct stat st;
-        if (strncasecmp(e->d_name, "XANTH", 5) != 0 || !strcasestr(e->d_name, ".SAV")) continue;
-        snprintf(path, sizeof(path), "%s/%s", dir, e->d_name);
-        if (stat(path, &st) == 0 && st.st_mtime > since) found = true;
+/* Compare the game's save slots with their post-warp fingerprints. This
+ * detects a save even within the same timestamp second as the warp. */
+static void snapshot_saves(void) {
+    for (int i = 0; i < 100; ++i) {
+        char path[600];
+        snprintf(path, sizeof(path), "%s/XANTH%03d.SAV", s_dm.host.save_dir, i);
+        s_dm.save_baseline[i][0] = 0;
+        xanth_sha256_file(path, s_dm.save_baseline[i]);
     }
-    closedir(d);
-    return found;
-#endif
+}
+
+static bool changed_save_exists(void) {
+    for (int i = 0; i < 100; ++i) {
+        char path[600], hash[65];
+        snprintf(path, sizeof(path), "%s/XANTH%03d.SAV", s_dm.host.save_dir, i);
+        if (xanth_sha256_file(path, hash) && strcmp(hash, s_dm.save_baseline[i])) return true;
+    }
+    return false;
 }
 
 static void check_first_save(void) {
@@ -1038,7 +1073,7 @@ static void check_first_save(void) {
     if (!s_dm.dev_used_since || s_dm.save_warned || dev_warp_active() || !s_dm.host.save_dir[0]) return;
     if (++s_dm.save_scan_frames < 70) return;        /* about once a second */
     s_dm.save_scan_frames = 0;
-    if (!newer_save_exists(s_dm.host.save_dir, s_dm.dev_used_since)) return;
+    if (!changed_save_exists()) return;
     s_dm.save_warned = true;
     toast("Dev menu was used: this save may not match a normal playthrough");
     snprintf(path, sizeof(path), "%s/xanth-dev-menu.log", s_dm.host.save_dir);
@@ -1083,6 +1118,7 @@ void dev_menu_frame(long long frame) {
             if (ws == DEV_WARP_DONE) {
                 s_dm.cheats_used = true;
                 if (!s_dm.dev_used_since) s_dm.dev_used_since = time(NULL);
+                if (!s_dm.save_warned) snapshot_saves();
             }
         }
     }

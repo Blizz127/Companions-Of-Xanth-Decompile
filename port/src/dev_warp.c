@@ -5,6 +5,8 @@
  * removed from) the save directory, like swapping a memory card.
  */
 #include "dev_warp.h"
+#include "asset_check.h"
+#include <ctype.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -72,7 +74,10 @@ int dev_warp_load(const dev_warp_host *host, bool include_unverified) {
         if (!line[0] || line[0] == '#') continue;
         for (tok = strtok_r(line, "\t", &save); tok && n < 12; tok = strtok_r(NULL, "\t", &save))
             field[n++] = tok;
-        if (n < 6) continue;
+        if (n < 7 || strlen(field[6]) != 64) continue;
+        bool digest_valid = true;
+        for (int j = 0; j < 64; ++j) digest_valid &= isxdigit((unsigned char)field[6][j]) != 0;
+        if (!digest_valid) continue;
         dev_warp_entry *e = &s_dw.entries[s_dw.count];
         copy_field(e->id, sizeof(e->id), field[0]);
         copy_field(e->label, sizeof(e->label), field[1]);
@@ -80,13 +85,17 @@ int dev_warp_load(const dev_warp_host *host, bool include_unverified) {
         copy_field(e->area, sizeof(e->area), field[3]);
         copy_field(e->spot, sizeof(e->spot), field[4]);
         e->verified = field[5][0] == '1';
+        copy_field(e->sha256, sizeof(e->sha256), field[6]);
+        for (int j = 0; j < 64; ++j) e->sha256[j] = (char)tolower((unsigned char)e->sha256[j]);
         e->room = n > 7 ? atoi(field[7]) : -1;
         e->score = n > 8 ? atoi(field[8]) : -1;
         e->step = n > 9 ? atoi(field[9]) : 0;
         copy_field(e->step_name, sizeof(e->step_name), n > 10 ? field[10] : "");
         e->items = n > 11 ? atoi(field[11]) : -1;
         snprintf(save_path, sizeof(save_path), "%s/%s.SAV", s_dw.host.checkpoint_dir, e->id);
-        if ((!e->verified && !include_unverified) || !file_exists(save_path)) continue;
+        char actual[65];
+        if ((!e->verified && !include_unverified) ||
+            !xanth_sha256_file(save_path, actual) || strcmp(actual, e->sha256)) continue;
         s_dw.count++;
     }
     fclose(f);
@@ -201,7 +210,7 @@ static bool copy_file(const char *src, const char *dst) {
     bool ok = true;
     FILE *in = fopen(src, "rb"), *out;
     if (!in) return false;
-    out = fopen(dst, "wb");
+    out = fopen(dst, "wbx"); /* Never overwrite an existing player save. */
     if (!out) { fclose(in); return false; }
     while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
         if (fwrite(buf, 1, n, out) != n) { ok = false; break; }
@@ -254,10 +263,21 @@ bool dev_warp_request(int index, char *msg, size_t msg_size) {
         return false;
     }
     snprintf(src, sizeof(src), "%s/%s.SAV", s_dw.host.checkpoint_dir, e->id);
+    char actual[65];
+    if (!xanth_sha256_file(src, actual) || strcmp(actual, e->sha256)) {
+        snprintf(msg, msg_size, "Warp refused: checkpoint changed since verification");
+        return false;
+    }
     if (!free_slot(s_dw.slot_path, sizeof(s_dw.slot_path)) || !copy_file(src, s_dw.slot_path)) {
         s_dw.slot_path[0] = '\0';
         snprintf(msg, msg_size, "Warp refused: cannot place the checkpoint save");
         DW_LOG("%s (%s)", msg, strerror(errno));
+        return false;
+    }
+    if (!xanth_sha256_file(s_dw.slot_path, actual) || strcmp(actual, e->sha256)) {
+        remove(s_dw.slot_path);
+        s_dw.slot_path[0] = 0;
+        snprintf(msg, msg_size, "Warp refused: checkpoint copy changed");
         return false;
     }
     s_dw.target = index;
@@ -365,6 +385,12 @@ dev_warp_status dev_warp_tick(void) {
 bool dev_warp_active(void) { return s_dw.state != W_IDLE; }
 const char *dev_warp_message(void) { return s_dw.message; }
 bool dev_warp_used(void) { return s_dw.used; }
+
+void dev_warp_shutdown(void) {
+    if (s_dw.slot_path[0]) remove(s_dw.slot_path);
+    s_dw.slot_path[0] = 0;
+    s_dw.state = W_IDLE;
+}
 
 void dev_warp_reset_for_tests(void) {
     if (s_dw.slot_path[0]) remove(s_dw.slot_path);
