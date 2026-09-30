@@ -146,6 +146,70 @@ static void test_video_viewport_geometry(void) {
                 "invalid output dimensions must produce an empty viewport");
 }
 
+static void test_video_presentation_state(void) {
+    printf("[TEST] Running test_video_presentation_state...\n");
+    bool initialized = hal_video_init(2, false, true, false);
+    TEST_ASSERT(initialized, "Headless video initialization must succeed");
+    if (!initialized) return;
+
+    int x, y, w, h;
+    hal_video_get_viewport(&x, &y, &w, &h);
+    TEST_ASSERT(x == 53 && y == 0 && w == 533 && h == 400,
+                "Input viewport must match initial 4:3 presentation before a flip");
+    hal_video_set_present_mode(HAL_VIDEO_PRESENT_PIXEL_INTEGER);
+    hal_video_get_viewport(&x, &y, &w, &h);
+    TEST_ASSERT(x == 0 && y == 0 && w == 640 && h == 400,
+                "Changing presentation mode must immediately update input geometry");
+    hal_video_set_window_size(1280, 800);
+    hal_video_get_viewport(&x, &y, &w, &h);
+    TEST_ASSERT(x == 0 && y == 0 && w == 1280 && h == 800,
+                "Resizing must update headless pixel-integer geometry");
+    hal_video_set_present_mode(HAL_VIDEO_PRESENT_ASPECT_4_3);
+    hal_video_get_viewport(&x, &y, &w, &h);
+    TEST_ASSERT(x == 107 && y == 0 && w == 1066 && h == 800,
+                "Switching back to aspect correction must restore pillarboxing");
+    hal_video_set_window_size(0, -1);
+    hal_video_get_viewport(&x, &y, &w, &h);
+    TEST_ASSERT(x == 107 && y == 0 && w == 1066 && h == 800,
+                "Invalid resize must preserve input geometry");
+
+    uint8_t *screen = hal_video_get_screen_buffer();
+    for (int i = 0; i < HAL_VIDEO_FRAME_SIZE; i++) screen[i] = (uint8_t)i;
+    hal_video_set_palette_entry(42, 63, 31, 7);
+    const char *retail_path = "test_video_presentation_retail.bmp";
+    const char *filtered_path = "test_video_presentation_filtered.bmp";
+    TEST_ASSERT(hal_video_save_bmp(retail_path), "Retail screenshot must save");
+    hal_video_set_filter(true, true);
+    hal_video_flip();
+    hal_video_toggle_crt();
+    hal_video_flip();
+    hal_video_set_filter(false, false);
+    hal_video_flip();
+    bool unchanged = true;
+    for (int i = 0; i < HAL_VIDEO_FRAME_SIZE; i++)
+        if (screen[i] != (uint8_t)i) unchanged = false;
+    TEST_ASSERT(unchanged, "Optional presentation effects must preserve guest VGA pixels");
+    TEST_ASSERT(hal_video_save_bmp(filtered_path), "Filtered screenshot must save");
+    FILE *retail = fopen(retail_path, "rb");
+    FILE *filtered = fopen(filtered_path, "rb");
+    bool identical = retail && filtered;
+    if (identical) {
+        int a, b;
+        do {
+            a = fgetc(retail);
+            b = fgetc(filtered);
+            if (a != b) identical = false;
+        } while (identical && a != EOF);
+        if (ferror(retail) || ferror(filtered)) identical = false;
+    }
+    TEST_ASSERT(identical, "Presentation effects must preserve retail screenshot pixels and palette");
+    if (retail) fclose(retail);
+    if (filtered) fclose(filtered);
+    remove(retail_path);
+    remove(filtered_path);
+    hal_video_shutdown();
+}
+
 /* -------------------------------------------------------------------------
  * Test 3: INT 33h Mouse & INT 16h Keyboard
  * ------------------------------------------------------------------------- */
@@ -408,6 +472,7 @@ int main(void) {
     test_portable_types_and_memory();
     test_vga_and_palette();
     test_video_viewport_geometry();
+    test_video_presentation_state();
     test_input_subsystem();
     test_filesystem_and_ini();
     test_audio_subsystem();

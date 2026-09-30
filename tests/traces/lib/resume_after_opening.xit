@@ -1,0 +1,30 @@
+# Boot and restore the anchor save produced by anchor_after_opening.xit:
+# the state at the end of the Mundania opening, for about a tenth of the
+# instructions a full replay of the route costs (~1.2 billion vs ~20).
+#
+# This is NOT the same path as lib/restore_slot1.xit. When a *.SAV is
+# present in the save directory the game offers to restore it during boot,
+# with its own "Restore?" Yes/No box -- buttons measured from the rendered
+# dialogue at (160,95) and (160,110). That prompt does not appear on the
+# mid-game system-menu route, so the two need separate fragments.
+#
+# Answering Yes opens the ordinary Restore Game dialogue: slot list with the
+# first row at (100,78), and Ok / Delete / Cancel along the bottom with Ok
+# at (65,168).
+
+include boot.xit
+
+move 160 95
+run 10
+click left
+run 60
+move 100 78
+run 10
+click left
+run 30
+move 65 168
+run 10
+click left
+run 90
+move 305 196
+run 20

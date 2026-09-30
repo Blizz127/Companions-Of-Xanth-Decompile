@@ -1,0 +1,73 @@
+# Continues the published route from walkthrough_02_phone.xit.
+include walkthrough_02_phone.xit
+
+# ============================================================
+# Walkthrough, segment 3: stocking up in the kitchen.
+#
+# The conversation UI does NOT close by itself. Edsel's last line sits on
+# screen with a checkmark button at (125,134); until that is clicked every
+# click on the room is swallowed by the conversation layer. An earlier
+# attempt clicked the teabag first and looked exactly like a dead hotspot.
+#
+# Kitchen hotspots, MEASURED by hover sweep:
+#   teabag  (62,85) on the table      freezer  x160-220 y22-38
+#   icebox  x160-250 y46-86           sink     (72,46)
+# With the icebox open its contents become hotspots of their own:
+#   mustard (208,55)   heart (204,73)   sandwich (202,88)
+#
+# Either click order works -- object-then-verb, or verb-then-object.
+# Clicking an object alone pre-selects the default verb, which is why the
+# pending command reads "Take the teabag" before the verb is clicked.
+# ============================================================
+
+run 60
+move 125 134
+run 5
+click left
+run 40
+move 305 196
+run 15
+checkpoint wt3_hung_up
+
+# --- take the teabag off the kitchen table ---
+move 62 85
+run 8
+click left
+run 20
+checkpoint wt3_teabag_selected
+move 14 7
+run 5
+click left
+run 50
+move 305 196
+run 15
+checkpoint wt3_teabag_taken
+shot build/frames/wt3_teabag_taken.bmp
+
+# --- open the icebox: mustard, a sandwich and a heart-shaped box ---
+move 14 37
+run 5
+click left
+run 15
+move 190 62
+run 5
+click left
+run 60
+move 305 196
+run 15
+checkpoint wt3_icebox_open
+shot build/frames/wt3_icebox_open.bmp
+
+# --- take the mustard from inside it ---
+move 14 7
+run 5
+click left
+run 15
+move 208 55
+run 5
+click left
+run 50
+move 305 196
+run 15
+checkpoint wt3_mustard_taken
+shot build/frames/wt3_mustard_taken.bmp

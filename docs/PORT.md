@@ -1,10 +1,63 @@
 # Native port: architecture and state
 
+## Resume checkpoint: 2026-09-29
+
+The relocated workspace now has a fresh Linux Release build in `build/`;
+its earlier CMake cache named the old `/var/home/...` directory and a missing
+CMake executable. Reconfiguration preserved the walkthrough saves.
+Fresh GCC and Clang Release builds completed without warnings. Counting the
+registration sites and their two tables gives 46 installed EXE hooks,
+including partial paths; this supersedes the older 34-entry counts below
+and does not measure translated byte coverage.
+
+`exe_100016` now dispatches both its unchanged return and its changed-input,
+flag-clear direct stores from the recovered mnemonic source. The flag-set
+helper-call path remains interpreted. `Native100016StoreFixture` compares
+registers, segments, flags, all guest memory and cycles for both branch
+shapes, signed edge values, stack/physical-address wrap, and an argument
+aliasing the first stored global. It also verifies unchanged fallback at
+instruction-budget, timer and DMA boundaries and before helper calls.
+The native adapter writes the saved BP stack slot, matching the retail
+prologue even after returning. `Stage2NativeParityTest` passed with the
+updated adapter, preserving the existing boot/interaction hashes and metrics.
+The baseline opening and picture-replacement parity suite also passed.
+
+The optional presentation work now synchronizes mouse viewport geometry
+before the first frame and after scaling/resizing, including headless mode.
+Native unit checks cover those transitions and unchanged guest pixels,
+palette and BMP output under optional presentation filters.
+`FontReplacementParityTest` passed on the combined Clang build: a temporary,
+format-preserving font visibly changes narrative text only with the font
+opt-in, while scene art and the verb panel stay identical. It is a diagnostic
+asset, not an HD font pack or higher-resolution scene support.
+
+Segment 19 restores the same SHA-identified 275-point save, replays the
+Fireman/hot-dog/Mack route, and takes the firewall charcoal at `(194,118)`.
+The guest reports “You take the charred wood. [5 points]”; checkpoint
+`wt19_charcoal_taken` is `b65a762ada0a1483`. The route implies 295 total points
+(275 + 15 + 5), not yet confirmed by a status panel. The isolated
+`tests.test_walkthrough_fire` replay passed in 272.119 seconds using
+`build-resume/tool_vmboot`, with no VM fault and a valid MCB chain. It clones
+saves and traces, keeps screenshots private, and verifies that both the
+cloned slot and original anchor remain byte-identical. CTest registers
+`Vm_walkthrough_fire` only when the exact measured anchor is available.
+The next unverified puzzle is the barrow plaque rubbing and cracker recipe;
+mortar/pestle collection and the rest of the 1,000-point route remain open.
+
+Fresh CPU/native/unit/HAL/audio/DMA checks passed (nine CTest cases).
+`tools/coverage.py` still reports 2,844 units and zero `_emit` dumps.
+Whole-image verification is currently blocked by missing Wine: `verify.py`
+exits with `historical compiler missing: cannot splice C units`, and the
+fast unit suite passes eight checks but fails its two compiler-dependent
+checks. These failures remain open; the earlier binary-match results are
+historical evidence, not a fresh verification in this environment.
+
+
 The EXE and OVL have documented byte-exact rebuild results. This verifies the
 image reconstruction, not semantic recovery of every function or 1:1 behavior
 of the port. See [`KNOWN_DIVERGENCES.md`](KNOWN_DIVERGENCES.md) for the open
 parity, completeness, platform and asset-validation gaps. The port currently
-executes the supplied retail binaries in an 8086/DOS VM, with thirty-nine verified
+executes the supplied retail binaries in an 8086/DOS VM, with thirty-four verified
 source-backed entries dispatched natively through guest-ABI adapters (one
 entry accelerates only a branch and leaves its helper-call path interpreted).
 
@@ -43,7 +96,7 @@ configuration has no mods or cheats active and must preserve retail behavior.
 
 **Current implementation status:** Stage 1 runs the supplied retail EXE and
 OVL in the custom 8086/DOS VM. VM services reach host facilities through the
-HAL and DOS shims. Stage 2 has thirty-nine active entries: the exact recovered bodies in
+HAL and DOS shims. Stage 2 has thirty-four active entries: the exact recovered bodies in
 `src/set_int_and_zero.c` and `src/set_far_ptr.c` are compiled into the port;
 the 16-bit arithmetic in `src/exe_94712.c` is lowered through the VM's
 8086 flag-accurate ALU. The nonzero fast-return branch from
@@ -54,21 +107,22 @@ store is lowered into guest DS memory, and `src/get_far_idx.c` looks up its
 far-pointer array in guest memory. `src/exe_37625.c` clears guest DS words at offsets 37,625, 52,680, 52,713, 99,835 and 99,897; `exe_99679` is at
 offset 99,679. The short global getters `src/exe_86810.c` and
 `src/exe_84866.c` return a DS word and far pointer, respectively. These entries
-are installed at verified EXE offsets 17,806, 17,820, 28,365, 29,169, 30,199, 31,178, 32,631, 35,386, 37,625, 52,674, 52,680, 52,710, 52,713, 83,182, 94,712, 16,216, 14,360,
+are installed at verified EXE offsets 17,806, 17,820, 28,365, 29,169, 30,199, 31,178, 32,631, 35,386, 37,625, 52,680, 52,713, 83,182, 94,712, 16,216, 14,360,
 83,200, 102,352, 99,835, 99,897, 99,679, 86,810, 84,866, 85,166, 94,589, 85,189, 90,625, 103,757,
-85,206, 112,665, 106,736, 108,184, 112,795, 114,942 and 115,346; the nonzero `arr_set_one` branch is at 115,161. `src/clear_byte.c` clears a guest byte through its
-far pointer. `src/swap_int.c` replaces and returns a guest DS word; `src/exe_115346.c` stores -1 in its indexed DS table; the nonzero branch of `src/arr_set_one.c` stores 1; and `src/exe_114942.c` copies two indexed table values on nonnegative inputs or clears both far outputs on negative inputs. Its negative branch matches a synthetic `cpu86` interpreter run of the exact 50-byte retail body, including 15 instructions, 60 cycles, flags, registers, and far-output memory; the pinned interaction route itself uses only nonnegative indices. Six `set_byte_one` entries write 1 to distinct guest DS bytes. Their partial branches stay interpreted. Two `src/set_int_pair.c` entries store two arguments into guest DS,
-and `src/set_int.c` entries at 85,206 and 112,665 store one argument. `src/exe_136552.c` returns -1 via verified `MOV AX,FFFF / RETF` bytes at offset 136,552. `src/exe_52710.c` returns the previous DS:0106 word and clears that word. `src/exe_52674.c` sets DS:0106 to one and DS:0102 to zero. `src/exe_112795.c` sets bit 7 on a bounds-checked far-table record.
+85,206, 112,665, 106,736, 108,184, 114,942 and 115,346; the nonzero `arr_set_one` branch is at 115,161. `src/clear_byte.c` clears a guest byte through its
+far pointer. Two `src/set_int_pair.c` entries store two arguments into guest DS,
+and `src/set_int.c` entries at 85,206 and 112,665 store one argument.
+`src/store_two_globals.c` stores two guest DS words through caller far pointers. `src/set_int_if_ge0.c` preserves its signed branch and conditionally stores one DS word; `src/set_far_arr_chk.c` checks bounds before storing a far pointer; six byte-setter units at 28,365, 29,169, 30,199, 31,178, 32,631 and 35,386 store 1 to their respective guest DS bytes; `src/iabs.c` returns the result of its recovered CWD/XOR/SUB absolute-value sequence. `src/swap_int.c` returns the previous guest DS word while replacing it with its argument. `src/exe_114942.c` copies two indexed table words to guest far-output pointers on its nonnegative path (negative inputs fall back to the VM); `src/exe_115346.c` stores -1 in its indexed DS table, and the nonzero branch of `src/arr_set_one.c` stores 1 in its indexed table (its zero branch falls back to the VM).
 The counter/table update in
-`src/exe_99679.c` is lowered with guest DS reads, writes and 8086 flag rules. `src/exe_112711.c` now runs through a byte-guarded far-table adapter; its opening-route dispatches preserve the retail VM state. The byte-matched `src/exe_34775.asm` data setter is also lowered with MZ segment relocation and `RETF 2` cleanup preserved. `src/add_mod.c` is now included at offset 56,247, with 16-bit unsigned globals mapped to guest DS:025E and DS:0260. Its exact 37-byte, 15-instruction retail body is guarded; VM/native execution through `walkthrough_03_kitchen.xit` matched all 15 hashes and instructions, timer ticks, DAC/OPL writes, input waits and opened-file metrics, with 15 native hits. `src/set_fields.c` is lowered at offset 105,702 from its 22-byte body. Its guard pins the far-pointer stores, nine-instruction budget, result registers, ES value and far return. On the seven-checkpoint pail/recipe route it ran twice; VM and native hashes and instruction, timer, DAC/OPL, input-wait and opened-file metrics match, ending fault-free with a valid MCB. `src/exe_112853.c` is lowered from its exact 52-byte body guard, including signed multiply, far-table selection, tag branches, returned word, guest flags/registers and path-specific 18/20/21-instruction timing. On the pinned 275-point Fireman route, 112,960 native dispatches plus 1,545 timed interpreter fallbacks matched all three checkpoint hashes and instruction, timer, DAC/OPL, input-wait and opened-file metrics; both runs ended fault-free with a valid MCB. The source compile remains a near match (58 vs. 52 bytes), so the claim is limited to guarded retail-body execution and route parity. `src/exe_100016.c` at offset 100,016 has a 70-byte retail guard with both MZ-relocated helper segments checked. The 10-instruction/40-cycle equal-global fast return dispatches 14,107,509 of 14,210,871 profiled Fireman-route calls; all helper-call and other branches remain interpreted. The 275-point route and interaction route retain all pinned hashes and guest instruction/timer/audio/input/file metrics, both fault-free with valid MCBs. `src/exe_103774.c` at offset 103,774 has a 54-byte guard with its far-helper segment relocation checked. The negative-input branch (12 instructions/48 cycles) writes zero to both guest globals; all nonnegative inputs fall back to the helper path. Its exact-body `cpu86` fixture matches native registers, segments, flags, stack, globals and cycles. The 275-point route dispatched this branch 12 times in 662,599 calls and retained all hashes and guest metrics.
+`src/exe_99679.c` is lowered with guest DS reads, writes and 8086 flag rules.
 Adapters map the far-call
 stack, DS globals, result registers, far returns, flags, and guest instruction/cycle
-budgets. The interaction trace covers the earlier entries; `walkthrough_01_mundania.xit` dispatches `exe_52674` once, `exe_52710` eight times, `exe_112795` eighteen times, and `exe_112711` seven times, with the `exe_34775` adapter also active; all nine VM/native hashes, instructions, timer ticks, DAC/OPL writes, input waits, and opened-file lists matching. The constant-return `exe_136552` hook is byte-guarded but was not hit by these profiles; setter hooks retain
+budgets. The interaction trace exercises all thirty-four; setter hooks retain
 interpreter fallback at timer/DMA boundaries. A 100-frame production run calls
 `exe_94712` 18,880 times and takes the native fast return 90 times. The boot
 checkpoint hash and guest instruction, timer, audio and file-open metrics
-match with hooks disabled or enabled. This is 45/2,844 indexed units (1.58%),
-including selected branches from several units, not proof of whole-route source coverage.
+match with hooks disabled or enabled. This is 34/2,844 indexed units (1.20%),
+including one partial-path dispatch, not proof of whole-route source coverage.
 The full renderer/audio/input/files/timing interface boundary is also not yet
 complete. Further units need the same per-path byte evidence and VM/native
 co-simulation before they are dispatched. See
@@ -118,7 +172,7 @@ The DOS kernel has therefore only ever grown to fit what this game actually call
 ordinary 8086 code in the EXE's 43,193-byte appended tail. The core executes it and it
 pages its own sections via ordinary `INT 21h` reads.
 
-### Stage 2 — static recompilation (twenty-two entries active)
+### Stage 2 — static recompilation (thirty-four entries active)
 
 Decode the retail bytes to portable C against the same HAL, function by function, each
 validated by co-simulation against the interpreter, until the interpreter is no longer
@@ -767,12 +821,12 @@ Both Python tests skip cleanly without the retail disc, so they are safe in publ
 
 ## Next
 
-- Isolate the action that crosses 200 on the verified Void-to-Earth route, then
-  continue through the full 1,000-point finale. The whole-game completion gate
-  remains open.
+- Verify a return route from the Fire firewall to the barrow plaque, then
+  collect the recipe and missing mortar/pestle through guest inputs. Segment 19
+  now verifies charcoal collection; the 1,000-point completion gate remains open.
 - Verify the Windows job on a real runner. The workflow exists and executes the
   conformance suite and CTest; it has not yet been observed passing.
-- Expand Stage 2 from the thirty-nine current source-backed entries: generate address/extent/ABI
+- Expand Stage 2 from the first thirty-four source-backed entries: generate address/extent/ABI
   metadata for recovered functions, prioritize units measured on real routes,
   and keep VM/native frame, save, audio and timing comparisons as gates. The
   first hook is at EXE code offset 17,820; `tests/test_stage2_native.py` checks

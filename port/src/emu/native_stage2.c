@@ -48,6 +48,17 @@
 #define far
 #include "../../../src/exe_112711.c"
 #undef far
+#define far
+#define dst0 xanth_exe_103744_dst0
+#define dst1 xanth_exe_103744_dst1
+#define src0 xanth_exe_103744_src0
+#define src1 xanth_exe_103744_src1
+#include "../../../src/exe_103744.c"
+#undef src1
+#undef src0
+#undef dst1
+#undef dst0
+#undef far
 
 /* Host scratch backing for the source C body invoked by its guest adapter. */
 unsigned g_idx;
@@ -121,10 +132,16 @@ static const word_clear_unit g_exe_37625_units[] = {
 #define EXE_100016_OFFSET           100016u
 #define EXE_100016_GLOBAL_A_DS      0x6428u
 #define EXE_100016_GLOBAL_B_DS      0x642au
+#define EXE_100016_FLAGS_DS         0x4e9eu
 #define EXE_103774_OFFSET           103774u
 #define EXE_103774_GLOBAL_A_DS      0x4f46u
 #define EXE_103774_GLOBAL_B_DS      0x4f48u
 #define EXE_100203_OFFSET           100203u
+#define EXE_103744_OFFSET           103744u
+#define EXE_103744_DST0_DS_OFFSET   0x4f46u
+#define EXE_103744_DST1_DS_OFFSET   0x4f48u
+#define EXE_103744_SRC0_DS_OFFSET   0x4f4au
+#define EXE_103744_SRC1_DS_OFFSET   0x4f4cu
 #define EXE_136552_OFFSET            136552u
 #define EXE_52710_OFFSET              52710u
 #define EXE_52710_GLOBAL_DS_OFFSET    0x0106u
@@ -191,8 +208,10 @@ static uint64_t g_add_mod_hits;
 static uint64_t g_set_fields_hits;
 static uint64_t g_exe_112853_hits;
 static uint64_t g_exe_100016_fast_hits;
+static uint64_t g_exe_100016_store_hits;
 static uint64_t g_exe_103774_negative_hits;
 static uint64_t g_exe_100203_prefix_hits;
+static uint64_t g_exe_103744_hits;
 static uint32_t g_exe_112711_record_scratch[82];
 static uint8_t g_exe_112795_record_scratch[65536];
 static xanth_guest_far_pointer g_far_ptr_scratch;
@@ -1399,7 +1418,8 @@ static hook_result_t native_exe_112853(cpu86 *cpu, void *user) {
     return HOOK_DID_RETF;
 }
 
-/* Fast return for exe_100016 when both arguments equal its guest globals. */
+/* Lower exe_100016's unchanged return and its flag-clear direct-store path.
+ * The flag-set changed-input path retains its two retail helper calls. */
 static hook_result_t native_exe_100016(cpu86 *cpu, void *user) {
     const uint16_t entry_sp = cpu->r[CPU_SP];
     const uint16_t saved_bp = cpu->r[CPU_BP];
@@ -1407,13 +1427,25 @@ static hook_result_t native_exe_100016(cpu86 *cpu, void *user) {
     const uint16_t arg_b = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 6u));
     const uint16_t global_a = seg_r16(cpu->s[CPU_DS], EXE_100016_GLOBAL_A_DS);
     const uint16_t global_b = seg_r16(cpu->s[CPU_DS], EXE_100016_GLOBAL_B_DS);
-    const uint32_t cycles = 10u * 4u;
+    const bool unchanged = arg_a == global_a && arg_b == global_b;
+    const uint8_t state = seg_r8(cpu->s[CPU_DS], EXE_100016_FLAGS_DS);
+    const unsigned count = unchanged ? 10u : (arg_a == global_a ? 16u : 13u);
+    const uint32_t cycles = count * 4u;
     vm *machine = (vm *)cpu->vm;
     (void)user;
 
-    if (arg_a != global_a || arg_b != global_b ||
-        cpu->step_budget_remaining < 10u)
+    if ((!unchanged && (state & 1u)) || cpu->step_budget_remaining < count)
         return HOOK_CONTINUE;
+    /* A frame PUSH must not change any value inspected before accepting
+     * the path. Fall back for guest layouts aliasing that slot with DS. */
+    for (unsigned i = 0; i < 2u; i++) {
+        const uint32_t byte = cpu_lin(cpu->s[CPU_SS], (uint16_t)(entry_sp - 2u + i));
+        if (byte == cpu_lin(cpu->s[CPU_DS], EXE_100016_FLAGS_DS))
+            return HOOK_CONTINUE;
+        for (unsigned j = 0; j < 4u; j++)
+            if (byte == cpu_lin(cpu->s[CPU_DS], (uint16_t)(EXE_100016_GLOBAL_A_DS + j)))
+                return HOOK_CONTINUE;
+    }
     if (machine && (machine->cycles_per_second == 0 ||
         machine->next_tick_cycles <= cpu->cycles ||
         machine->next_tick_cycles - cpu->cycles <= cycles ||
@@ -1421,17 +1453,34 @@ static hook_result_t native_exe_100016(cpu86 *cpu, void *user) {
          machine->sb.dma_end_cycles - cpu->cycles <= cycles))))
         return HOOK_CONTINUE;
 
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(entry_sp - 2u), saved_bp);
     cpu->r[CPU_AX] = global_a;
     (void)alu_op(cpu, ALU_SUB, arg_a, global_a, 16);
-    cpu->r[CPU_AX] = global_b;
-    (void)alu_op(cpu, ALU_SUB, arg_b, global_b, 16);
+    if (arg_a == global_a) {
+        cpu->r[CPU_AX] = global_b;
+        (void)alu_op(cpu, ALU_SUB, arg_b, global_b, 16);
+    }
+    if (!unchanged) {
+        (void)alu_op(cpu, ALU_AND, state, 1u, 8);
+        cpu->r[CPU_AX] = arg_a;
+        seg_w16(cpu->s[CPU_DS], EXE_100016_GLOBAL_A_DS, arg_a);
+        cpu->r[CPU_AX] = seg_r16(cpu->s[CPU_SS], (uint16_t)(entry_sp + 6u));
+        seg_w16(cpu->s[CPU_DS], EXE_100016_GLOBAL_B_DS, cpu->r[CPU_AX]);
+    }
     cpu->r[CPU_BP] = saved_bp;
     cpu->r[CPU_SP] = entry_sp;
     cpu->cycles += cycles;
-    cpu->step_guest_insns = 10;
-    g_exe_100016_fast_hits++;
+    cpu->step_guest_insns = (uint8_t)count;
+    if (unchanged) g_exe_100016_fast_hits++;
+    else g_exe_100016_store_hits++;
     return HOOK_DID_RETF;
 }
+
+#ifdef XANTH_NATIVE_STAGE2_TESTING
+hook_result_t xanth_native_stage2_test_exe_100016(cpu86 *cpu) {
+    return native_exe_100016(cpu, NULL);
+}
+#endif
 
 /* Lower exe_103774's signed-negative path; nonnegative inputs call a helper. */
 static hook_result_t native_exe_103774(cpu86 *cpu, void *user) {
@@ -1490,6 +1539,42 @@ static hook_result_t native_exe_100203_prefix(cpu86 *cpu, void *user) {
     return HOOK_DID_SETIP;
 }
 
+/* Recovered src/exe_103744.c performs two DS word copies, then RETF. */
+static hook_result_t native_exe_103744(cpu86 *cpu, void *user) {
+    static const uint8_t expected[] = {
+        0xa1, 0x4a, 0x4f, 0xa3, 0x46, 0x4f,
+        0xa1, 0x4c, 0x4f, 0xa3, 0x48, 0x4f, 0xcb
+    };
+    vm *machine = (vm *)cpu->vm;
+    const uint32_t cycles = 5u * 4u;
+    (void)user;
+
+    if (cpu->step_budget_remaining < 5u) return HOOK_CONTINUE;
+    if (machine && (machine->cycles_per_second == 0 ||
+        machine->next_tick_cycles <= cpu->cycles ||
+        machine->next_tick_cycles - cpu->cycles <= cycles ||
+        (machine->sb.dma_active && (machine->sb.dma_end_cycles <= cpu->cycles ||
+         machine->sb.dma_end_cycles - cpu->cycles <= cycles))))
+        return HOOK_CONTINUE;
+    for (size_t i = 0; i < sizeof(expected); i++)
+        if (mem_r8(cpu_lin(cpu->s[CPU_CS], (uint16_t)(cpu->ip + i))) != expected[i])
+            return HOOK_CONTINUE;
+
+    /* Preserve the retail 16-bit signed globals around the recovered C body. */
+    xanth_exe_103744_src0 = (int16_t)seg_r16(cpu->s[CPU_DS], EXE_103744_SRC0_DS_OFFSET);
+    xanth_exe_103744_src1 = (int16_t)seg_r16(cpu->s[CPU_DS], EXE_103744_SRC1_DS_OFFSET);
+    exe_103744();
+    seg_w16(cpu->s[CPU_DS], EXE_103744_DST0_DS_OFFSET,
+            (uint16_t)xanth_exe_103744_dst0);
+    seg_w16(cpu->s[CPU_DS], EXE_103744_DST1_DS_OFFSET,
+            (uint16_t)xanth_exe_103744_dst1);
+    cpu->r[CPU_AX] = (uint16_t)xanth_exe_103744_src1;
+    cpu->cycles += cycles;
+    cpu->step_guest_insns = 5u;
+    g_exe_103744_hits++;
+    return HOOK_DID_RETF;
+}
+
 #ifdef XANTH_NATIVE_STAGE2_TESTING
 hook_result_t xanth_native_stage2_test_exe_100203_prefix(cpu86 *cpu) {
     return native_exe_100203_prefix(cpu, NULL);
@@ -1499,6 +1584,12 @@ hook_result_t xanth_native_stage2_test_exe_100203_prefix(cpu86 *cpu) {
 #ifdef XANTH_NATIVE_STAGE2_TESTING
 hook_result_t xanth_native_stage2_test_exe_103774(cpu86 *cpu) {
     return native_exe_103774(cpu, NULL);
+}
+#endif
+
+#ifdef XANTH_NATIVE_STAGE2_TESTING
+hook_result_t xanth_native_stage2_test_exe_103744(cpu86 *cpu) {
+    return native_exe_103744(cpu, NULL);
 }
 #endif
 
@@ -1692,6 +1783,10 @@ bool xanth_native_stage2_install(vm *machine) {
     static const uint8_t verified_exe_100203_head[] = {
         0x50, 0x50, 0x50, 0x50, 0x9a
     };
+    static const uint8_t verified_exe_103744_body[] = {
+        0xa1, 0x4a, 0x4f, 0xa3, 0x46, 0x4f,
+        0xa1, 0x4c, 0x4f, 0xa3, 0x48, 0x4f, 0xcb
+    };
     uint32_t linear;
     uint16_t segment, offset;
     if (!machine) return false;
@@ -1779,6 +1874,11 @@ bool xanth_native_stage2_install(vm *machine) {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
                            EXE_100203_OFFSET + (uint32_t)i;
         if (mem_r8(address) != verified_exe_100203_head[i]) return false;
+    }
+    for (size_t i = 0; i < sizeof(verified_exe_103744_body); i++) {
+        uint32_t address = (uint32_t)machine->img.load_seg * 16u +
+                           EXE_103744_OFFSET + (uint32_t)i;
+        if (mem_r8(address) != verified_exe_103744_body[i]) return false;
     }
     {
         uint32_t address = (uint32_t)machine->img.load_seg * 16u +
@@ -2150,6 +2250,7 @@ bool xanth_native_stage2_install(vm *machine) {
     segment = (uint16_t)(linear >> 4);
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_100016_fast_hits = 0;
+    g_exe_100016_store_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_100016, NULL)) return false;
     linear = (uint32_t)machine->img.load_seg * 16u + EXE_103774_OFFSET;
     segment = (uint16_t)(linear >> 4);
@@ -2161,6 +2262,11 @@ bool xanth_native_stage2_install(vm *machine) {
     offset = (uint16_t)(linear & 0x0fu);
     g_exe_100203_prefix_hits = 0;
     if (!cpu86_hook_install(segment, offset, native_exe_100203_prefix, NULL)) return false;
+    linear = (uint32_t)machine->img.load_seg * 16u + EXE_103744_OFFSET;
+    segment = (uint16_t)(linear >> 4);
+    offset = (uint16_t)(linear & 0x0fu);
+    g_exe_103744_hits = 0;
+    if (!cpu86_hook_install(segment, offset, native_exe_103744, NULL)) return false;
     return true;
 }
 
@@ -2299,5 +2405,7 @@ uint64_t xanth_native_add_mod_hits(void) {
 uint64_t xanth_native_set_fields_hits(void) { return g_set_fields_hits; }
 uint64_t xanth_native_exe_112853_hits(void) { return g_exe_112853_hits; }
 uint64_t xanth_native_exe_100016_fast_hits(void) { return g_exe_100016_fast_hits; }
+uint64_t xanth_native_exe_100016_store_hits(void) { return g_exe_100016_store_hits; }
 uint64_t xanth_native_exe_103774_negative_hits(void) { return g_exe_103774_negative_hits; }
 uint64_t xanth_native_exe_100203_prefix_hits(void) { return g_exe_100203_prefix_hits; }
+uint64_t xanth_native_exe_103744_hits(void) { return g_exe_103744_hits; }

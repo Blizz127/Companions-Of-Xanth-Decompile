@@ -46,6 +46,25 @@ unit is written as a `char` array whose header carries the sentence
 This is a spelling for bytes that are already known not to be a function —
 it is not a way to retire a function that merely failed to compile.
 
+**Correction, 2026-09-19.** The premise above — that the transcribed
+population is "predominantly data, strings and the Pocket Soft RTLink
+runtime, not a queue of uncompiled functions" — is **partly wrong**, and it
+was load-bearing for the 2026-09-10 bar change, so it is corrected here
+rather than quietly overwritten. A measurable share of the 915
+`transcribed-data` units decode cleanly as functions. Worked example:
+`exe-code:0x1948b`, 36 bytes, `src/exe_102763.c`-class, decodes as
+`push di; xor ax,ax; mov bx,6A24h; mov dx,38AFh; mov cx,180h; mov di,bx;
+mov es,dx; rep stosw; push dx; push bx; call far …; add sp,4;
+mov word ptr [42E8h],1; pop di; retf`. That is a complete function.
+
+It is labelled data only because CL 8.00c's inline assembler could not spell
+its encoding — a *toolchain* fact, not a *semantic* one. This does not
+retroactively violate the bar (the bar forbids transcribing code as data to
+dodge recovery; these were transcribed after a recorded assembly failure,
+which the header documents). But it does mean the `transcribed-data` count is
+**not** a measure of how much of the image is non-code, and the port's Stage 2
+must re-classify these from the bytes rather than inherit the label.
+
 This was previously "no `_emit` *or* `_asm`", which was not reachable. Changed
 on 2026-09-10 with the user's decision, on this evidence (`docs/STATUS.md`):
 
@@ -60,10 +79,10 @@ on 2026-09-10 with the user's decision, on this evidence (`docs/STATUS.md`):
   (`int` 35, `in`/`out` 27, flag save/restore 18, …). The count is an upper
   bound because some string ops are compiler-producible.
 
-The bar is still strict in the direction that matters: 197 of 2,844 units
-are byte dumps today, so the gate is red and stays red until they are real
-source. A notebook reconstruction that does not MATCH in `src/` is not a
-recovery.
+As of 2026-09-19 this gate is **green**: 0 of 2,844 units are byte dumps. The
+bar stays — a notebook reconstruction that does not MATCH in `src/` is still
+not a recovery — but it is now a floor to hold rather than a backlog to burn
+down.
 
 **Open question for the next session (not a bar change).** That 197 is not a
 spelling backlog any more. They are the units whose retail bytes carry an
@@ -101,10 +120,16 @@ improving direction.
 
 | Metric | Today | Direction | Checked by |
 |---|---|---|---|
-| `exe-code` `_emit` dump coverage | 18.92% | must not rise | `tests/test_units.py::test_emit_dump_coverage_does_not_increase` |
-| `ovl-payload` `_emit` dump coverage | 18.98% | must not rise | same |
+| `exe-code` `_emit` dump coverage | 0.0% | must not rise | `tests/test_units.py::test_emit_dump_coverage_does_not_increase` |
+| `ovl-payload` `_emit` dump coverage | 0.0% | must not rise | same |
 | unaided-C unit count | 442 | must not fall | `tests/test_units.py::test_unaided_c_unit_count_does_not_fall` |
-| complete far functions still in dump form | 560 | must not rise | `tests/test_units.py::test_dump_function_count_does_not_increase` |
+| complete far functions still in dump form | 0 | must not rise | `tests/test_units.py::test_dump_function_count_does_not_increase` |
+
+Re-measured 2026-09-19 by `python3 tools/coverage.py`: `emit-dump=0`,
+`dump functions still in dump form: 0`, kinds `unaided-c=442,
+mnemonic-asm=959, watcom-asm=528, transcribed-data=915`. The three
+dump-related ratchets above are now at their floor and can only be held, not
+improved.
 
 How these numbers moved, so a later session can tell a recovery from a
 denominator change:
@@ -167,19 +192,104 @@ These are the work queue, not decoration. They are the only red gates.
 
 | Gate | Today | Blocked by |
 |---|---|---|
-| `test_recovered_sources_have_no_emit_byte_dumps` | 197 dump units | function recovery |
 | `test_each_c_unit_...::image_source == "cl-link"` | `listing-splice` | an EXE symbol/data map, then deleting the listing fallback |
+
+`test_recovered_sources_have_no_emit_byte_dumps` **went green on 2026-09-19**
+(0 dump units) and is no longer an open gate. The `cl-link` gate is
+decompilation fidelity and is orthogonal to the port; the port work does not
+change its priority.
 
 ## Exceptions
 
-| ID | Rule | Path | Reason | Owner | Expires |
-|---|---|---|---|---|---|
-| E1 | `_emit` floor | `src/**` | 197 units still to convert; tracked by the ratchet above | 2026-09-11 session | on completion |
+None. (**E1** — the `_emit` floor exception for 197 unconverted units, owned
+by the 2026-09-11 session and set to expire on completion — completed on
+2026-09-19 and is retired.)
+
+## The port bar
+
+Promoted 2026-09-19 from a footnote to a first-class section, because the bar
+was being violated while it sat in "not a constraint here". The port must be
+derived from matched source. **It must not become a replacement
+implementation.**
+
+What went wrong, recorded so it is not repeated: `port/src/engine_glue.c`
+became a hand-written text adventure — three hardcoded rooms, hand-typed
+narration, a bespoke command parser, and an overlay section model that is
+provably wrong (it reads the 62 directory `size` fields as a byte partition of
+the payload, but they sum to 43,284 against a 325,595-byte payload). It loaded
+`XANTH.OVL` and never executed a byte of it. A prior audit called this
+complete because the written acceptance criterion was only "boots to the title
+screen".
+
+**Floor rule: no hand-written game logic in `port/`.** There are exactly two
+categories and no third:
+
+- `port/gen/**` — machine-generated from retail bytes, every function carrying
+  a manifest entry recording its byte extent and provenance.
+- `port/src/hal_*.c`, `port/src/emu/**` — environment: video, audio, input,
+  filesystem, CPU, DOS/BIOS services. Not game logic.
+
+**What "100%" means for the port.** Not "every byte statically recompiled" —
+roughly 25-40 KB of `exe-code` is Pocket Soft RTLink/Plus runtime and the 1992
+MS C library, which are environment, not game. The port is 100% complete when:
+
+1. Every byte of `exe-code` and `ovl-payload` is accounted for in the manifest
+   as exactly one of `translated`, `data`, or `shimmed`.
+2. `shimmed` is a closed, enumerated set of byte ranges, each with a written
+   reason. Nothing joins it without a ratchet bump in the same commit.
+3. **Zero bytes are interpreted at runtime.** The 8086 interpreter is not
+   linked into the release build; it survives only in the test binary as the
+   co-simulation oracle.
+4. Every `translated` function passes co-simulation against the interpreter.
+5. The game is completable start to finish with the release build on Linux and
+   on Windows 11, matching the golden frame hashes on both.
+
+Criterion 3 is what stops the usual cop-out of leaving an interpreter on the
+hot path; criterion 4 is a behavioural proof that "100% recompiled" alone does
+not give.
+
+### Port ratchets (to be measured at Stage 2 start)
+
+| Metric | Today | Direction |
+|---|---|---|
+| bytes classified `shimmed` in `exe-code` | not yet measured | must not rise; ceiling 8% |
+| bytes classified `shimmed` in `ovl-payload` | not yet measured | must stay 0 |
+| bytes still interpreted at runtime in the release build | 100% (Stage 2 not started) | must not rise |
+| translated functions passing co-simulation | 0 | must not fall |
+| walkthrough segments green in all three configs | 0 (only config **R** exists) | must not fall |
+| walkthrough segments green in config **R** | **9** | must not fall |
+| published-route points reached | **122** (status panel at Fairy Nuff's booth, recipe in hand) | must not fall |
+| golden checkpoint hashes pinned | **66** | must not fall |
+| segments reached from a **cold boot** | **5** | must not fall |
+
+The Stage-2 rows are still placeholders; each gets its measured number in the
+commit that first produces it. A placeholder is not a licence to skip the
+measurement.
+
+The four walkthrough rows are **measured now** (`tests/test_walkthrough.py`,
+`tests/test_walkthrough_isthmus.py`, `tests/test_walkthrough_pail.py`, 66
+tests). Segment 7 prints `[9 points]` on the clearing. Segment 8 traps the
+bucket (status panel **102**). Segment 9 takes the pail (`[7 points]`),
+passes the eye screen, and reads Fairy Nuff's recipe. The status panel at
+his booth reads **122 of 1000**. They exist because progress through the game is the one metric that
+cannot be satisfied by inspection, and because the specific failure this
+project already had once was a completeness claim with no playthrough behind
+it. Lowering any of them requires saying so in the commit message.
+
+The **cold boot** row is there to stop the anchoring optimisation from being
+used to hide a regression. Segments from 6 on start by restoring a save, so
+that each costs a flat ~1.2 billion instructions rather than replaying an
+ever-growing prefix. That is a sound trade only while a real prefix of the
+route is still proven from a cold start, so the count that is allowed to be
+anchored is bounded by a ratchet of its own.
+
+A note on how the point count is verified: the game prints its own score
+increments in the text pane (`[5 points]`, `[15 points]`, `[2 points]`,
+`[9 points]`), so the figure is read off retail output rather than asserted by
+the test author.
 
 ## Not a constraint here
 
 - Compiler limitation is not assumed. A "CL cannot emit this" claim needs a
   controlled experiment (`tools/cl_probe.py`) recorded in `docs/STATUS.md`,
   the same way the `_asm`-forces-a-frame result was.
-- The `pc-port` is out of scope and must be derived from matched source; it
-  must not become a replacement implementation.

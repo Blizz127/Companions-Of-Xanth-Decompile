@@ -212,6 +212,230 @@ fail:
     return 1;
 }
 
+static const uint8_t test_exe_103744_body[] = {
+    0xa1, 0x4a, 0x4f, 0xa3, 0x46, 0x4f,
+    0xa1, 0x4c, 0x4f, 0xa3, 0x48, 0x4f, 0xcb
+};
+
+static void setup_exe_103744_cpu(cpu86 *cpu) {
+    memset(g_dos_mem, 0xa5, DOS_MEM_SIZE);
+    cpu86_reset(cpu);
+    cpu->s[CPU_CS] = 0x1000u;
+    cpu->s[CPU_SS] = 0x2000u;
+    cpu->s[CPU_DS] = 0x2100u;
+    cpu->ip = 0x0100u;
+    cpu->r[CPU_SP] = 0x1000u;
+    cpu->r[CPU_AX] = 0xabcdu;
+    cpu->r[CPU_BX] = 0x1357u;
+    cpu->r[CPU_CX] = 0x2468u;
+    cpu->r[CPU_DX] = 0x9876u;
+    cpu->r[CPU_BP] = 0x2345u;
+    cpu->r[CPU_SI] = 0x6789u;
+    cpu->flags |= F_IF | F_DF | F_CF | F_AF | F_SF | F_OF;
+    cpu->cycles = 100u;
+    cpu->step_budget_remaining = 100u;
+    memcpy(g_dos_mem + cpu_lin(cpu->s[CPU_CS], cpu->ip),
+           test_exe_103744_body, sizeof(test_exe_103744_body));
+    seg_w16(cpu->s[CPU_SS], cpu->r[CPU_SP], 0x2222u);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(cpu->r[CPU_SP] + 2u), 0x3333u);
+    seg_w16(cpu->s[CPU_DS], 0x4f46u, 0xaaaau);
+    seg_w16(cpu->s[CPU_DS], 0x4f48u, 0xbbbbu);
+    seg_w16(cpu->s[CPU_DS], 0x4f4au, 0x8001u);
+    seg_w16(cpu->s[CPU_DS], 0x4f4cu, 0xfffdu);
+}
+
+static int test_native_exe_103744(void) {
+    uint8_t *expected = malloc(DOS_MEM_SIZE);
+    cpu86 interpreted, native, before;
+    vm machine;
+    if (!expected) return 1;
+
+    setup_exe_103744_cpu(&interpreted);
+    for (unsigned i = 0; i < 5u; i++) cpu86_step(&interpreted);
+    if (interpreted.fault || interpreted.s[CPU_CS] != 0x3333u ||
+        interpreted.ip != 0x2222u || interpreted.r[CPU_SP] != 0x1004u) {
+        fprintf(stderr, "exe_103744 interpreter precondition failed: fault=%u cs=%04x ip=%04x sp=%04x\n",
+                interpreted.fault, interpreted.s[CPU_CS], interpreted.ip, interpreted.r[CPU_SP]);
+        goto fail;
+    }
+    memcpy(expected, g_dos_mem, DOS_MEM_SIZE);
+
+    setup_exe_103744_cpu(&native);
+    if (xanth_native_stage2_test_exe_103744(&native) != HOOK_DID_RETF)
+        goto fail;
+    native.ip = cpu86_pop16(&native);
+    native.s[CPU_CS] = cpu86_pop16(&native);
+    if (memcmp(native.r, interpreted.r, sizeof(native.r)) != 0 ||
+        memcmp(native.s, interpreted.s, sizeof(native.s)) != 0 ||
+        native.flags != interpreted.flags || native.cycles != interpreted.cycles ||
+        native.ip != interpreted.ip || native.r[CPU_SP] != interpreted.r[CPU_SP] ||
+        memcmp(expected, g_dos_mem, DOS_MEM_SIZE) != 0 ||
+        native.step_guest_insns != 5u ||
+        seg_r16(native.s[CPU_DS], 0x4f46u) != 0x8001u ||
+        seg_r16(native.s[CPU_DS], 0x4f48u) != 0xfffdu) {
+        fprintf(stderr, "exe_103744 parity diff: AX=%04x/%04x SP=%04x/%04x CS:IP=%04x:%04x/%04x:%04x cycles=%llu/%llu flags=%04x/%04x mem=%d insns=%u\n",
+                native.r[CPU_AX], interpreted.r[CPU_AX], native.r[CPU_SP], interpreted.r[CPU_SP],
+                native.s[CPU_CS], native.ip, interpreted.s[CPU_CS], interpreted.ip,
+                (unsigned long long)native.cycles, (unsigned long long)interpreted.cycles,
+                native.flags, interpreted.flags,
+                memcmp(expected, g_dos_mem, DOS_MEM_SIZE), native.step_guest_insns);
+        goto fail;
+    }
+
+    for (unsigned fallback = 0; fallback < 3u; fallback++) {
+        setup_exe_103744_cpu(&native);
+        if (fallback == 0u) native.step_budget_remaining = 4u;
+        else {
+            memset(&machine, 0, sizeof(machine));
+            machine.cycles_per_second = 4000000u;
+            machine.next_tick_cycles = native.cycles + (fallback == 2u ? 1000u : 20u);
+            machine.sb.dma_active = fallback == 2u;
+            machine.sb.dma_end_cycles = native.cycles + 20u;
+            native.vm = &machine;
+        }
+        before = native;
+        memcpy(expected, g_dos_mem, DOS_MEM_SIZE);
+        if (xanth_native_stage2_test_exe_103744(&native) != HOOK_CONTINUE ||
+            memcmp(&native, &before, sizeof(native)) != 0 ||
+            memcmp(expected, g_dos_mem, DOS_MEM_SIZE) != 0) {
+            fprintf(stderr, "exe_103744 fallback diff mode=%u result/mem/state\n", fallback);
+            goto fail;
+        }
+    }
+
+    free(expected);
+    puts("exe_103744 interpreter/native state: exact (two DS copies, 5 insns, 20 cycles; boundary fallbacks)");
+    return 0;
+fail:
+    free(expected);
+    fprintf(stderr, "exe_103744 interpreter/native state mismatch\n");
+    return 1;
+}
+
+/* Retail exe_100016, including both helper-call sites. The fixture only
+ * executes its no-call paths; helper paths must decline native dispatch. */
+static const uint8_t test_exe_100016_body[] = {
+    0x55, 0x8b, 0xec, 0xa1, 0x28, 0x64, 0x39, 0x46, 0x06, 0x75,
+    0x08, 0xa1, 0x2a, 0x64, 0x39, 0x46, 0x08, 0x74, 0x31, 0xf6,
+    0x06, 0x9e, 0x4e, 0x01, 0x74, 0x1e, 0x9a, 0x34, 0xfa, 0xa7,
+    0x08, 0x8b, 0x46, 0x06, 0xa3, 0x28, 0x64, 0x8b, 0x46, 0x08,
+    0xa3, 0x2a, 0x64, 0xb8, 0x01, 0x00, 0x50, 0x9a, 0x79, 0xf9,
+    0xa7, 0x08, 0x8b, 0xe5, 0xeb, 0x0c, 0x8b, 0x46, 0x06, 0xa3,
+    0x28, 0x64, 0x8b, 0x46, 0x08, 0xa3, 0x2a, 0x64, 0x5d, 0xcb
+};
+
+static void setup_exe_100016_cpu(cpu86 *cpu, uint16_t a, uint16_t b, uint8_t flag) {
+    memset(g_dos_mem, 0xa5, DOS_MEM_SIZE);
+    cpu86_reset(cpu);
+    cpu->s[CPU_CS] = 0x1000u;
+    cpu->s[CPU_SS] = 0x2000u;
+    cpu->s[CPU_DS] = 0x4000u;
+    cpu->ip = 0x0100u;
+    cpu->r[CPU_SP] = 0x1000u;
+    cpu->r[CPU_BP] = 0x2345u;
+    cpu->r[CPU_AX] = 0xabcdu;
+    cpu->r[CPU_BX] = 0x6789u;
+    cpu->flags |= F_IF | F_DF | F_CF | F_AF | F_SF | F_OF;
+    cpu->cycles = 100u;
+    cpu->step_budget_remaining = 100u;
+    memcpy(g_dos_mem + cpu_lin(cpu->s[CPU_CS], cpu->ip),
+           test_exe_100016_body, sizeof(test_exe_100016_body));
+    seg_w16(cpu->s[CPU_SS], 0x1000u, 0x2222u);
+    seg_w16(cpu->s[CPU_SS], 0x1002u, 0x3333u);
+    seg_w16(cpu->s[CPU_SS], 0x1004u, a);
+    seg_w16(cpu->s[CPU_SS], 0x1006u, b);
+    seg_w16(cpu->s[CPU_DS], 0x6428u, 0x1111u);
+    seg_w16(cpu->s[CPU_DS], 0x642au, 0x2222u);
+    seg_w8(cpu->s[CPU_DS], 0x4e9eu, flag);
+}
+
+static void setup_exe_100016_layout(cpu86 *cpu, unsigned layout) {
+    if (!layout) return;
+    /* Layout 1 makes argument B alias the first stored global; layout 2
+     * wraps the frame word across FFFF:0000 and the physical 1 MB boundary. */
+    cpu->s[CPU_SS] = layout == 1u ? cpu->s[CPU_DS] : 0xffffu;
+    cpu->r[CPU_SP] = layout == 1u ? 0x6422u : 1u;
+    const uint16_t sp = cpu->r[CPU_SP];
+    seg_w16(cpu->s[CPU_SS], sp, 0x2222u);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(sp + 2u), 0x3333u);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(sp + 4u), 0xffffu);
+    seg_w16(cpu->s[CPU_SS], (uint16_t)(sp + 6u), 0x1111u);
+}
+
+static int test_native_exe_100016_store(void) {
+    static const struct { uint16_t a, b; uint8_t flag, count, layout; } cases[] = {
+        {0x1111u, 0x2222u, 0x00u, 10u, 0u},
+        {0x1111u, 0x2222u, 0x01u, 10u, 0u},
+        {0xffffu, 0x8000u, 0x00u, 13u, 0u},
+        {0x1111u, 0x8000u, 0xfeu, 16u, 0u},
+        {0x0000u, 0x0000u, 0xfeu, 13u, 0u},
+        {0xffffu, 0x1111u, 0x00u, 13u, 1u},
+        {0xffffu, 0x1111u, 0x00u, 13u, 2u},
+    };
+    uint8_t *expected = malloc(DOS_MEM_SIZE);
+    if (!expected) return 1;
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        cpu86 interpreted, native;
+        setup_exe_100016_cpu(&interpreted, cases[i].a, cases[i].b, cases[i].flag);
+        setup_exe_100016_layout(&interpreted, cases[i].layout);
+        for (unsigned n = 0; n < cases[i].count; n++) cpu86_step(&interpreted);
+        if (interpreted.fault || interpreted.ip != 0x2222u ||
+            interpreted.s[CPU_CS] != 0x3333u) goto fail;
+        memcpy(expected, g_dos_mem, DOS_MEM_SIZE);
+        setup_exe_100016_cpu(&native, cases[i].a, cases[i].b, cases[i].flag);
+        setup_exe_100016_layout(&native, cases[i].layout);
+        if (xanth_native_stage2_test_exe_100016(&native) != HOOK_DID_RETF)
+            goto fail;
+        native.ip = cpu86_pop16(&native);
+        native.s[CPU_CS] = cpu86_pop16(&native);
+        if (memcmp(native.r, interpreted.r, sizeof(native.r)) ||
+            memcmp(native.s, interpreted.s, sizeof(native.s)) ||
+            native.flags != interpreted.flags || native.ip != interpreted.ip ||
+            native.cycles != interpreted.cycles || native.step_guest_insns != cases[i].count ||
+            memcmp(expected, g_dos_mem, DOS_MEM_SIZE)) goto fail;
+        /* Insufficient instruction budget must leave registers and memory alone. */
+        setup_exe_100016_cpu(&native, cases[i].a, cases[i].b, cases[i].flag);
+        setup_exe_100016_layout(&native, cases[i].layout);
+        native.step_budget_remaining = cases[i].count - 1u;
+        interpreted = native;
+        memcpy(expected, g_dos_mem, DOS_MEM_SIZE);
+        if (xanth_native_stage2_test_exe_100016(&native) != HOOK_CONTINUE ||
+            memcmp(&native, &interpreted, sizeof(native)) ||
+            memcmp(expected, g_dos_mem, DOS_MEM_SIZE)) goto fail;
+    }
+    {
+        cpu86 native, before;
+        vm machine;
+        setup_exe_100016_cpu(&native, 0xffffu, 0x8000u, 1u);
+        before = native;
+        memcpy(expected, g_dos_mem, DOS_MEM_SIZE);
+        if (xanth_native_stage2_test_exe_100016(&native) != HOOK_CONTINUE ||
+            memcmp(&native, &before, sizeof(native)) ||
+            memcmp(expected, g_dos_mem, DOS_MEM_SIZE)) goto fail;
+        for (unsigned dma = 0; dma < 2u; dma++) {
+            setup_exe_100016_cpu(&native, 0xffffu, 0x8000u, 0u);
+            memset(&machine, 0, sizeof(machine));
+            machine.cycles_per_second = 4000000u;
+            machine.next_tick_cycles = dma ? 1000u : native.cycles + 52u;
+            machine.sb.dma_active = dma != 0u;
+            machine.sb.dma_end_cycles = native.cycles + 52u;
+            native.vm = &machine;
+            before = native;
+            memcpy(expected, g_dos_mem, DOS_MEM_SIZE);
+            if (xanth_native_stage2_test_exe_100016(&native) != HOOK_CONTINUE ||
+                memcmp(&native, &before, sizeof(native)) ||
+                memcmp(expected, g_dos_mem, DOS_MEM_SIZE)) goto fail;
+        }
+    }
+    free(expected);
+    puts("exe_100016 no-call paths: registers, flags, full memory and cycles match; budget/timer/DMA/helper fallbacks unchanged");
+    return 0;
+fail:
+    free(expected);
+    fprintf(stderr, "exe_100016 interpreter/native state mismatch\n");
+    return 1;
+}
+
 /*
  * Trace format: an ORDERED list of steps, not timestamped events.
  *
@@ -581,6 +805,8 @@ int main(int argc, char **argv) {
     bool test_native_114942_negative = false;
     bool test_native_103774_negative = false;
     bool test_native_100203_prefix = false;
+    bool test_native_103744 = false;
+    bool test_native_100016_store = false;
 
     memset(&cfg, 0, sizeof(cfg));
     snprintf(cfg.exe_path, sizeof(cfg.exe_path), "original/XANTH.EXE");
@@ -614,6 +840,10 @@ int main(int argc, char **argv) {
             test_native_103774_negative = true;
         else if (!strcmp(argv[i], "--test-native-exe100203-prefix"))
             test_native_100203_prefix = true;
+        else if (!strcmp(argv[i], "--test-native-exe103744"))
+            test_native_103744 = true;
+        else if (!strcmp(argv[i], "--test-native-exe100016-store"))
+            test_native_100016_store = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
         else if (!strcmp(argv[i], "--nonblocking-conin")) cfg.nonblocking_conin = true;
         else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc) {
@@ -635,6 +865,11 @@ int main(int argc, char **argv) {
         return test_native_exe_103774_negative();
     if (test_native_100203_prefix)
         return test_native_exe_100203_prefix();
+    if (test_native_103744)
+        return test_native_exe_103744();
+
+    if (test_native_100016_store)
+        return test_native_exe_100016_store();
 
     cfg.max_instructions = insns;
     cfg.replacement_fonts = replacement_fonts;
@@ -741,11 +976,17 @@ int main(int argc, char **argv) {
         fprintf(stderr, "[native] exe_100016 fast-return hits: %llu\n",
                 (unsigned long long)xanth_native_exe_100016_fast_hits());
     if (!vm_only)
+        fprintf(stderr, "[native] exe_100016 direct-store hits: %llu\n",
+                (unsigned long long)xanth_native_exe_100016_store_hits());
+    if (!vm_only)
         fprintf(stderr, "[native] exe_103774 negative hits: %llu\n",
                 (unsigned long long)xanth_native_exe_103774_negative_hits());
     if (!vm_only)
         fprintf(stderr, "[native] exe_100203 prefix hits: %llu\n",
                 (unsigned long long)xanth_native_exe_100203_prefix_hits());
+    if (!vm_only)
+        fprintf(stderr, "[native] exe_103744 hits: %llu\n",
+                (unsigned long long)xanth_native_exe_103744_hits());
     if (!vm_only)
         fprintf(stderr, "[native] exe_86810 hits: %llu\n",
                 (unsigned long long)xanth_native_exe_86810_hits());

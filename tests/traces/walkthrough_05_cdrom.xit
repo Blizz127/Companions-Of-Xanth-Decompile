@@ -1,0 +1,126 @@
+# Continues the published route from walkthrough_04_courier.xit.
+include walkthrough_04_courier.xit
+
+# ============================================================
+# Walkthrough, segment 5: booting the game-within-the-game (9 points).
+#
+# This completes the Mundania opening at 31/31 points and is where the
+# story actually starts: the last frame has Grundy Golem drawn on the
+# monitor, waiting.
+#
+# Two nested containers in a row. The courier's parcel holds a game box
+# ("You find a game box entitled 'Companions of Xanth'."), and the box in
+# turn holds five objects ("You find a game manual, a CD-ROM, a warranty
+# card, a red book, and a pair of 3D glasses."). One take becomes seven
+# inventory items, and the bar grows a scroll control to hold them.
+#
+# Bedroom hotspots, MEASURED by hover sweep:
+#   screen (240,35)  shelf (300,35)  post-it (240,68)  light (264,68)
+#   computer (192,79)  disk drive (240,90)  CD-ROM drive (270,100)
+#
+# Inventory slots are 20px apart starting at x=92, y=162. After the box is
+# opened they read:
+#   92 glasses  112 glasses  132 tome  152 plastic  172 -  192 game
+#   212 CD-ROM  232 card  252 card  272 manual
+# Selecting by measured slot is the only reliable way in: the ordering is
+# not stable across container operations.
+#
+# Selecting the computer publishes the context verbs Read (87), Turn on
+# (97) and Turn off (107), and pre-selects "Turn on the computer".
+# ============================================================
+
+# --- SE, back to the bedroom ---
+move 37 161
+run 5
+click left
+run 45
+move 305 196
+run 15
+checkpoint wt5_bedroom
+
+# --- open the parcel: a game box ---
+move 92 162
+run 5
+click left
+run 20
+move 14 37
+run 5
+click left
+run 60
+move 305 196
+run 15
+checkpoint wt5_game_box
+shot build/frames/wt5_game_box.bmp
+
+# --- open the box: manual, CD-ROM, warranty card, red book, 3D glasses ---
+move 92 162
+run 5
+click left
+run 20
+move 14 37
+run 5
+click left
+run 60
+move 305 196
+run 15
+checkpoint wt5_box_opened
+shot build/frames/wt5_box_opened.bmp
+
+# --- turn the computer on (context verb) ---
+move 192 79
+run 8
+click left
+run 20
+move 14 97
+run 5
+click left
+run 80
+move 305 196
+run 15
+checkpoint wt5_computer_on
+shot build/frames/wt5_computer_on.bmp
+
+# --- open the CD-ROM drive ---
+move 14 37
+run 5
+click left
+run 15
+move 270 100
+run 5
+click left
+run 60
+move 305 196
+run 15
+checkpoint wt5_tray_open
+
+# --- put the CD-ROM in the drive ---
+move 212 162
+run 6
+click left
+run 25
+checkpoint wt5_cd_selected
+move 14 17
+run 5
+click left
+run 20
+move 270 100
+run 5
+click left
+run 70
+move 305 196
+run 15
+checkpoint wt5_cd_inserted
+
+# --- close the drive: "[9 points] You close the CD-ROM drive." ---
+move 14 47
+run 5
+click left
+run 15
+move 270 100
+run 5
+click left
+run 90
+move 305 196
+run 15
+checkpoint wt5_game_started
+shot build/frames/wt5_game_started.bmp

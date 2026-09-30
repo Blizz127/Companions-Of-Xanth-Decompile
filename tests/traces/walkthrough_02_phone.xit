@@ -1,0 +1,52 @@
+# Continues the published route from walkthrough_01_mundania.xit.
+include walkthrough_01_mundania.xit
+
+# ============================================================
+# Walkthrough, segment 2: the phone call from Edsel.
+#
+# The call is TIME-GATED. The phone is not ringing when you first reach the
+# kitchen, and the game says so ("That might make sense if the phone were
+# ringing."). Waiting with F1 advances the clock until it rings.
+#
+# Answering opens the conversation UI. Dialogue options are rows at
+# y = 114, 123, 131, 139, 147, 156. The published path is "Hi, Edsel"
+# (option 3 in the first menu) then 1, 2, 2, 3, which makes Edsel send the
+# game by courier -- scored 15 points.
+# ============================================================
+
+key 0 59
+run 30
+move 275 32
+run 4
+click left
+run 15
+move 14 87
+run 4
+click left
+run 40
+checkpoint wt2_call_open
+
+move 120 131
+run 5
+click left
+run 40
+checkpoint wt2_said_hi
+
+move 120 114
+run 5
+click left
+run 40
+move 120 123
+run 5
+click left
+run 40
+move 120 123
+run 5
+click left
+run 40
+move 120 131
+run 5
+click left
+run 60
+checkpoint wt2_bet_accepted
+shot build/frames/wt2_bet_accepted.bmp

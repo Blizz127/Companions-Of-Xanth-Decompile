@@ -474,6 +474,8 @@ int main(int argc, char **argv) {
             (unsigned long long)xanth_native_exe_103774_negative_hits());
     fprintf(stderr, "[native] exe_100203 prefix hits: %llu\n",
             (unsigned long long)xanth_native_exe_100203_prefix_hits());
+    fprintf(stderr, "[native] exe_103744 hits: %llu\n",
+            (unsigned long long)xanth_native_exe_103744_hits());
     vm_report(&machine, stderr);
     vm_shutdown(&machine);
     hal_audio_shutdown();

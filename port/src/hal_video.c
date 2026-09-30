@@ -92,6 +92,22 @@ hal_video_viewport hal_video_compute_viewport(int win_w, int win_h,
     return viewport;
 }
 
+/* Input must use the same geometry even before the first presented frame,
+ * after a mode/size change, and when presentation is disabled headlessly. */
+static void update_viewport(void) {
+    int width = g_video.window_width, height = g_video.window_height;
+#ifndef XANTH_HEADLESS_STUB
+    if (g_video.renderer && !g_video.headless)
+        SDL_GetRendererOutputSize(g_video.renderer, &width, &height);
+#endif
+    hal_video_viewport viewport = hal_video_compute_viewport(
+        width, height, g_video.present_mode);
+    g_video.viewport_x = viewport.x;
+    g_video.viewport_y = viewport.y;
+    g_video.viewport_w = viewport.width;
+    g_video.viewport_h = viewport.height;
+}
+
 bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycling) {
     memset(&g_video, 0, sizeof(g_video));
 
@@ -202,17 +218,14 @@ bool hal_video_init(int scale, bool fullscreen, bool headless, bool enable_cycli
     }
 #endif
 
-    /* Initial 4:3 viewport */
-    g_video.viewport_x = 0;
-    g_video.viewport_y = 0;
-    g_video.viewport_w = g_video.window_width;
-    g_video.viewport_h = g_video.window_height;
+    update_viewport();
 
     return true;
 }
 
 void hal_video_set_present_mode(hal_video_present_mode mode) {
     g_video.present_mode = mode;
+    update_viewport();
 }
 
 void hal_video_set_filter(bool crt_scanlines, bool linear_filter) {
@@ -237,6 +250,7 @@ void hal_video_set_window_size(int width, int height) {
 #ifndef XANTH_HEADLESS_STUB
     if (g_video.window) SDL_SetWindowSize(g_video.window,width,height);
 #endif
+    update_viewport();
 }
 
 void hal_video_toggle_fullscreen(void) {
@@ -425,6 +439,7 @@ void hal_video_wait_vsync(void) {
 }
 
 void hal_video_get_viewport(int *x, int *y, int *w, int *h) {
+    update_viewport();
     if (x) *x = g_video.viewport_x;
     if (y) *y = g_video.viewport_y;
     if (w) *w = g_video.viewport_w;

@@ -1,0 +1,71 @@
+# Walkthrough, segment 6: into Xanth, with Nada Naga as Companion.
+#
+# SAVE-ANCHORED, unlike segments 1-5. Those replay from a cold boot, which
+# is the claim under test for the opening. Continuing that way costs ~20
+# billion instructions per segment before the segment's own material even
+# starts, and grows with every segment added. From here on a segment boots
+# and restores the anchor that anchor_after_opening.xit produced, which is
+# ~1.2 billion, and the cold-boot claim stays covered by segments 1-5.
+#
+# Route: look at the screen to zoom into the game-within-the-game, talk to
+# Grundy Golem, ask to make a selection, and pick Nada from the gallery.
+#
+# Measured coordinates:
+#   screen (240,35) in the bedroom; "tiny man" (88,48) in the close-up
+#   Grundy's dialogue rows: y = 130, 138, 146, 154, 162, 170
+#   conversation dismiss checkmark: (125,134)
+#   companion gallery panels: Jenny (113,100), Che (158,100), Nada (248,100)
+
+include lib/resume_after_opening.xit
+checkpoint wt6_resumed
+
+# --- look at the screen: a full-screen view of the game ---
+move 240 35
+run 8
+click left
+run 20
+move 14 27
+run 5
+click left
+run 90
+move 305 196
+run 15
+checkpoint wt6_closeup
+shot build/frames/wt6_closeup.bmp
+
+# --- talk to the "tiny man" ---
+move 88 48
+run 8
+click left
+run 25
+move 14 57
+run 5
+click left
+run 100
+checkpoint wt6_grundy
+shot build/frames/wt6_grundy.bmp
+
+# --- "Okay, Grund. I'm ready to make my selection." (row 6) ---
+move 160 170
+run 8
+click left
+run 100
+checkpoint wt6_pick_wisely
+
+# --- dismiss, and the companion gallery appears ---
+move 125 134
+run 8
+click left
+run 100
+checkpoint wt6_gallery
+shot build/frames/wt6_gallery.bmp
+
+# --- choose Nada ---
+move 248 100
+run 8
+click left
+run 110
+move 305 196
+run 15
+checkpoint wt6_in_xanth
+shot build/frames/wt6_in_xanth.bmp

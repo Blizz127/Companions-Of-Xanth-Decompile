@@ -1,0 +1,71 @@
+# Continues the published route from walkthrough_03_kitchen.xit.
+include walkthrough_03_kitchen.xit
+
+# ============================================================
+# Walkthrough, segment 4: the courier's package.
+#
+# Edsel said he would send the game "by courier as soon as I hang up", and
+# the delivery is driven by the same event scheduler as the phone call: on
+# the first WAIT after returning to the front hall the game reports "Time
+# passes. You hear the doorbell sound." Every later WAIT is just "Time
+# passes.", so the doorbell is a one-shot scheduled event, not a poll.
+#
+# The package is NOT handed over -- opening the door reveals an empty
+# stoop ("You open the front door and immediately feel the force of the
+# storm building outside.") and the parcel is sitting on it.
+#
+# Front hall hotspots, MEASURED by hover sweep:
+#   door (270,42)   flowers (230,51)   switch (310,51)   table (230,80)
+# and once the door is open, through the doorway:
+#   front yard (280,40)   stoop (280,90)   package (280,100)
+#
+# The package region sits right at the bottom edge of the picture window,
+# where the cursor sprite overlaps the label strip -- which is why the
+# sweep that found it deliberately reads the label text rather than
+# treating the strip as an opaque hash.
+# ============================================================
+
+# --- east, back to the lit front hall ---
+move 37 148
+run 5
+click left
+run 40
+move 305 196
+run 15
+checkpoint wt4_hall_again
+
+# --- WAIT once: the doorbell rings ---
+key 0 59
+run 30
+checkpoint wt4_doorbell
+shot build/frames/wt4_doorbell.bmp
+
+# --- open the front door ---
+move 14 37
+run 5
+click left
+run 15
+move 270 42
+run 5
+click left
+run 70
+move 305 196
+run 15
+checkpoint wt4_door_open
+shot build/frames/wt4_door_open.bmp
+
+# --- take the package off the stoop (2 points) ---
+key 0 59
+run 30
+move 14 7
+run 5
+click left
+run 15
+move 280 100
+run 5
+click left
+run 70
+move 305 196
+run 15
+checkpoint wt4_package_taken
+shot build/frames/wt4_package_taken.bmp

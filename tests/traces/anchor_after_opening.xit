@@ -1,0 +1,11 @@
+# Save-anchor for exploration past the Mundania opening.
+#
+# Plays the whole published route to the end of the opening and then saves,
+# so that later probes can `include lib/boot.xit` + `lib/restore_slot1.xit`
+# and be in the same state for ~2 billion instructions instead of ~20.
+#
+# This is an exploration convenience only. The walkthrough gate itself still
+# runs each segment from boot, because "the route works from a cold start" is
+# the claim under test and a restore would quietly weaken it.
+include walkthrough_05_cdrom.xit
+include lib/save_as_ZZZZ.xit

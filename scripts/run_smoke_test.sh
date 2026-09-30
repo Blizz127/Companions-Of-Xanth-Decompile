@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BUILD_DIR="${ROOT_DIR}/build"
 BIN="${BUILD_DIR}/xanth_port"
+DATA_DIR="${ROOT_DIR}/game_cd/XANTH"
 
 echo "===================================================================="
 echo " Executing Automated Headless Smoke Test (300 Frames)"
@@ -20,10 +21,18 @@ fi
 export SDL_VIDEODRIVER=dummy
 export SDL_AUDIODRIVER=dummy
 
-echo "Running: ${BIN} --headless --frames 300 --data \"${ROOT_DIR}/original\" --test-boot"
+SHOT="${BUILD_DIR}/smoke_shot.bmp"
+rm -f "${SHOT}"
+
+if [[ ! -d "${DATA_DIR}" ]]; then
+    echo "[FAIL] Runtime assets are missing. Supply the XANBUD files in ${DATA_DIR} or pass --data to xanth_port." >&2
+    exit 2
+fi
+
+echo "Running: ${BIN} --headless --frames 300 --data \"${DATA_DIR}\" --shot \"${SHOT}\""
 
 set +e
-OUTPUT=$("${BIN}" --headless --frames 300 --data "${ROOT_DIR}/original" --test-boot 2>&1)
+OUTPUT=$("${BIN}" --headless --frames 300 --data "${DATA_DIR}" --shot "${SHOT}" 2>&1)
 EXIT_CODE=$?
 set -e
 
@@ -34,12 +43,13 @@ if [[ ${EXIT_CODE} -ne 0 ]]; then
     exit ${EXIT_CODE}
 fi
 
-if echo "${OUTPUT}" | grep -q "BOOT_SUCCESS"; then
+if [[ -s "${SHOT}" ]]; then
     echo "===================================================================="
     echo " SMOKE TEST PASSED: Title & intro ran cleanly for 300 frames."
+    echo " Shot artifact: ${SHOT}"
     echo "===================================================================="
     exit 0
 else
-    echo "[FAIL] BOOT_SUCCESS marker not observed in test output." >&2
+    echo "[FAIL] Shot artifact not written to ${SHOT}." >&2
     exit 1
 fi

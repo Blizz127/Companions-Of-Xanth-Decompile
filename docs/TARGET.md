@@ -48,6 +48,25 @@ produced identical JSON.
 - Not MZ. Treating it as an EXE is a pipeline bug.
 - Directory: 62 entries of `{u16 size, u16 segment}` with a unique load
   segment `0x30CB`, terminator `0xFFFF` at offset 248.
+- **The directory is not a partition of the payload** (measured 2026-09-19).
+  The 62 `size` fields sum to **43,284** against a payload of **325,595**
+  bytes (payload starts at file offset 496, after the terminator and a run of
+  `00 00 FF FF` padding). Read as paragraphs they give 692,544 — also wrong.
+  Taking the sizes as cumulative byte offsets, only 1 of 62 resulting starts
+  lands on a `55 8B EC` function prologue; as paragraphs, 2 of 62. So the
+  `size` field's meaning is **unknown**, and any model that assumes it slices
+  the payload is wrong. `port/src/engine_glue.c` assumed exactly that.
+  Resolved by observation (2026-09-20): the port's VM records every read the
+  RTLink manager makes on the OVL handle. Sections load at **two or more slot
+  segments** (observed `317D:0000` and `32D0:0000`), each section load is
+  preceded by short reads of its **relocation records** into a scratch buffer
+  in the root image at `1E73:0BAA`, and sections are **re-paged repeatedly**
+  rather than kept resident. See `docs/PORT.md` and `tests/test_overlay.py`.
+  The directory `size` fields themselves remain unexplained and are not
+  needed to run the game.
+- Section payloads are plain **uncompressed 8086**: section 0 at file offset
+  `0x1F0` begins `55 8B EC 81 EC 18 03 56 57` — a textbook MSC prologue —
+  followed by a `9A` far call.
 - Credits string `[retail bytes removed]` at offset
   1792. Credits name Michael Lindner, Mark Poesch, and Duane Beck.
 

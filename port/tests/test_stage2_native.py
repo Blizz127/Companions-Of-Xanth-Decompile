@@ -195,6 +195,7 @@ class NativeStage2ParityTests(unittest.TestCase):
                         ("exe_114942", "exe_114942"),
                         ("exe_114942_negative", "exe_114942 negative"),
                         ("exe_100016_fast", "exe_100016 fast-return"),
+                        ("exe_100016_store", "exe_100016 direct-store"),
                         ("exe_100203_prefix", "exe_100203 prefix"),
                         ("store_two_globals", "store_two_globals"),
                         ("set_int_if_ge0", "set_int_if_ge0"),

@@ -395,6 +395,12 @@ if(XANTH_BUILD_TESTS)
     add_test(NAME Native100203PrefixFixture
         COMMAND tool_vmboot --test-native-exe100203-prefix)
     set_tests_properties(Native100203PrefixFixture PROPERTIES TIMEOUT 10)
+    add_test(NAME Native103744Fixture
+        COMMAND tool_vmboot --test-native-exe103744)
+    set_tests_properties(Native103744Fixture PROPERTIES TIMEOUT 10)
+    add_test(NAME Native100016StoreFixture
+        COMMAND tool_vmboot --test-native-exe100016-store)
+    set_tests_properties(Native100016StoreFixture PROPERTIES TIMEOUT 10)
 
     add_test(NAME NativeHalStressTests COMMAND xanth_hal_stress)
     set_tests_properties(NativeHalStressTests PROPERTIES
@@ -443,6 +449,36 @@ if(XANTH_BUILD_TESTS)
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 360
             )
+            add_test(NAME FontReplacementParityTest
+                COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_VMBOOT=$<TARGET_FILE:tool_vmboot>"
+                        ${Python3_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_font_replacements.py
+            )
+            set_tests_properties(FontReplacementParityTest PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 720
+            )
+            # This continuation requires the guest-generated 275-point save.
+            # Register it only for the measured anchor, never a synthetic save.
+            set(FIRE_ANCHOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/agent_dungeon_test")
+            if(EXISTS "${FIRE_ANCHOR_DIR}/XANTH000.SAV")
+                file(SHA256 "${FIRE_ANCHOR_DIR}/XANTH000.SAV" FIRE_ANCHOR_SHA256)
+                if(FIRE_ANCHOR_SHA256 STREQUAL
+                   "901998237900d1665a78bfcc42cb0f067045c49806edc336efbed7bd062647df")
+                    add_test(NAME Vm_walkthrough_fire
+                        COMMAND ${CMAKE_COMMAND} -E env
+                                "XANTH_VM_TOOL=$<TARGET_FILE:tool_vmboot>"
+                                "XANTH_FIRE_ANCHOR=${FIRE_ANCHOR_DIR}"
+                                ${Python3_EXECUTABLE} -m unittest tests.test_walkthrough_fire
+                    )
+                    set_tests_properties(Vm_walkthrough_fire PROPERTIES
+                        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                        ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy"
+                        TIMEOUT 660
+                    )
+                endif()
+            endif()
         endif()
 
         add_test(NAME HeadlessBootSmokeTest

@@ -1,0 +1,117 @@
+# Walkthrough, segment 1: Mundania opening.
+#
+# Follows the published solution: "Take the envelope, then open it. Look at
+# the letter. Go northwest to get to the front hall. Turn on the light switch
+# (next to the door), then go west into the kitchen."
+#
+# Coordinates are MEASURED, never estimated -- clicking the gap between two
+# UI entries looks exactly like "nothing happened".
+#   verb column rows : 7 17 27 37 47 57 67; context verbs 87, 97, 107
+#   compass (3x3)    : x 11/24/37, y 135/148/161
+#   envelope         : (105, 103) on the desk
+#   post-it note     : (238, 66) on the monitor
+#   inventory slots  : x 92, 112, 132, 152 at y 162
+#   light switch     : (310, 52) in the front hall
+
+# --- boot: logo, demon cutscene, title ---
+run 60
+key 32
+run 40
+key 32
+run 40
+key 32
+run 60
+move 305 196
+run 15
+checkpoint wt_bedroom
+
+# --- take the envelope from the desk ---
+move 105 103
+run 5
+click left
+run 20
+move 14 7
+run 5
+click left
+run 50
+move 305 196
+run 12
+checkpoint wt_envelope_taken
+
+# --- open it: a letter and a bracelet fall out ---
+move 92 162
+run 5
+click left
+run 15
+move 14 37
+run 5
+click left
+run 50
+move 305 196
+run 12
+checkpoint wt_envelope_opened
+shot build/frames/wt_envelope_opened.bmp
+
+# --- read Pia's letter (scores 5 points) ---
+# After opening, the inventory reorders to: letter (92), bracelet (132),
+# envelope (152). The envelope was at 92 before it was opened.
+move 92 162
+run 5
+click left
+run 15
+move 14 27
+run 5
+click left
+run 12
+checkpoint wt_letter_read
+shot build/frames/wt_letter_read.bmp
+
+# --- take the Post-It off the monitor and read it ---
+run 30
+move 238 66
+run 5
+click left
+run 20
+move 14 7
+run 5
+click left
+run 50
+move 305 196
+run 12
+checkpoint wt_postit_taken
+
+# --- NW to the front hall, which starts dark ---
+move 11 135
+run 5
+click left
+run 30
+move 305 196
+run 12
+checkpoint wt_hall_dark
+
+# --- select the switch; the game offers the context verb "Push" ---
+move 310 52
+run 5
+click left
+run 20
+checkpoint wt_switch_selected
+
+# --- push it: the room lights ---
+move 14 87
+run 5
+click left
+run 60
+move 305 196
+run 15
+checkpoint wt_hall_lit
+shot build/frames/wt_hall_lit.bmp
+
+# --- W into the kitchen ---
+move 11 148
+run 5
+click left
+run 40
+move 305 196
+run 15
+checkpoint wt_kitchen
+shot build/frames/wt_kitchen.bmp

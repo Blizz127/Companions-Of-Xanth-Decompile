@@ -127,10 +127,24 @@ then replays the opening through the bedroom checkpoint. Retail and
 With `--replacement-graphics`, the frame is `dc114d7e201b6081` and the BMP SHA-256
 is `e06c402a09f35dea3d1594b9621aaa248a53d61cde1428cdfe40972c2002bfd2`.
 All three runs ended `fault=ok` with a valid MCB chain; generated assets and
-screenshots stayed under the system temporary directory. The font opening
-route currently proves separate hash gating and unchanged output with
-retail-identical replacements; a visibly changed, valid font sample remains
-unverified.
+screenshots stayed under the system temporary directory.
+
+`FontReplacementParityTest` also checks a visibly changed, format-preserving
+local `XANTH_10.FNT` replacement at the bedroom checkpoint. The test mirrors
+its eight-row glyph bitmaps within their existing advance widths, keeping the
+138-byte header/width table and total file size unchanged. This is a diagnostic
+sample, not an HD font pack. Retail, `--mods` alone, and
+`--mods ... --replacement-graphics` produce frame `ace8f1a3d6b858f2` and BMP
+SHA-256 `719c68af9d67f6d1b8d146bde9d2877799cd4ef846943f1db72692f6e2bda96e`.
+With `--mods ... --replacement-fonts`, the frame is `0d7b760b986313c2` and the
+BMP SHA-256 is
+`f410c27ad6decb29bcb576dc5c75680476ee31d6af8fe25cf2ccdd62e8214736`.
+The narrative text crop changes, while the bedroom art and verb-panel crops
+remain byte-identical. All four runs finish with `fault=ok` and a valid MCB
+chain. The generated font and screenshots stay in the system temporary
+directory; the original retail font is never overwritten. This checks one
+measured font layout and opening checkpoint, not arbitrary replacement fonts
+or higher-resolution text rendering.
 
 As of 2026-09-29, a fresh Linux Release build succeeds and all 15 registered
 CTest cases pass, including the retail walkthrough/hash suite and VM soak

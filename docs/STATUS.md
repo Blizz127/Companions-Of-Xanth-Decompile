@@ -947,6 +947,25 @@ population by content (string tables, jump tables, the RTLink region) so the
 "uncovered/overlapping ranges" number in the coverage report separates data
 from code. That is measurement, and it does not require the compiler.
 
+> **Correction (2026-09-19, port Stage 2 survey).** The claim above — "the
+> fragment population is predominantly data, strings and the RTLink runtime,
+> so it is not a queue of functions waiting for C" — is **partly wrong**, and
+> it was load-bearing for the 2026-09-10 `CONSTRAINTS.md` bar change, so it is
+> corrected in place rather than overwritten. A measurable share of the 915
+> units now classified `transcribed-data` decode cleanly as complete
+> functions. Worked example: `exe-code:0x1948b`, 36 bytes, decodes as
+> `push di; xor ax,ax; mov bx,6A24h; mov dx,38AFh; mov cx,180h; mov di,bx;
+> mov es,dx; rep stosw; push dx; push bx; call far …; add sp,4;
+> mov word ptr [42E8h],1; pop di; retf`.
+>
+> The `data` label records a *toolchain* failure (CL 8.00c's inline assembler
+> could not spell the encoding, which each unit's header documents), not a
+> semantic judgement that the bytes are non-code. This does not retroactively
+> breach the bar, but it does mean the `transcribed-data` count must not be
+> read as "how much of the image is not code". The follow-up classification
+> suggested above is still the right work, and the port's Stage 2 decoder
+> does it from the bytes.
+
 ### Near match: exe_64277 (exe-code:0xfb15, 36 B)
 
 Retail is a bounds-checked indirect far call through a table:

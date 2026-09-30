@@ -20,8 +20,17 @@ if errorlevel 1 (
 
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 
+rem SDL2 is not discoverable by default under MSVC. Honour an externally
+rem supplied toolchain file (vcpkg on CI, or a local vcpkg install) rather
+rem than hardcoding one, and pass through any extra cmake arguments.
+set TOOLCHAIN_ARG=
+if defined CMAKE_TOOLCHAIN_FILE (
+    set TOOLCHAIN_ARG=-DCMAKE_TOOLCHAIN_FILE="%CMAKE_TOOLCHAIN_FILE%"
+    echo  Toolchain : "%CMAKE_TOOLCHAIN_FILE%"
+)
+
 echo [1/2] Configuring CMake build...
-cmake -S "%ROOT_DIR%\port" -B "%BUILD_DIR%" -DCMAKE_BUILD_TYPE=Release
+cmake -S "%ROOT_DIR%\port" -B "%BUILD_DIR%" -DCMAKE_BUILD_TYPE=Release !TOOLCHAIN_ARG! %*
 if errorlevel 1 (
     echo [ERROR] CMake configuration failed.
     exit /b %errorlevel%

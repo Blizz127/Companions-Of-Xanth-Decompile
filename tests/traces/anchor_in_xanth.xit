@@ -1,0 +1,5 @@
+# Save-anchor inside Xanth: the dimly lit cavern, with Nada as Companion.
+# Built by resuming the post-opening anchor, playing segment 6, and saving
+# over the same slot.
+include walkthrough_06_xanth.xit
+include lib/save_over_slot1.xit

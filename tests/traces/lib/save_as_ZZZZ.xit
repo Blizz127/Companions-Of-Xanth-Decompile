@@ -1,0 +1,35 @@
+# Save the game through its own system menu, under the name "ZZZZ".
+#
+# Used to anchor exploration: replaying the whole published route to reach a
+# late room costs ~20 billion instructions and several minutes, so a probe
+# that only wants to hover a new room saves once here and restores instead.
+#
+# System menu item centres, measured from the rendered menu:
+#   Help 40  Save 56  Restore 72  Restart 88
+#   Music/Voice 104  Status/Score 120  Quit 136  Cancel 152
+# The menu is opened by the MAP/system button at (35,174); the dialogue's
+# Ok button is at (65,168).
+
+move 35 174
+run 10
+click left
+run 40
+move 160 56
+run 10
+click left
+run 50
+key 90
+run 6
+key 90
+run 6
+key 90
+run 6
+key 90
+run 6
+run 20
+move 65 168
+run 10
+click left
+run 70
+move 305 196
+run 15
