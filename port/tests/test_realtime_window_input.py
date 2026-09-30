@@ -301,7 +301,10 @@ class RealtimeInputGate(unittest.TestCase):
                                 # The existing host Escape path exits normally
                                 # and writes --shot after the verified guest turn.
                                 display.escape(window);quit_sent=True
-                        if inputs and not ready and not clicks and key_index<len(key_frames) and frame>=key_frames[key_index]:
+                        # Stop intro keys as soon as the exact bedroom RGB oracle appears.
+                        # A later Space is retail gameplay input and can enter the
+                        # parser while we wait for the next returned idle event.
+                        if inputs and not bedroom and not ready and not clicks and key_index<len(key_frames) and frame>=key_frames[key_index]:
                             display.space(window);spaces+=1
                             key_posts.append((key_frames[key_index],frame))
                             key_index+=1
