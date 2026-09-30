@@ -53,6 +53,11 @@ bool hal_video_map_mouse(int window_x, int window_y, int *screen_x, int *screen_
 void hal_video_mouse_window_event(uint32_t window_id, bool inside);
 uint64_t hal_video_get_frame_count(void);
 bool hal_video_save_bmp(const char *path);
+bool hal_video_crt_enabled(void);
+/* The last presented 320x200 RGBA8888 frame (R<<24|G<<16|B<<8|A), and a BMP
+ * writer for such a frame; used for host screenshots. */
+bool hal_video_copy_presented(uint32_t *dst);
+bool hal_video_save_rgba_bmp(const char *path, const uint32_t *rgba);
 
 /* -------------------------------------------------------------------------
  * Audio Subsystem API (OPL3, Sound Blaster, VOC, RealSound, SDL2 Mixer)

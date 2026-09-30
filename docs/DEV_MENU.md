@@ -1,6 +1,6 @@
 # Native dev menu work
 
-The alpha release does not contain a dev menu. The shared implementation
+Releases up to alpha.3 do not contain a dev menu; it is opt-in from alpha.4. The shared implementation
 contract is `~/release-staging/port-dev-menu/DEV_MENU_SPEC.md` (v1,
 2026-09-30). The owner additionally requires Xanth checkpoints to use the
 game's own save/restore path, with no host memory pokes.
@@ -14,6 +14,68 @@ wait for neutral input before returning control to gameplay. The existing
 optional F11 fullscreen/F10 scanline shortcuts will need collision handling
 under the dev-menu opt-in. Normal launches must retain retail inputs and
 frame hashes. No replacement hotkey mapping has shipped yet.
+
+## Menu shell
+
+The host-side shell is in `port/src/dev_menu.c`. It is off by default and
+enabled by `--dev-menu`, `XANTH_DEV_MENU=1` or `dev_menu=1` in the port
+config. `XANTH_DEV_MENU=0` turns it off again, and `XANTH_CHEATS=0`
+hard-disables it, so no filter, overlay or controller handle is subscribed.
+
+- **Opening:** F12, or Back+Start held on the same pad. Back and Start are
+  reserved from the moment either is pressed; a lone press reaches the game as
+  a tap on release, and a same-pad chord toggles the menu.
+- **Navigation:** Up/Down, the D-pad or the left stick (threshold 12000, one
+  row per deflection) move the cursor. Enter/A selects, and Esc/B goes back,
+  closing the menu at the root. There is no auto-repeat.
+- **Pages:** the root is Warp, Finish Area, Cheats, Options. Warp and Finish
+  Area list only live-verified checkpoints (below); without local checkpoints
+  they show one explanatory line and no selectable rows. Cheats has no
+  verified entries, so it shows only that line.
+- **Options:** fast-forward on/off (also L3), hold R3 to fast-forward, speed
+  2x/4x/8x/max, screenshot (the presented frame with the overlay), fullscreen,
+  CRT scanlines and a controls help page. With the menu enabled, the
+  `--hotkeys` F10/F11 shortcuts are off and these rows replace them.
+- **Input capture:** while the menu is open it consumes keys, mouse buttons
+  and pad buttons. A release is consumed exactly when its press was, so input
+  the game already saw never sticks. After closing, anything still held from
+  the menu must be released before gameplay input passes. A pad that connects
+  with buttons held is ignored until it goes neutral.
+- **Presentation:** the overlay is drawn on the presented RGBA copy after
+  palette expansion. Guest VRAM, the DAC and the game's draw lists are never
+  touched, and the simulation keeps running while the menu is open.
+- **Harness:** `XANTH_DEV_KEYS="frame:NAME,..."` scripts menu input for tests
+  (OPEN, UP, DOWN, ENTER, ESC, HELP, FF, FF_SPEED, SHOT, R3_DOWN, ...),
+  and `XANTH_DEV_SHOT_DIR` redirects screenshots. `XANTH_STATE_HASH=1` prints
+  an FNV-1a hash of guest RAM and the DAC at exit.
+
+Xanth exception to the shared key map: retail Xanth reads function keys as
+game commands (F1 waits), so the menu takes no key the game can receive.
+The port forwards F1-F10 to the guest and never forwards F11 or F12, so F12
+opens the menu and F1-F10 always reach the game, menu enabled or not. Help,
+fast-forward speed, screenshots and (once verified) quick save/load are
+Options rows instead of F-keys. Backspace stays with the parser for typing,
+so fast-forward is L3 (toggle) and R3 (hold). While the menu is open it
+consumes all keyboard input, F-keys included.
+
+Gates on the branch:
+- `DevMenuTests` (asset-free, SDL virtual devices) covers opt-in resolution,
+  the all-off identity, navigation and empty groups, keyboard/mouse/pad
+  capture and drain, the same-pad combo and replays, fast-forward, refusals,
+  screenshots, the key script, and held-at-connect/removal hotplug.
+- `DevMenuRetailIdentityTest` (asset-gated) runs the real game for 1500
+  frames three ways: off, opted in with a scripted walk through every page,
+  and hard-disabled. Guest RAM plus DAC hash, cycle count and final frame
+  must be identical in all three.
+
+The menu uses the shared hooks:
+- `hal_input_set_event_filter` sees every SDL event before the game and the
+  host hotkeys do.
+- `hal_input_set_pad_button_mask` keeps the game from seeing the pad: the
+  whole pad, analog pointer included, while the menu is open or buttons from
+  it are still held, and the reserved Back/Start bits while a combo is armed.
+- `hal_video_set_overlay` draws the menu layer into the renderer viewport.
+  Screenshots composite the same layer onto the presented frame.
 
 ## Save/restore recovery evidence
 
@@ -43,15 +105,75 @@ The existing save/load round-trip artifacts are both 17,972 bytes and differ
 only at label offsets 0–3. That proves a specific round trip, not every
 checkpoint. Startup restore and mid-field restore use different UI paths.
 
+## Safe-state observer and restore path (M2/M3 findings)
+
+`guest_state.c` classifies the game's own input state (see
+`docs/GUEST_UI_SEMANTICS.md` section 6). Warps and quick load will act only
+on `field-idle`, which means the main loop's verified `get_event` call just
+returned an idle event, the synthetic queue is empty, and no guard is set.
+
+Live runs from the end-of-opening save show that the retail Restore dialog
+can be driven with ordinary input, the same input a player types:
+- **R** (or F6) opens "Restore Game" while the game is field-idle. It lists
+  the saves in the save directory and has Ok, Delete and Cancel buttons.
+  The observer reads `busy-modal` at 317D:0764 while it is open.
+- **Down** moves the list highlight, and the name box mirrors the selected
+  entry.
+- **Enter** restores the selected entry, and the observer returns to
+  `field-idle`.
+- **Esc** cancels, also back to `field-idle`.
+- **F5 or S** opens "Save Game". A typed label plus Enter makes the game
+  write the next free slot file itself (XANTH001.SAV in the probe).
+
+## Warp and Finish Area (M3/M4)
+
+Warps use the game's own Restore dialog and make no memory writes:
+1. Each checkpoint is a save the game's own Save dialog wrote at a point on
+   the published route. `tools/xanth_dev_checkpoints.py` builds them locally
+   from the player's data with `tool_vmboot`, into
+   `$XDG_DATA_HOME/xanth-port/dev-checkpoints` (or
+   `~/.local/share/xanth-port/dev-checkpoints`; directory 0700, files 0600).
+   They are never committed or packaged. `checkpoints.txt` records each
+   save's SHA-256 and its fingerprint (room `DS:0256`, score `DS:0264`,
+   inventory count `DS:69FC`).
+2. The menu copies the save into the lowest free slot (`XANTH000`-`XANTH099`).
+3. On `field-idle` it types R. Only while the observer reports the Restore
+   dialog (`busy-modal`) does it type the entry's label, which selects it,
+   then Enter.
+4. It waits for `field-idle` again, removes the temporary slot and reports
+   "Warped to <spot>". A timeout, or the dialog closing early, stops the
+   warp with a "Warp refused"/"Warp failed" toast and removes the slot; the
+   menu presses no further keys.
+
+`tools/xanth_dev_warp_sweep.py` verifies every checkpoint live in
+`xanth_port`'s own real-time loop from a fresh boot, driving the menu with
+its harness keys. A target passes when the warp reports arrival, never a
+refusal, the guest is `field-idle` at exit, no temporary slot is left, the
+room picture and inventory match the checkpoint's reference frame (at most
+3% of pixels differ, for animation), and room and score match. Passing
+entries get `verified=1`; only those are listed in the menu.
+
+Finish Area > Finish Current Step reads the live fingerprint, finds the
+route step it lies in (start score <= score < end score, or the exact start
+point for steps that score nothing), and warps to that step's end. Steps
+whose fingerprints cannot be told apart are not offered. `--steps` in the
+sweep verifies it: warp to step N-1's end, then Finish Current Step must
+land exactly on step N's fingerprint.
+
+Results on 2026-09-30 (headless, local checkpoints): warp sweep VERIFIED 8/8
+(bedroom at start, kitchen steps 1-3, package received, opening finished,
+cavern with Nada, second cavern door), and Finish Current Step VERIFIED 7/7.
+
+After any warp or step finish, the first new game save shows the toast "Dev
+menu was used: this save may not match a normal playthrough" and appends a
+line to `xanth-dev-menu.log` in the save directory.
+
 ## Remaining gates
 
-Recover the regular gameplay input loop and the source-owned guards for
-modal UI, cutscenes, and room transitions. Trace the guards across title,
-field, save, dialogue, and room-change cases. Then perform a live-field
-restore sweep for each proposed checkpoint, checking arrival, continued
-field activity, and a subsequent transition. Only passing entries belong in
-the Warp or Finish Area lists. Quick save/load also needs the verified field
-predicate and the host-side slot/first-save warning from the shared spec.
+Checkpoints currently cover the opening and the first Xanth cavern. More
+areas need route builders plus a passing sweep before they are listed.
+Cheats and quick save/load are not offered: neither has a verified
+game-state path yet.
 
 The controller backend now has virtual-device regression coverage for Steam
 hint sanitation, active-pad selection, removal and neutral reconnects. The

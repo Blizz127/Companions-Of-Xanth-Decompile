@@ -15,6 +15,7 @@
 #include "port_hal.h"
 #include "asset_check.h"
 #include "guest_state.h"
+#include "dev_menu.h"
 #include "controller_guest_actions.h"
 
 #include <stdio.h>
@@ -43,6 +44,26 @@
     #include <SDL.h>
   #endif
 #endif
+
+/* Dev-menu warps type into the game through the same keyboard path a
+ * player uses. */
+static vm *g_dev_menu_vm;
+static void dev_menu_post_key(uint8_t scan, uint8_t ascii) {
+    if (g_dev_menu_vm) vm_post_key(g_dev_menu_vm, scan, ascii);
+}
+
+static bool dev_menu_read_progress(int *room, int *score, int *items) {
+    uint16_t ds = guest_state_dgroup();
+    if (!ds) return false;
+    *room = seg_r16(ds, 0x0256);    /* current room */
+    *score = seg_r16(ds, 0x0264);   /* score */
+    *items = seg_r16(ds, 0x69FC);   /* inventory count */
+    return true;
+}
+
+static bool dev_menu_game_modal(void) {
+    return guest_state_classify() == GUEST_BUSY_MODAL;
+}
 
 static void report_startup_error(const char *message, bool headless) {
     fprintf(stderr, "[FATAL] %s\n", message);
@@ -224,6 +245,7 @@ static void print_usage(const char *prog) {
     printf("  --controller     Enable SDL gamepad input (automatic by default)\n");
     printf("  --no-controller  Disable automatic controller input\n");
     printf("  --hotkeys        Enable F11 fullscreen and F10 scanline hotkeys\n");
+    printf("  --dev-menu       Opt in to the playtest dev menu (F12 or Back+Start)\n");
     printf("  --volume-<name> <0..128>  Set master/music/sfx/voice channel volume\n");
     printf("  --soundfont <sf2>  Opt in to FluidSynth General MIDI using your soundfont\n");
     printf("  --fullscreen     Start fullscreen\n");
@@ -305,7 +327,7 @@ int main(int argc, char **argv) {
     int scale = 3;
     bool fullscreen = false, headless = false;
     bool pixel_perfect = false, crt = false, linear = false, handheld = false;
-    bool gamepad = true, hotkeys = false;
+    bool gamepad = true, hotkeys = false, dev_menu_opt_in = false;
     bool enhanced_graphics = false;
     bool replacement_fonts = false;
     bool replacement_graphics = false;
@@ -374,6 +396,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--controller")) gamepad = true;
         else if (!strcmp(argv[i], "--no-controller")) gamepad = false;
         else if (!strcmp(argv[i], "--hotkeys")) hotkeys = true;
+        else if (!strcmp(argv[i], "--dev-menu")) dev_menu_opt_in = true;
         else if (!strcmp(argv[i], "--volume-master") && i + 1 < argc) volume_master = parse_volume(argv[++i]);
         else if (!strcmp(argv[i], "--volume-music") && i + 1 < argc) volume_music = parse_volume(argv[++i]);
         else if (!strcmp(argv[i], "--volume-sfx") && i + 1 < argc) volume_sfx = parse_volume(argv[++i]);
@@ -399,7 +422,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    hal_input_prepare_gamepad(gamepad);
+    /* Resolve before SDL starts: the menu needs the Steam hint sanitation too. */
+    hal_input_prepare_gamepad(dev_menu_resolve(dev_menu_opt_in, config_path) || gamepad);
 
     if (!have_exe) {
         int n = snprintf(cfg.exe_path, sizeof(cfg.exe_path),
@@ -504,7 +528,41 @@ int main(int argc, char **argv) {
     hal_input_init();
     hal_input_enable_gamepad(gamepad);
     hal_input_enable_pointer_events(true);
-    hal_input_enable_hotkeys(hotkeys);
+    /* With the dev menu on, fullscreen and scanlines move to its Options page
+     * and F10/F11 stay unbound (Xanth keeps every key the game reads). */
+    hal_input_enable_hotkeys(hotkeys && !dev_menu_enabled());
+    if (dev_menu_enabled()) {
+        dev_menu_host host = {0};
+        host.toggle_fullscreen = hal_video_toggle_fullscreen;
+        host.toggle_scanlines = hal_video_toggle_crt;
+        host.scanlines_enabled = hal_video_crt_enabled;
+        host.copy_presented = hal_video_copy_presented;
+        host.save_screenshot = hal_video_save_rgba_bmp;
+        host.set_pad_mask = hal_input_set_pad_button_mask;
+        host.field_idle = guest_state_field_idle;
+        host.game_modal = dev_menu_game_modal;
+        host.read_progress = dev_menu_read_progress;
+        host.post_key = dev_menu_post_key;
+        snprintf(host.save_dir, sizeof(host.save_dir), "%s", cfg.save_dir);
+        if (getenv("XANTH_DEV_CHECKPOINTS"))
+            snprintf(host.checkpoint_dir, sizeof(host.checkpoint_dir), "%s",
+                     getenv("XANTH_DEV_CHECKPOINTS"));
+        else if (getenv("XDG_DATA_HOME") && *getenv("XDG_DATA_HOME"))
+            snprintf(host.checkpoint_dir, sizeof(host.checkpoint_dir),
+                     "%.460s/xanth-port/dev-checkpoints", getenv("XDG_DATA_HOME"));
+        else if (getenv("HOME"))
+            snprintf(host.checkpoint_dir, sizeof(host.checkpoint_dir),
+                     "%.450s/.local/share/xanth-port/dev-checkpoints", getenv("HOME"));
+        if (getenv("XANTH_DEV_SHOT_DIR"))
+            snprintf(host.screenshot_dir, sizeof(host.screenshot_dir), "%s",
+                     getenv("XANTH_DEV_SHOT_DIR"));
+        else
+            snprintf(host.screenshot_dir, sizeof(host.screenshot_dir), "%.480s/screenshots",
+                     cfg.save_dir);
+        dev_menu_start(&host);
+        hal_input_set_event_filter(dev_menu_filter_event, NULL);
+        hal_video_set_overlay(dev_menu_render, NULL);
+    }
     if (!hal_audio_init())
         fprintf(stderr, "[WARN] audio unavailable; continuing silently\n");
     hal_audio_set_volume(volume_master,volume_music,volume_sfx,volume_voice);
@@ -548,7 +606,14 @@ int main(int argc, char **argv) {
     }
     const char *input_trace_env = getenv("XANTH_TRACE_INPUT");
     bool trace_input = input_trace_env && !strcmp(input_trace_env, "1");
-    bool state_observer = (gamepad || trace_input) && guest_state_install(&machine);
+    /* Read-only: the dev menu acts only when the game itself is idle. */
+    bool state_observer = (gamepad || trace_input || dev_menu_enabled()) &&
+        guest_state_install(&machine);
+    if (dev_menu_enabled()) {
+        g_dev_menu_vm = &machine;
+        if (!state_observer)
+            fprintf(stderr, "[DEV_MENU] guest-state observer unavailable; warps disabled\n");
+    }
     bool controller_ui = gamepad && state_observer;
     hal_input_enable_guest_ui_actions(controller_ui);
     machine.cycles_per_second = cpu_speed;
@@ -590,6 +655,7 @@ int main(int argc, char **argv) {
             default: break;
             }
             if (key == 27) { running = false; break; }   /* Escape quits */
+            dev_menu_frame(frame);
 
             if (pointer_edge_waiting && machine.mouse_poll_sequence != pointer_poll_sequence) {
                 pointer_edge_waiting = false;
@@ -685,17 +751,20 @@ int main(int argc, char **argv) {
                         guest_state_name(guest_state_classify()));
             }
 
-            /* ---- run one frame of guest time ---- */
-            target = machine.cpu.cycles + cycles_per_frame;
-            while (machine.cpu.cycles < target) {
-                /* The budget is in instructions; the coarse cost model charges
-                 * four cycles each, and a blocked read jumps to the next tick,
-                 * so this converges quickly whether the guest is busy or idle. */
-                if (!vm_run(&machine, (target - machine.cpu.cycles) / 4 + 1)) {
-                    running = false;
-                    break;
+            /* ---- run one frame of guest time (more under dev fast-forward) ---- */
+            for (int ff = dev_menu_guest_frames_per_present(); ff > 0 && running; --ff) {
+                target = machine.cpu.cycles + cycles_per_frame;
+                while (machine.cpu.cycles < target) {
+                    /* The budget is in instructions; the coarse cost model charges
+                     * four cycles each, and a blocked read jumps to the next tick,
+                     * so this converges quickly whether the guest is busy or idle. */
+                    if (!vm_run(&machine, (target - machine.cpu.cycles) / 4 + 1)) {
+                        running = false;
+                        break;
+                    }
+                    if (machine.waiting_for_input) break;
                 }
-                if (machine.waiting_for_input) break;
+                if (ff > 1) hal_audio_tick();
             }
 
             if (trace_input) {
@@ -715,13 +784,16 @@ int main(int argc, char **argv) {
             hal_audio_tick();
             hal_video_set_palette(machine.dac, 0, 256);
             hal_video_flip();
+            dev_menu_after_present();
             frame++;
 
 #ifndef XANTH_HEADLESS_STUB
             next_frame += (uint64_t)(perf_freq / TARGET_FPS);
             {
                 uint64_t now = SDL_GetPerformanceCounter();
-                if (now < next_frame) {
+                if (dev_menu_unpaced()) {
+                    next_frame = now;
+                } else if (now < next_frame) {
                     double ms = (double)(next_frame - now) * 1000.0 / (double)perf_freq;
                     if (ms > 1.0) SDL_Delay((Uint32)(ms - 0.5));
                 } else {
@@ -735,6 +807,23 @@ int main(int argc, char **argv) {
     if (shot_path[0]) {
         if (vm_save_bmp(&machine, shot_path))
             fprintf(stderr, "wrote %s\n", shot_path);
+    }
+    if (dev_menu_enabled() && guest_state_installed()) {
+        int room = -1, score = -1, items = -1;
+        fprintf(stderr, "[DEV_MENU] guest state at exit: %s (polls %llu)\n",
+                guest_state_name(guest_state_classify()),
+                (unsigned long long)guest_state_poll_count());
+        if (dev_menu_read_progress(&room, &score, &items))
+            fprintf(stderr, "[DEV_MENU] progress at exit: room %d score %d items %d\n",
+                    room, score, items);
+    }
+    if (getenv("XANTH_STATE_HASH")) {
+        /* Diagnostic for opt-in identity gates: guest RAM, DAC and clock. */
+        uint64_t h = 1469598103934665603ull;
+        for (size_t i = 0; i < DOS_MEM_SIZE; ++i) { h ^= g_dos_mem[i]; h *= 1099511628211ull; }
+        for (size_t i = 0; i < sizeof(machine.dac); ++i) { h ^= machine.dac[i]; h *= 1099511628211ull; }
+        fprintf(stderr, "[state] cycles=%llu fnv1a64=%016llx\n",
+                (unsigned long long)machine.cpu.cycles, (unsigned long long)h);
     }
 
     fprintf(stderr, "[native] set_int_and_zero hits: %llu\n",
@@ -818,6 +907,7 @@ int main(int argc, char **argv) {
     vm_report(&machine, stderr);
     if (state_observer) guest_state_uninstall();
     vm_shutdown(&machine);
+    dev_menu_shutdown();
     hal_audio_shutdown();
     hal_input_shutdown();
     hal_video_shutdown();
