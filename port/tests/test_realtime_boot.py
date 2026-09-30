@@ -11,6 +11,7 @@ unlit, which is the black window players saw in alpha.1 and alpha.2.
 
 Requires owned data via XANTH_DATA or game_cd/XANTH; nothing is written to git.
 """
+import hashlib
 import os
 import subprocess
 import sys
@@ -56,7 +57,9 @@ def main():
         if lit < MIN_LIT_PIXELS:
             print(f"FAIL: frame {FRAMES} has {lit} lit pixels (logo not visible); {ticks}")
             return 1
-        print(f"PASS: frame {FRAMES} shows the logo ({lit} lit pixels); {ticks}")
+        with open(shot, "rb") as image:
+            digest = hashlib.sha256(image.read()).hexdigest()
+        print(f"PASS: frame {FRAMES} shows the logo ({lit} lit pixels); {ticks}; BMP SHA256 {digest}")
         return 0
 
 
