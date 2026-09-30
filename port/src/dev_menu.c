@@ -182,11 +182,12 @@ static bool text_false(const char *v) {
     return v && (!strcmp(v, "0") || !strcmp(v, "false") || !strcmp(v, "no") || !strcmp(v, "off"));
 }
 
-static bool config_dev_menu(const char *path) {
+/* The dev_menu key of the port config: 1 on, 0 off, -1 absent. */
+static int config_dev_menu(const char *path) {
     FILE *f;
     char line[512];
-    bool on = true;
-    if (!path || !*path || !(f = fopen(path, "r"))) return on;
+    int on = -1;
+    if (!path || !*path || !(f = fopen(path, "r"))) return -1;
     while (fgets(line, sizeof(line), f)) {
         char *key = line, *eq, *value, *end;
         while (isspace((unsigned char)*key)) ++key;
@@ -198,19 +199,22 @@ static bool config_dev_menu(const char *path) {
         while (isspace((unsigned char)*value)) ++value;
         end = value + strlen(value);
         while (end > value && isspace((unsigned char)end[-1])) *--end = '\0';
-        if (!strcmp(key, "dev_menu")) on = text_true(value);
+        if (!strcmp(key, "dev_menu"))
+            on = text_true(value) ? 1 : text_false(value) ? 0 : on;
     }
     fclose(f);
     return on;
 }
 
-bool dev_menu_resolve(int cli_override, const char *config_path) {
+bool dev_menu_resolve(int cli, const char *config_path) {
     const char *env = getenv("XANTH_DEV_MENU");
     const char *cheats = getenv("XANTH_CHEATS");
-    bool requested = config_dev_menu(config_path);
+    int config = config_dev_menu(config_path);
+    bool requested = true;                        /* on by default */
+    if (config >= 0) requested = config != 0;
+    if (cli >= 0) requested = cli != 0;
     if (text_true(env)) requested = true;
     if (text_false(env)) requested = false;
-    if (cli_override >= 0) requested = cli_override != 0;
     s_dm.resolved = true;
     s_dm.enabled = requested && !text_false(cheats);
     if (requested && !s_dm.enabled)

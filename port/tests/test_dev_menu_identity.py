@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Retail-parity gate for the preview dev menu (shared spec section 8/10).
+"""Retail-parity gate for the dev menu (shared spec section 8/10).
 
 Runs the real game headless four ways for the same number of frames:
-  off       - explicitly disabled with --no-dev-menu;
-  default   - default-on with the menu closed;
+  off       - --no-dev-menu, the retail launch;
+  default   - a normal launch: the menu is on by default but never opened;
   on        - --dev-menu with a scripted walk through every page, help,
               refusals and screenshots, but no fast-forward or cheat;
   disabled  - --dev-menu with XANTH_CHEATS=0 (hard disable).
@@ -94,10 +94,12 @@ def main():
                 if r[field] != off[field]:
                     raise AssertionError(
                         f"{label} {field} {r[field]} != off {off[field]}")
-        if "[DEV_MENU] enabled" not in default["log"] or "[DEV_MENU] open" in default["log"] or default["shots"]:
-            raise AssertionError("default menu was not enabled and closed")
         if "[DEV_MENU]" in off["log"]:
             raise AssertionError("off run printed dev-menu output")
+        if "[DEV_MENU] enabled" not in default["log"] or "[DEV_MENU] open" in default["log"]:
+            raise AssertionError("default run did not enable the menu, or opened it")
+        if default["shots"]:
+            raise AssertionError("default run produced screenshots")
         if "[DEV_MENU] hard-disabled by XANTH_CHEATS=0" not in dis["log"] or \
                 "[DEV_MENU] open" in dis["log"]:
             raise AssertionError("hard-disabled run was not inert")

@@ -15,7 +15,7 @@ Restore dialog. No cheats or direct guest-memory writes are included.
 
 The host-side shell is in `port/src/dev_menu.c`. It is on by default in this
 preview. `--no-dev-menu`, `XANTH_DEV_MENU=0` or `dev_menu=0` in the port
-config turns it off. Explicit CLI choices override config and XANTH_DEV_MENU;
+config turns it off. XANTH_DEV_MENU overrides CLI choices, which override config;
 `--dev-menu` enables it again. `XANTH_CHEATS=0`
 hard-disables it, so no filter, overlay or controller handle is subscribed.
 

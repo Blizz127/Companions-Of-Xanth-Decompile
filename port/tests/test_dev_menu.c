@@ -128,30 +128,38 @@ static int queued_replays(void) {
 static void test_resolution(void) {
     SDL_setenv("XANTH_DEV_MENU", "", 1); SDL_setenv("XANTH_CHEATS", "", 1);
     dev_menu_reset_for_tests();
-    CHECK(dev_menu_resolve(-1, NULL));                    /* preview default */
-    CHECK(!dev_menu_resolve(false, NULL));                 /* --no-dev-menu */
-    CHECK(dev_menu_resolve(true, NULL));                   /* --dev-menu */
-    SDL_setenv("XANTH_DEV_MENU", "1", 1);
-    CHECK(dev_menu_resolve(-1, NULL));
-    CHECK(!dev_menu_resolve(false, NULL));                 /* CLI off wins */
-    SDL_setenv("XANTH_CHEATS", "0", 1);
-    CHECK(!dev_menu_resolve(false, NULL));                 /* hard disable wins */
-    CHECK(!dev_menu_resolve(true, NULL));
-    SDL_setenv("XANTH_CHEATS", "", 1);
+    CHECK(dev_menu_resolve(-1, NULL));                     /* on by default */
+    CHECK(dev_menu_resolve(1, NULL));                      /* --dev-menu */
+    CHECK(!dev_menu_resolve(0, NULL));                     /* --no-dev-menu */
+    CHECK(dev_menu_resolve(-1, "no-such-file.cfg"));       /* missing config: default */
+
+    /* Config key: explicit on and explicit off; other values leave the default. */
+    write_cfg("# port config\nscale = 3\n dev_menu = true \n");
+    CHECK(dev_menu_resolve(-1, "dev_menu_test.cfg"));
+    write_cfg("dev_menu=0\n");
+    CHECK(!dev_menu_resolve(-1, "dev_menu_test.cfg"));     /* config off */
+    write_cfg("dev_menu = off\n");
+    CHECK(!dev_menu_resolve(-1, "dev_menu_test.cfg"));
+    write_cfg("dev_menu = maybe\n");
+    CHECK(dev_menu_resolve(-1, "dev_menu_test.cfg"));
+    write_cfg("dev_menu=0\n");
+    CHECK(dev_menu_resolve(1, "dev_menu_test.cfg"));       /* CLI beats config */
+
+    /* Environment beats CLI and config. */
     SDL_setenv("XANTH_DEV_MENU", "0", 1);
-    CHECK(!dev_menu_resolve(-1, NULL));                    /* explicit env off */
-    CHECK(dev_menu_resolve(true, NULL));                   /* CLI on wins */
+    CHECK(!dev_menu_resolve(-1, NULL));                    /* env off */
+    CHECK(!dev_menu_resolve(1, NULL));
+    SDL_setenv("XANTH_DEV_MENU", "1", 1);
+    CHECK(dev_menu_resolve(0, "dev_menu_test.cfg"));
+    remove("dev_menu_test.cfg");
+
+    /* Hard disable wins over everything. */
+    SDL_setenv("XANTH_CHEATS", "0", 1);
+    CHECK(!dev_menu_resolve(-1, NULL));
+    CHECK(!dev_menu_resolve(1, NULL));
     SDL_setenv("XANTH_DEV_MENU", "", 1);
-    {
-        FILE *f = fopen("dev_menu_test.cfg", "w");
-        CHECK(f); fputs("# port config\nscale = 3\n dev_menu = true \n", f); fclose(f);
-        CHECK(dev_menu_resolve(-1, "dev_menu_test.cfg"));
-        f = fopen("dev_menu_test.cfg", "w");
-        CHECK(f); fputs("dev_menu=0\n", f); fclose(f);
-        CHECK(!dev_menu_resolve(-1, "dev_menu_test.cfg"));
-        remove("dev_menu_test.cfg");
-    }
-    CHECK(dev_menu_resolve(-1, "no-such-file.cfg"));
+    CHECK(!dev_menu_resolve(-1, NULL));
+    SDL_setenv("XANTH_CHEATS", "", 1);
 }
 
 static void test_disabled_is_inert(void) {
