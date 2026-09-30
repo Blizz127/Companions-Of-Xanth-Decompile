@@ -153,3 +153,17 @@ check. On Linux Release, its assertions passed for 1280×800 4:3 fit
 (960×600), wide 1920×1080 pillarboxing, tall 800×1280 letterboxing, and
 invalid zero-width output. This checks host composition geometry only; it does
 not alter or establish parity for the guest-rendered scene.
+
+Focused validation on 2026-09-30 against the current Linux Release build passed
+`Stage2NativeParityTest`, `Stage2OpeningNativeParityTest` (all nine pinned
+opening hashes and VM/native guest metrics), `FontReplacementParityTest`, and
+the isolated `exe_103744` and `exe_100016` native fixtures. CPU conformance,
+native unit/HAL/audio/DMA stress, and the 600-frame headless boot passed too.
+The route tests `Vm_walkthrough_fire`, `Vm_vmplay`, `Vm_contextverbs`,
+`Vm_hotspots`, `Vm_overlay`, `Vm_saveload`, `Vm_navigate`, and
+`Vm_soundblaster`, plus the three older negative-hook fixtures, passed. In
+total, 22 of the 24 registered CTest cases passed across the focused runs.
+This is not a full CTest pass: the multi-segment `Vm_walkthrough` case was
+interrupted during its cavern segment before the later 22-billion-instruction
+save-anchor run, and `Vm_soak` was not run. These results are VM/native parity
+checks, not a DOSBox comparison.
