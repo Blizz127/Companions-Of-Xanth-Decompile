@@ -42,6 +42,7 @@ Requires the retail disc, so it skips cleanly in asset-free CI.
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -49,11 +50,11 @@ import unittest
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA = PROJECT_ROOT / "game_cd" / "XANTH"
+DATA = Path(os.environ.get("XANTH_DATA", PROJECT_ROOT / "game_cd" / "XANTH"))
 EXE = DATA / "XANTH.EXE"
-TOOL = PROJECT_ROOT / "build" / "tool_vmboot"
+TOOL = Path(os.environ.get("XANTH_VM_TOOL", PROJECT_ROOT / "build" / "tool_vmboot"))
 TRACES = PROJECT_ROOT / "tests" / "traces"
-SAVES = PROJECT_ROOT / "build" / "walkthrough_saves"
+SAVES = Path(os.environ.get("XANTH_WALKTHROUGH_SAVES", PROJECT_ROOT / "build" / "walkthrough_saves"))
 
 # Each segment replays every earlier segment's route before reaching its own
 # material, so the budget grows with the route. These are sized from measured
@@ -65,6 +66,16 @@ BUDGET = 4_000_000_000
 #: Instructions needed to play the whole Mundania opening, plus the save at
 #: the end of it. Measured.
 ANCHOR_BUDGET = 22_000_000_000
+
+def unavailable(message: str) -> Exception:
+    if any(os.environ.get(key) for key in ("XANTH_DATA", "XANTH_VM_TOOL")):
+        return FileNotFoundError(message)
+    return unittest.SkipTest(message)
+
+
+RUN_ENV = {key: value for key, value in os.environ.items()
+           if key not in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY")}
+RUN_ENV.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy")
 
 _anchor_dir: Path | None = None
 
@@ -93,7 +104,7 @@ def build_anchor() -> Path:
         [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
          "--saves", str(saves), "--insns", str(ANCHOR_BUDGET),
          "--script", str(TRACES / "anchor_after_opening.xit")],
-        capture_output=True, text=True, timeout=1800,
+        capture_output=True, text=True, timeout=1800, env=RUN_ENV,
     )
     out = proc.stdout + proc.stderr
     if "fault                 : ok" not in out:
@@ -120,7 +131,7 @@ def run_segment(name: str, budget: int = BUDGET,
         [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
          "--saves", str(saves), "--script", str(TRACES / f"{name}.xit"),
          "--insns", str(budget)],
-        capture_output=True, text=True, timeout=1800,
+        capture_output=True, text=True, timeout=1800, env=RUN_ENV,
     )
     out = proc.stdout + proc.stderr
     marks = {m.group(1): m.group(2) for m in
@@ -149,9 +160,9 @@ class SegmentBase:
                            (DATA, "retail asset directory"),
                            (TRACES / f"{cls.SEGMENT}.xit", "walkthrough trace")):
             if not path.exists():
-                raise unittest.SkipTest(f"{what} not present: {path}")
+                raise unavailable(f"{what} not present: {path}")
         if not TOOL.exists():
-            raise unittest.SkipTest(f"{TOOL} not built")
+            raise unavailable(f"{TOOL} not built")
         cls.out, cls.rc, cls.marks = run_segment(cls.SEGMENT, cls.BUDGET,
                                                  cls.ANCHORED)
 
@@ -582,7 +593,7 @@ def run_cavern_segment(budget: int) -> tuple[str, int, dict]:
             [str(TOOL), "--exe", str(EXE), "--data", str(DATA),
              "--saves", str(dest), "--insns", "12000000000",
              "--script", str(TRACES / "anchor_in_xanth.xit")],
-            capture_output=True, text=True, timeout=1800,
+            capture_output=True, text=True, timeout=1800, env=RUN_ENV,
         )
         out = proc.stdout + proc.stderr
         if "fault                 : ok" not in out or not list(dest.glob("*.SAV")):
@@ -593,7 +604,7 @@ def run_cavern_segment(budget: int) -> tuple[str, int, dict]:
          "--saves", str(dest),
          "--script", str(TRACES / "walkthrough_07_cavern.xit"),
          "--insns", str(budget)],
-        capture_output=True, text=True, timeout=1800,
+        capture_output=True, text=True, timeout=1800, env=RUN_ENV,
     )
     out = proc.stdout + proc.stderr
     marks = {m.group(1): m.group(2) for m in
@@ -640,9 +651,9 @@ class CavernTests(SegmentBase, unittest.TestCase):
                            (DATA, "retail asset directory"),
                            (TRACES / f"{cls.SEGMENT}.xit", "walkthrough trace")):
             if not path.exists():
-                raise unittest.SkipTest(f"{what} not present: {path}")
+                raise unavailable(f"{what} not present: {path}")
         if not TOOL.exists():
-            raise unittest.SkipTest(f"{TOOL} not built")
+            raise unavailable(f"{TOOL} not built")
         cls.out, cls.rc, cls.marks = run_cavern_segment(cls.BUDGET)
 
     def test_the_cavern_save_restored(self) -> None:

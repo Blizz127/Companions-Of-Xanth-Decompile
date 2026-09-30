@@ -480,7 +480,7 @@ if(XANTH_BUILD_TESTS)
                     set_tests_properties(RealTimeInputBedroomTest PROPERTIES TIMEOUT 300 SKIP_RETURN_CODE 77)
                 endif()
                 foreach(suite IN ITEMS mzload vmboot vmplay contextverbs hotspots
-                        overlay saveload navigate soundblaster soak realsound)
+                        overlay saveload navigate soundblaster soak realsound walkthrough)
                     add_test(NAME Vm_${suite}
                         COMMAND ${CMAKE_COMMAND} -E env
                             "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
@@ -491,6 +491,7 @@ if(XANTH_BUILD_TESTS)
                         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                         TIMEOUT 1800 ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
                 endforeach()
+                set_tests_properties(Vm_walkthrough PROPERTIES TIMEOUT 5400)
             endif()
         endif()
     endif()
