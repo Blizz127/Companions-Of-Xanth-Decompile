@@ -189,14 +189,23 @@ class SegmentBase:
                 f"never just to make this pass.")
 
 
+# Palette/IRQ fix 07b34b8 goldens were reviewed against the old build before
+# updating: 41 paired checkpoints, 27 identical; every changed pixel in the
+# other 14 lies inside the live room animation descriptors. No puzzle, score,
+# inventory or story change was found. The shared RNG receives more animation
+# calls, changing the cosmetic lightning/thunder interval saved at 0x462E.
+# Private evidence: ~/release-staging/xanth-work/golden-evidence-07b34b8/
+# (paired frames, event watches, rand-call counts); independent pixel audit:
+# /tmp/xanth-walkthrough-final-visual-audit.json. See task 6b61bdd69376.
+
 class MundaniaOpeningTests(SegmentBase, unittest.TestCase):
     SEGMENT = "walkthrough_01_mundania"
     WITNESS = "wt_hall_lit.bmp"
 
     GOLDEN = {
-        "wt_bedroom":           "ace8f1a3d6b858f2",
+        "wt_bedroom":           "fc53131750c9cb17",
         "wt_envelope_taken":    "3d1d3d0cc740a586",
-        "wt_envelope_opened":   "960b3613f65c7a7b",
+        "wt_envelope_opened":   "a50c05cbb541c80c",
         "wt_letter_read":       "d42f3bbea8fba840",
         "wt_postit_taken":      "c8b44c4bf818789a",
         "wt_hall_dark":         "e588dc6d2b9310d3",
@@ -327,11 +336,11 @@ class KitchenTests(SegmentBase, unittest.TestCase):
     BUDGET = 6_000_000_000
 
     GOLDEN = {
-        "wt3_hung_up":          "69673e6b3a542cb8",
-        "wt3_teabag_selected":  "dea004454ac3d826",
-        "wt3_teabag_taken":     "9b0b3ff096834fc1",
+        "wt3_hung_up":          "12ef03a37e807e15",
+        "wt3_teabag_selected":  "d417076c5ae38f4b",
+        "wt3_teabag_taken":     "1fd34123137b3950",
         "wt3_icebox_open":      "c24aa2acf5f13dc5",
-        "wt3_mustard_taken":    "f335916bb2748b9b",
+        "wt3_mustard_taken":    "f2f4860b3b338ebd",
     }
 
     def test_the_conversation_layer_tears_down(self) -> None:
@@ -396,7 +405,7 @@ class CourierTests(SegmentBase, unittest.TestCase):
     GOLDEN = {
         "wt4_hall_again":     "00172dcab397cd56",
         "wt4_doorbell":       "2de61ed0c5a9d041",
-        "wt4_door_open":      "dcc6b85c20663048",
+        "wt4_door_open":      "848e2d2d779bfafb",
         "wt4_package_taken":  "ad7131e71cff2549",
     }
 
@@ -440,9 +449,9 @@ class CdRomTests(SegmentBase, unittest.TestCase):
     BUDGET = 16_000_000_000
 
     GOLDEN = {
-        "wt5_bedroom":       "328a0b7e4f771e93",
-        "wt5_game_box":      "a4e0ca1f2a22997c",
-        "wt5_box_opened":    "d5f77e14e7f0b32d",
+        "wt5_bedroom":       "1e7afd4a718e261a",
+        "wt5_game_box":      "472b8a223b36e523",
+        "wt5_box_opened":    "246a6b34089b25df",
         "wt5_computer_on":   "7fa647328ff70e46",
         "wt5_tray_open":     "fa94dac93d0b72c0",
         "wt5_cd_selected":   "d36c2034dfdadd0b",
@@ -526,7 +535,7 @@ class IntoXanthTests(SegmentBase, unittest.TestCase):
     ANCHORED = True
 
     GOLDEN = {
-        "wt6_resumed":      "0d4f7a1d8a332adc",
+        "wt6_resumed":      "e6305abca7e6a705",
         "wt6_closeup":      "193ee23c12ac1d59",
         "wt6_grundy":       "48a73cb19f7724dc",
         "wt6_pick_wisely":  "5fc7be060c6533c7",
@@ -635,9 +644,9 @@ class CavernTests(SegmentBase, unittest.TestCase):
     ANCHORED = False
 
     GOLDEN = {
-        "wt7_resumed":         "db0b24a30be970e3",
-        "wt7_glasses_worn":    "cf1f5e41f4f35582",
-        "wt7_door_opened":     "e3a3d2573df65d29",
+        "wt7_resumed":         "f15e07534d2f5df9",
+        "wt7_glasses_worn":    "33da15a7bb6dd78e",
+        "wt7_door_opened":     "b6ed7f6eca4606a2",
         "wt7_nada_speaks":     "d6069f2576582bc6",
         "wt7_option1_chosen":  "6acf0da8b6c2e5ee",
         "wt7_cavern_escaped":  "5d6e8db6615d8d05",
