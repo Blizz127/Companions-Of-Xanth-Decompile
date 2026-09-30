@@ -103,6 +103,13 @@ void hal_input_prepare_gamepad(bool enabled);
 void hal_input_enable_gamepad(bool enabled);
 void hal_input_enable_hotkeys(bool enabled);
 int hal_input_take_hotkey(void);
+/* Optional host gestures. Consumers validate live guest state before acting. */
+typedef enum {
+    HAL_CONTROLLER_NONE = 0, HAL_CONTROLLER_SNAP,
+    HAL_CONTROLLER_PREVIOUS_VERB, HAL_CONTROLLER_NEXT_VERB
+} hal_controller_action;
+void hal_input_enable_guest_ui_actions(bool enabled);
+hal_controller_action hal_input_take_controller_action(void);
 void hal_input_shutdown(void);
 typedef struct { int x, y, buttons; } hal_pointer_event;
 void hal_input_enable_pointer_events(bool enabled);

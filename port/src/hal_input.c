@@ -95,10 +95,36 @@ static keyboard_state_t g_keyboard;
 static bool (*g_event_filter)(const SDL_Event *, void *);
 static void *g_event_filter_user;
 static uint32_t g_pad_button_mask;
+#define CONTROLLER_ACTION_CAPACITY 32u
+static hal_controller_action g_controller_actions[CONTROLLER_ACTION_CAPACITY];
+static unsigned g_controller_action_head, g_controller_action_count;
+static bool g_guest_ui_actions;
+void hal_input_enable_guest_ui_actions(bool enabled) {
+    g_guest_ui_actions = enabled;
+    g_controller_action_head = g_controller_action_count = 0;
+}
+hal_controller_action hal_input_take_controller_action(void) {
+    if (!g_controller_action_count) return HAL_CONTROLLER_NONE;
+    hal_controller_action action = g_controller_actions[g_controller_action_head];
+    g_controller_action_head = (g_controller_action_head + 1u) % CONTROLLER_ACTION_CAPACITY;
+    g_controller_action_count--;
+    return action;
+}
+#ifndef XANTH_HEADLESS_STUB
+static void controller_action(hal_controller_action action) {
+    if (!g_guest_ui_actions || g_controller_action_count == CONTROLLER_ACTION_CAPACITY) return;
+    unsigned tail = (g_controller_action_head + g_controller_action_count) % CONTROLLER_ACTION_CAPACITY;
+    g_controller_actions[tail] = action;
+    g_controller_action_count++;
+}
+#endif
 void hal_input_set_event_filter(bool (*fn)(const SDL_Event *, void *), void *user) {
     g_event_filter = fn; g_event_filter_user = user;
 }
-void hal_input_set_pad_button_mask(uint32_t mask) { g_pad_button_mask = mask; }
+void hal_input_set_pad_button_mask(uint32_t mask) {
+    if (mask != g_pad_button_mask) g_controller_action_head = g_controller_action_count = 0;
+    g_pad_button_mask = mask;
+}
 static bool g_gamepad_enabled;
 static bool g_hotkeys_enabled;
 static int g_pending_hotkey;
@@ -205,6 +231,7 @@ static bool select_gamepad(int index) {
 
 void hal_input_init(void) {
     g_mouse_buttons = g_gamepad_buttons = 0;
+    hal_input_enable_guest_ui_actions(false);
     g_event_filter = NULL; g_event_filter_user = NULL; g_pad_button_mask = 0;
     memset(&g_mouse, 0, sizeof(g_mouse));
     g_mouse.virt_x = 320;
@@ -276,6 +303,7 @@ void hal_input_prepare_gamepad(bool enabled) {
 
 void hal_input_enable_gamepad(bool enabled) {
     g_gamepad_enabled = enabled;
+    if (!enabled) g_controller_action_head = g_controller_action_count = 0;
 #ifndef XANTH_HEADLESS_STUB
     if (!enabled) {
         close_gamepads();
@@ -297,6 +325,7 @@ void hal_input_enable_gamepad(bool enabled) {
 void hal_input_shutdown(void) {
     /* Release controller-owned clicks while preserving a held physical mouse. */
     g_gamepad_enabled = false;
+    hal_input_enable_guest_ui_actions(false);
     g_gamepad_buttons = 0;
     g_mouse.buttons = g_mouse_buttons;
 #ifndef XANTH_HEADLESS_STUB
@@ -556,6 +585,7 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
             int index = find_gamepad(event.cbutton.which);
             if (!g_gamepad_enabled || index < 0 || event.cbutton.button >= SDL_CONTROLLER_BUTTON_MAX) break;
             bool down = event.type == SDL_CONTROLLERBUTTONDOWN;
+            bool was_held = (g_pads[index].buttons & (1u << event.cbutton.button)) != 0;
             if (down) g_pads[index].buttons |= 1u << event.cbutton.button;
             else g_pads[index].buttons &= ~(1u << event.cbutton.button);
             if (down) (void)select_gamepad(index);
@@ -584,6 +614,15 @@ void hal_input_poll(int *mouse_x, int *mouse_y, int *mouse_buttons, int *key_cod
                 break;
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
                 if (down) (void)hal_keyboard_push(0x4D,0);
+                break;
+            case SDL_CONTROLLER_BUTTON_Y:
+                if (down && !was_held) controller_action(HAL_CONTROLLER_SNAP);
+                break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                if (down && !was_held) controller_action(HAL_CONTROLLER_PREVIOUS_VERB);
+                break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                if (down && !was_held) controller_action(HAL_CONTROLLER_NEXT_VERB);
                 break;
             case SDL_CONTROLLER_BUTTON_BACK:
                 if (down) g_pending_hotkey = 3;
