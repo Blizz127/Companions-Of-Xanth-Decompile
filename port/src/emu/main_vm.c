@@ -245,7 +245,8 @@ static void print_usage(const char *prog) {
     printf("  --controller     Enable SDL gamepad input (automatic by default)\n");
     printf("  --no-controller  Disable automatic controller input\n");
     printf("  --hotkeys        Enable F11 fullscreen and F10 scanline hotkeys\n");
-    printf("  --dev-menu       Opt in to the playtest dev menu (F12 or Back+Start)\n");
+    printf("  --dev-menu       Enable the preview dev menu (default; F12 or Back+Start)\n");
+    printf("  --no-dev-menu    Disable the preview dev menu\n");
     printf("  --volume-<name> <0..128>  Set master/music/sfx/voice channel volume\n");
     printf("  --soundfont <sf2>  Opt in to FluidSynth General MIDI using your soundfont\n");
     printf("  --fullscreen     Start fullscreen\n");
@@ -327,7 +328,8 @@ int main(int argc, char **argv) {
     int scale = 3;
     bool fullscreen = false, headless = false;
     bool pixel_perfect = false, crt = false, linear = false, handheld = false;
-    bool gamepad = true, hotkeys = false, dev_menu_opt_in = false;
+    bool gamepad = true, hotkeys = false;
+    int dev_menu_override = -1;
     bool enhanced_graphics = false;
     bool replacement_fonts = false;
     bool replacement_graphics = false;
@@ -396,7 +398,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--controller")) gamepad = true;
         else if (!strcmp(argv[i], "--no-controller")) gamepad = false;
         else if (!strcmp(argv[i], "--hotkeys")) hotkeys = true;
-        else if (!strcmp(argv[i], "--dev-menu")) dev_menu_opt_in = true;
+        else if (!strcmp(argv[i], "--dev-menu")) dev_menu_override = 1;
+        else if (!strcmp(argv[i], "--no-dev-menu")) dev_menu_override = 0;
         else if (!strcmp(argv[i], "--volume-master") && i + 1 < argc) volume_master = parse_volume(argv[++i]);
         else if (!strcmp(argv[i], "--volume-music") && i + 1 < argc) volume_music = parse_volume(argv[++i]);
         else if (!strcmp(argv[i], "--volume-sfx") && i + 1 < argc) volume_sfx = parse_volume(argv[++i]);
@@ -423,7 +426,7 @@ int main(int argc, char **argv) {
     }
 
     /* Resolve before SDL starts: the menu needs the Steam hint sanitation too. */
-    hal_input_prepare_gamepad(dev_menu_resolve(dev_menu_opt_in, config_path) || gamepad);
+    hal_input_prepare_gamepad(dev_menu_resolve(dev_menu_override, config_path) || gamepad);
 
     if (!have_exe) {
         int n = snprintf(cfg.exe_path, sizeof(cfg.exe_path),

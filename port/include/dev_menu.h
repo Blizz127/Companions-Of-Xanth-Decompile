@@ -1,12 +1,12 @@
 /*
- * dev_menu.h — opt-in playtest menu (shared port dev-menu spec v1).
+ * dev_menu.h — preview playtest menu (shared port dev-menu spec v1).
  *
  * The menu is host-only: it draws on the presented RGBA copy of the frame,
  * never on guest VRAM, and in this milestone it holds no pointer to guest
  * memory at all.  Warp, Finish Area and Cheats list only entries verified
  * against the game's own state; until those land they show no selectable rows.
  *
- * Off by default.  Enabled by --dev-menu, XANTH_DEV_MENU=1 or dev_menu=1 in
+ * On by default in this preview. Disabled by --no-dev-menu, XANTH_DEV_MENU=0 or dev_menu=0 in
  * the port config; XANTH_CHEATS=0 hard-disables it so nothing is subscribed.
  */
 #ifndef DEV_MENU_H
@@ -71,10 +71,10 @@ typedef struct {
     char checkpoint_dir[512];
 } dev_menu_host;
 
-/* Resolve the opt-in from the CLI flag, XANTH_DEV_MENU, XANTH_CHEATS and the
+/* Resolve the preview default from CLI (-1=default, 0=off, 1=on), XANTH_DEV_MENU, XANTH_CHEATS and the
  * dev_menu key of the port config file (may be NULL or empty).  Call once,
  * before SDL is initialised.  Returns true when the menu is enabled. */
-bool dev_menu_resolve(bool cli_opt_in, const char *config_path);
+bool dev_menu_resolve(int cli_override, const char *config_path);
 bool dev_menu_enabled(void);
 
 /* Start the menu (controllers, harness script).  No-op when the menu is not

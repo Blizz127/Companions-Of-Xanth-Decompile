@@ -43,9 +43,9 @@ The full game is not completable yet. See docs/KNOWN_DIVERGENCES.md.
 
 Linux requires system SDL2 (libSDL2-2.0.so.0) and glibc 2.34 or newer. SDL2 is already installed on the verified Bazzite Alienware. On Debian/Ubuntu, the runtime package is libsdl2-2.0-0; on Fedora, SDL2. This release does not bundle SDL2.
 
-DEV MENU (OFF BY DEFAULT)
-Launch with --dev-menu, or set dev_menu=1 in the port config passed with
---config. Open with F12 or Back+Start on the same controller. F1-F10 and
+DEV MENU (ON IN THIS PREVIEW)
+Press F12 or Back+Start on the same controller. Set dev_menu=0 in the port
+config passed with --config, or use --no-dev-menu, to hide it. F1-F10 and
 Backspace stay with the game while the menu is closed. XANTH_CHEATS=0
 hard-disables the menu. No cheats are included.
 

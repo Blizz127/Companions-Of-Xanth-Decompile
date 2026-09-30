@@ -1,5 +1,5 @@
 /*
- * dev_menu.c — opt-in playtest menu (shared port dev-menu spec v1).
+ * dev_menu.c — preview playtest menu (shared port dev-menu spec v1).
  *
  * Everything here is host-side.  The menu reads SDL input ahead of the game,
  * draws onto the presented RGBA copy of the frame, and drives host services
@@ -185,8 +185,8 @@ static bool text_false(const char *v) {
 static bool config_dev_menu(const char *path) {
     FILE *f;
     char line[512];
-    bool on = false;
-    if (!path || !*path || !(f = fopen(path, "r"))) return false;
+    bool on = true;
+    if (!path || !*path || !(f = fopen(path, "r"))) return on;
     while (fgets(line, sizeof(line), f)) {
         char *key = line, *eq, *value, *end;
         while (isspace((unsigned char)*key)) ++key;
@@ -204,11 +204,13 @@ static bool config_dev_menu(const char *path) {
     return on;
 }
 
-bool dev_menu_resolve(bool cli_opt_in, const char *config_path) {
+bool dev_menu_resolve(int cli_override, const char *config_path) {
     const char *env = getenv("XANTH_DEV_MENU");
     const char *cheats = getenv("XANTH_CHEATS");
-    bool requested = cli_opt_in || config_dev_menu(config_path) || text_true(env);
+    bool requested = config_dev_menu(config_path);
+    if (text_true(env)) requested = true;
     if (text_false(env)) requested = false;
+    if (cli_override >= 0) requested = cli_override != 0;
     s_dm.resolved = true;
     s_dm.enabled = requested && !text_false(cheats);
     if (requested && !s_dm.enabled)

@@ -1,6 +1,6 @@
 # Native dev menu work
 
-Releases up to alpha.3 do not contain a dev menu; it is opt-in from alpha.4. The shared implementation
+Releases up to alpha.3 do not contain a dev menu; alpha.4 enables it by default for this preview. The shared implementation
 contract is `~/release-staging/port-dev-menu/DEV_MENU_SPEC.md` (v1,
 2026-09-30). The owner additionally requires Xanth checkpoints to use the
 game's own save/restore path, with no host memory pokes.
@@ -13,9 +13,10 @@ Restore dialog. No cheats or direct guest-memory writes are included.
 
 ## Menu shell
 
-The host-side shell is in `port/src/dev_menu.c`. It is off by default and
-enabled by `--dev-menu`, `XANTH_DEV_MENU=1` or `dev_menu=1` in the port
-config. `XANTH_DEV_MENU=0` turns it off again, and `XANTH_CHEATS=0`
+The host-side shell is in `port/src/dev_menu.c`. It is on by default in this
+preview. `--no-dev-menu`, `XANTH_DEV_MENU=0` or `dev_menu=0` in the port
+config turns it off. Explicit CLI choices override config and XANTH_DEV_MENU;
+`--dev-menu` enables it again. `XANTH_CHEATS=0`
 hard-disables it, so no filter, overlay or controller handle is subscribed.
 
 - **Opening:** F12, or Back+Start held on the same pad. Back and Start are
@@ -55,7 +56,7 @@ so fast-forward is L3 (toggle) and R3 (hold). While the menu is open it
 consumes all keyboard input, F-keys included.
 
 Gates on the branch:
-- `DevMenuTests` (asset-free, SDL virtual devices) covers opt-in resolution,
+- `DevMenuTests` (asset-free, SDL virtual devices) covers default and explicit enable/disable resolution,
   the all-off identity, navigation and empty groups, keyboard/mouse/pad
   capture and drain, the same-pad combo and replays, fast-forward, refusals,
   screenshots, the key script, and held-at-connect/removal hotplug.

@@ -128,27 +128,30 @@ static int queued_replays(void) {
 static void test_resolution(void) {
     SDL_setenv("XANTH_DEV_MENU", "", 1); SDL_setenv("XANTH_CHEATS", "", 1);
     dev_menu_reset_for_tests();
-    CHECK(!dev_menu_resolve(false, NULL));                 /* off by default */
+    CHECK(dev_menu_resolve(-1, NULL));                    /* preview default */
+    CHECK(!dev_menu_resolve(false, NULL));                 /* --no-dev-menu */
     CHECK(dev_menu_resolve(true, NULL));                   /* --dev-menu */
     SDL_setenv("XANTH_DEV_MENU", "1", 1);
-    CHECK(dev_menu_resolve(false, NULL));
+    CHECK(dev_menu_resolve(-1, NULL));
+    CHECK(!dev_menu_resolve(false, NULL));                 /* CLI off wins */
     SDL_setenv("XANTH_CHEATS", "0", 1);
     CHECK(!dev_menu_resolve(false, NULL));                 /* hard disable wins */
     CHECK(!dev_menu_resolve(true, NULL));
     SDL_setenv("XANTH_CHEATS", "", 1);
     SDL_setenv("XANTH_DEV_MENU", "0", 1);
-    CHECK(!dev_menu_resolve(true, NULL));                  /* explicit env off */
+    CHECK(!dev_menu_resolve(-1, NULL));                    /* explicit env off */
+    CHECK(dev_menu_resolve(true, NULL));                   /* CLI on wins */
     SDL_setenv("XANTH_DEV_MENU", "", 1);
     {
         FILE *f = fopen("dev_menu_test.cfg", "w");
         CHECK(f); fputs("# port config\nscale = 3\n dev_menu = true \n", f); fclose(f);
-        CHECK(dev_menu_resolve(false, "dev_menu_test.cfg"));
+        CHECK(dev_menu_resolve(-1, "dev_menu_test.cfg"));
         f = fopen("dev_menu_test.cfg", "w");
         CHECK(f); fputs("dev_menu=0\n", f); fclose(f);
-        CHECK(!dev_menu_resolve(false, "dev_menu_test.cfg"));
+        CHECK(!dev_menu_resolve(-1, "dev_menu_test.cfg"));
         remove("dev_menu_test.cfg");
     }
-    CHECK(!dev_menu_resolve(false, "no-such-file.cfg"));
+    CHECK(dev_menu_resolve(-1, "no-such-file.cfg"));
 }
 
 static void test_disabled_is_inert(void) {

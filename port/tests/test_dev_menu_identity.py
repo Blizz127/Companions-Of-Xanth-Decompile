@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Retail-parity gate for the opt-in dev menu (shared spec section 8/10).
+"""Retail-parity gate for the preview dev menu (shared spec section 8/10).
 
-Runs the real game headless three ways for the same number of frames:
-  off       - a normal launch;
+Runs the real game headless four ways for the same number of frames:
+  off       - explicitly disabled with --no-dev-menu;
+  default   - default-on with the menu closed;
   on        - --dev-menu with a scripted walk through every page, help,
               refusals and screenshots, but no fast-forward or cheat;
   disabled  - --dev-menu with XANTH_CHEATS=0 (hard disable).
 Guest RAM + DAC hash, cycle count and the final guest frame must be
-identical in all three.  The menu screenshots (presented frame, overlay
+identical in all four.  The menu screenshots (presented frame, overlay
 included) are kept as evidence and must differ from the guest frame.
 
 Requires the retail data in game_cd/XANTH; no game data is written to git.
@@ -82,16 +83,19 @@ def main():
     evidence = os.environ.get("XANTH_DEV_EVIDENCE")
     with tempfile.TemporaryDirectory(prefix="xanth-devmenu-") as work:
         keys = ",".join(f"{BASE + f}:{k}" for f, k in SCRIPT)
-        off = run("off", work, [], {})
+        off = run("off", work, ["--no-dev-menu"], {})
+        default = run("default", work, [], {})
         on = run("on", work, ["--dev-menu"], {"XANTH_DEV_KEYS": keys})
         dis = run("disabled", work, ["--dev-menu"],
                   {"XANTH_DEV_KEYS": keys, "XANTH_CHEATS": "0"})
 
-        for label, r in (("on", on), ("disabled", dis)):
+        for label, r in (("default", default), ("on", on), ("disabled", dis)):
             for field in ("cycles", "hash", "frame"):
                 if r[field] != off[field]:
                     raise AssertionError(
                         f"{label} {field} {r[field]} != off {off[field]}")
+        if "[DEV_MENU] enabled" not in default["log"] or "[DEV_MENU] open" in default["log"] or default["shots"]:
+            raise AssertionError("default menu was not enabled and closed")
         if "[DEV_MENU]" in off["log"]:
             raise AssertionError("off run printed dev-menu output")
         if "[DEV_MENU] hard-disabled by XANTH_CHEATS=0" not in dis["log"] or \
@@ -120,10 +124,10 @@ def main():
                 shutil.copy(path, os.path.join(evidence, f"{name}.bmp"))
             shutil.copy(off["final"], os.path.join(evidence, "guest-final-frame.bmp"))
             with open(os.path.join(evidence, "identity.txt"), "w") as f:
-                for label, r in (("off", off), ("on", on), ("disabled", dis)):
+                for label, r in (("off", off), ("default", default), ("on", on), ("disabled", dis)):
                     f.write(f"{label}: frames={FRAMES} cycles={r['cycles']} "
                             f"state_fnv1a64={r['hash']} final_frame_sha256={r['frame']}\n")
-            for label in ("off", "on", "disabled"):
+            for label in ("off", "default", "on", "disabled"):
                 shutil.copy(os.path.join(work, label, "run.log"),
                             os.path.join(evidence, f"{label}.log"))
 

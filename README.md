@@ -34,8 +34,9 @@ Linux requires installed SDL2 (`libSDL2-2.0.so.0`) and glibc 2.34 or newer. The 
 
 ## Dev menu
 
-Off by default. Launch with `--dev-menu`, or set `dev_menu=1` in your port
-config. Open it with F12 or Back+Start on one controller. The menu offers
+On in this preview: press F12 or Back+Start on one controller. Set
+`dev_menu=0` in your port config or use `--no-dev-menu` to hide it.
+`XANTH_CHEATS=0` hard-disables it. The menu offers
 8 verified warps and 7 finish-step entries after you build and verify your
 own local checkpoints. See [DEV_MENU.md](docs/DEV_MENU.md) for the packaged
 tools and instructions. No cheats are included.
