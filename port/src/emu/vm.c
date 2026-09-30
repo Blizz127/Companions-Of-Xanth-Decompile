@@ -2528,6 +2528,29 @@ void vm_shutdown(vm *v) {
     if (g_vm == v) g_vm = NULL;
 }
 
+/*
+ * Hardware interrupts may be taken when the guest has IF set -- or while it
+ * is inside one of the DOS/BIOS software services we emulate.
+ *
+ * Real MS-DOS executes STI on entry to INT 21h, and the BIOS video/keyboard
+ * services and the mouse driver enable interrupts too, so a pending timer
+ * tick is serviced during the call even when the caller runs with IF clear;
+ * the service's IRET then restores the caller's own flags. Our services run
+ * in a HLT callback and return through the slot's IRET, so the equivalent
+ * window is the boundary at that IRET. Without it, a caller that polls DOS
+ * with interrupts masked never sees a tick: the retail Legend logo does
+ * exactly that, waiting on a music clock its own INT 08h handler advances,
+ * and stayed black forever.
+ */
+static bool irq_window_open(const cpu86 *c) {
+    uint16_t vec;
+    if (c->inhibit_irq) return false;
+    if (c->flags & F_IF) return true;
+    if (c->s[CPU_CS] != VM_SEG_TRAMP || (c->ip & 15u) != 1u) return false;
+    vec = (uint16_t)(c->ip >> 4);
+    return vec == 0x10 || vec == 0x16 || vec == 0x21 || vec == 0x33;
+}
+
 bool vm_run(vm *v, uint64_t max_insns) {
     cpu86 *c = &v->cpu;
 
@@ -2601,7 +2624,7 @@ bool vm_run(vm *v, uint64_t max_insns) {
          * the shadow of a segment load is not a safe place to divert. */
         if (v->m33_pending && !c->inhibit_irq) m33_dispatch(v);
 
-        if (v->tick_pending && (c->flags & F_IF) && !c->inhibit_irq) {
+        if (v->tick_pending && irq_window_open(c)) {
             v->tick_pending = false;
             v->timer_ticks++;
             cpu86_interrupt(c, 0x08);
@@ -2610,8 +2633,7 @@ bool vm_run(vm *v, uint64_t max_insns) {
         /* Deliver pending Sound Blaster virtual IRQ */
         if (v->sb.irq_pending &&
             !(v->pic.imr & (1 << v->sb.irq)) &&
-            !(v->pic.isr & (1 << v->sb.irq)) &&
-            (c->flags & F_IF) && !c->inhibit_irq) {
+            !(v->pic.isr & (1 << v->sb.irq)) && irq_window_open(c)) {
             v->pic.irr &= (uint8_t)~(1 << v->sb.irq);
             v->pic.isr |= (uint8_t)(1 << v->sb.irq);
             cpu86_interrupt(c, (uint8_t)(0x08 + v->sb.irq));

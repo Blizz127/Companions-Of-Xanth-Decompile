@@ -434,6 +434,9 @@ if(XANTH_BUILD_TESTS)
         add_executable(xanth_vm_mouse_tests tests/test_vm_mouse_events.c src/dos_mem.c $<TARGET_OBJECTS:xanth_emu>)
         target_include_directories(xanth_vm_mouse_tests PRIVATE include include/emu)
         add_test(NAME VmMouseEventsTests COMMAND xanth_vm_mouse_tests)
+        add_executable(xanth_vm_irq_window_tests tests/test_vm_irq_window.c src/dos_mem.c $<TARGET_OBJECTS:xanth_emu>)
+        target_include_directories(xanth_vm_irq_window_tests PRIVATE include include/emu)
+        add_test(NAME VmIrqWindowTests COMMAND xanth_vm_irq_window_tests)
     endif()
     if(SDL2_FOUND_ANY)
         add_executable(xanth_mouse_video_tests tests/test_mouse_video.c src/dos_mem.c src/controller_help.c)
@@ -566,6 +569,20 @@ if(XANTH_BUILD_TESTS)
                     )
                 endif()
             endif()
+        endif()
+
+        find_package(Python3 COMPONENTS Interpreter QUIET)
+        if(Python3_Interpreter_FOUND)
+            add_test(NAME RealTimeBootLogoTest
+                COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                        ${Python3_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_realtime_boot.py
+            )
+            set_tests_properties(RealTimeBootLogoTest PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 300
+            )
         endif()
 
         add_test(NAME HeadlessBootSmokeTest
