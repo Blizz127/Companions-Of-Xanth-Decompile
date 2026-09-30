@@ -19,6 +19,7 @@
 #include "vm.h"
 #include "native_stage2.h"
 #include "asset_check.h"
+#include "guest_state.h"
 #include "port_hal.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -625,11 +626,26 @@ static bool run_until_waiting(vm *m, long long slices) {
     return true;
 }
 
+/* --guest-state: after each step, log the game's own idle classification
+ * (guest_state.c) so safe-state sweeps can tabulate it per scene. */
+static bool g_guest_state_log;
+
+static void log_guest_state(int step) {
+    if (!g_guest_state_log) return;
+    fprintf(stderr, "[guest-state] step %d %s caller=%04X:%04X image=%u polls=%llu\n",
+            step, guest_state_name(guest_state_classify()),
+            (unsigned)(guest_state_last_caller_csip() >> 16),
+            (unsigned)(guest_state_last_caller_csip() & 0xFFFF),
+            (unsigned)guest_state_last_caller_image(),
+            (unsigned long long)guest_state_poll_count());
+}
+
 static bool run_script(vm *m, uint64_t overall_budget) {
     bool alive = true;
 
     for (int i = 0; i < g_step_count && alive; i++) {
         script_step *st = &g_steps[i];
+        if (i > 0) log_guest_state(i - 1);
         if (m->insn_count >= overall_budget) {
             fprintf(stderr, "[script] instruction budget exhausted at step %d\n", i);
             break;
@@ -730,6 +746,7 @@ static bool run_script(vm *m, uint64_t overall_budget) {
             break;
         }
     }
+    if (g_step_count > 0) log_guest_state(g_step_count - 1);
     return alive;
 }
 
@@ -881,6 +898,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--test-native-exe100016-store"))
             test_native_100016_store = true;
         else if (!strcmp(argv[i], "--watch")) g_watch = true;
+        else if (!strcmp(argv[i], "--guest-state")) g_guest_state_log = true;
         else if (!strcmp(argv[i], "--nonblocking-conin")) cfg.nonblocking_conin = true;
         else if (!strcmp(argv[i], "--hook-at") && i + 1 < argc) {
             if (g_hook_probe_count == sizeof(g_hook_probes) / sizeof(g_hook_probes[0])) {
@@ -933,6 +951,13 @@ int main(int argc, char **argv) {
 
     if (!vm_only && !xanth_native_stage2_install(&machine)) {
         fprintf(stderr, "[vm] could not install verified Stage-2 native units\n");
+        vm_shutdown(&machine);
+        hal_audio_shutdown();
+        return 1;
+    }
+
+    if (g_guest_state_log && !guest_state_install(&machine)) {
+        fprintf(stderr, "[vm] could not install the guest-state observer\n");
         vm_shutdown(&machine);
         hal_audio_shutdown();
         return 1;

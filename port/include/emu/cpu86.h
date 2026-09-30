@@ -208,6 +208,9 @@ const char *cpu86_fault_name(int fault);
 /* ------------------------------------------------------------------ */
 bool cpu86_hook_install(uint16_t seg, uint16_t off, cpu_hook_fn fn, void *user);
 void cpu86_hook_remove(uint16_t seg, uint16_t off);
+/* True when a live hook is installed at seg:off (observers use it to avoid
+ * replacing a Stage-2 native adapter). */
+bool cpu86_hook_present(uint16_t seg, uint16_t off);
 void cpu86_hook_clear_all(void);
 
 /* ------------------------------------------------------------------ */

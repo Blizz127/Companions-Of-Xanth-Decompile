@@ -95,6 +95,11 @@ void cpu86_hook_remove(uint16_t seg, uint16_t off) {
     if (g_hook_bitmap) g_hook_bitmap[lin >> 3] &= (uint8_t)~(1u << (lin & 7u));
 }
 
+bool cpu86_hook_present(uint16_t seg, uint16_t off) {
+    hook_slot *s = hook_find(cpu_lin(seg, off));
+    return s && s->fn;
+}
+
 void cpu86_hook_clear_all(void) {
     memset(g_hooks, 0, sizeof(g_hooks));
     g_hook_count = 0;

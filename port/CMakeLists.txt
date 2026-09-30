@@ -159,6 +159,7 @@ set(XANTH_EMU_SOURCES
     src/emu/mzload.c
     src/emu/dos_mcb.c
     src/emu/vm.c
+    src/emu/guest_state.c
 )
 
 add_library(xanth_emu OBJECT ${XANTH_EMU_SOURCES})
@@ -552,6 +553,16 @@ if(XANTH_BUILD_TESTS)
             set_tests_properties(Stage2OpeningNativeParityTest PROPERTIES
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 360
+            )
+            add_test(NAME GuestStateModalTest
+                COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_VMBOOT=$<TARGET_FILE:tool_vmboot>"
+                        ${Python3_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_guest_state_modal.py
+            )
+            set_tests_properties(GuestStateModalTest PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 900
             )
             add_test(NAME FontReplacementParityTest
                 COMMAND ${CMAKE_COMMAND} -E env
