@@ -579,9 +579,8 @@ uint64_t hal_video_get_frame_count(void) {
     return g_video.frame_count;
 }
 
-bool hal_video_save_bmp(const char *path) {
-    if (!path || !g_video.screen_buffer) return false;
-
+/* Writes a 24-bit BMP; pixel(x, y) returns RGBA8888 for the source image. */
+static bool write_bmp(const char *path, uint32_t (*pixel)(int x, int y)) {
     FILE *f = fopen(path, "wb");
     if (!f) return false;
 
@@ -612,19 +611,51 @@ bool hal_video_save_bmp(const char *path) {
     uint8_t *row = (uint8_t *)calloc(1, row_bytes);
     for (int y = h - 1; y >= 0; y--) {
         for (int x = 0; x < w; x++) {
-            uint8_t idx = g_video.screen_buffer[y * w + x];
-            vga_dac_t d = g_video.dac[idx];
-            /* 6-bit DAC to 8-bit RGB */
-            uint8_t r = (uint8_t)((d.r << 2) | (d.r >> 4));
-            uint8_t g = (uint8_t)((d.g << 2) | (d.g >> 4));
-            uint8_t b = (uint8_t)((d.b << 2) | (d.b >> 4));
-            row[x * 3 + 0] = b;
-            row[x * 3 + 1] = g;
-            row[x * 3 + 2] = r;
+            uint32_t p = pixel(x, y);
+            row[x * 3 + 0] = (uint8_t)(p >> 8);
+            row[x * 3 + 1] = (uint8_t)(p >> 16);
+            row[x * 3 + 2] = (uint8_t)(p >> 24);
         }
         fwrite(row, 1, row_bytes, f);
     }
     free(row);
     fclose(f);
     return true;
+}
+
+static uint32_t guest_pixel(int x, int y) {
+    uint8_t idx = g_video.screen_buffer[y * HAL_VIDEO_WIDTH + x];
+    vga_dac_t d = g_video.dac[idx];
+    /* 6-bit DAC to 8-bit RGB */
+    uint8_t r = (uint8_t)((d.r << 2) | (d.r >> 4));
+    uint8_t g = (uint8_t)((d.g << 2) | (d.g >> 4));
+    uint8_t b = (uint8_t)((d.b << 2) | (d.b >> 4));
+    return ((uint32_t)r << 24) | ((uint32_t)g << 16) | ((uint32_t)b << 8) | 0xFF;
+}
+
+static const uint32_t *g_bmp_rgba;
+
+static uint32_t rgba_pixel(int x, int y) {
+    return g_bmp_rgba[y * HAL_VIDEO_WIDTH + x];
+}
+
+bool hal_video_save_bmp(const char *path) {
+    if (!path || !g_video.screen_buffer) return false;
+    return write_bmp(path, guest_pixel);
+}
+
+bool hal_video_copy_presented(uint32_t *dst) {
+    if (!dst || !g_video.rgba_surface) return false;
+    memcpy(dst, g_video.rgba_surface, HAL_VIDEO_FRAME_SIZE * sizeof(uint32_t));
+    return true;
+}
+
+bool hal_video_save_rgba_bmp(const char *path, const uint32_t *rgba) {
+    if (!path || !rgba) return false;
+    g_bmp_rgba = rgba;
+    return write_bmp(path, rgba_pixel);
+}
+
+bool hal_video_crt_enabled(void) {
+    return g_video.crt_scanlines;
 }

@@ -192,6 +192,8 @@ set(XANTH_PORT_SOURCES
     src/controller_guest_ui.c
     src/controller_guest_actions.c
     src/emu/native_stage2.c
+    src/dev_menu.c
+    src/dev_warp.c
     src/dos_mem.c
     src/hal_video.c
     src/controller_help.c
@@ -527,6 +529,16 @@ if(XANTH_BUILD_TESTS)
             add_test(NAME ControllerInputTests COMMAND xanth_controller_tests)
             set_tests_properties(ControllerInputTests PROPERTIES
                 ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
+            add_executable(xanth_dev_menu_tests tests/test_dev_menu.c src/dev_menu.c src/dev_warp.c src/hal_input.c)
+            target_include_directories(xanth_dev_menu_tests PRIVATE include)
+            target_link_libraries(xanth_dev_menu_tests PRIVATE ${SDL2_TARGET_LIB})
+            add_test(NAME DevMenuTests COMMAND xanth_dev_menu_tests)
+            add_executable(xanth_dev_warp_tests tests/test_dev_warp.c src/dev_warp.c)
+            target_include_directories(xanth_dev_warp_tests PRIVATE include)
+            add_test(NAME DevWarpTests COMMAND xanth_dev_warp_tests)
+            set_tests_properties(DevMenuTests PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+                ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
         endif()
     endif()
 
@@ -621,6 +633,17 @@ if(XANTH_BUILD_TESTS)
                         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_guest_state_modal.py
             )
             set_tests_properties(GuestStateModalTest PROPERTIES
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                TIMEOUT 900
+            )
+            add_test(NAME DevMenuRetailIdentityTest
+                COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                        "XANTH_DEV_EVIDENCE=${CMAKE_BINARY_DIR}/dev_menu_evidence"
+                        ${Python3_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_dev_menu_identity.py
+            )
+            set_tests_properties(DevMenuRetailIdentityTest PROPERTIES
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 900
             )
