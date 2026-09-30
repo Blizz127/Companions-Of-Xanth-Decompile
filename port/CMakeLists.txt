@@ -421,6 +421,17 @@ if(XANTH_BUILD_TESTS)
     if(EXISTS "${XANTH_TEST_DATA_DIR}/XANTH.EXE")
         find_package(Python3 COMPONENTS Interpreter QUIET)
         if(Python3_Interpreter_FOUND)
+            if(UNIX)
+                find_program(XANTH_XVFB_EXECUTABLE Xvfb)
+                if(XANTH_XVFB_EXECUTABLE)
+                    add_test(NAME RealTimeWindowInputTest
+                        COMMAND ${CMAKE_COMMAND} -E env
+                            "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                            "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                            ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_realtime_window_input.py)
+                    set_tests_properties(RealTimeWindowInputTest PROPERTIES TIMEOUT 180)
+                endif()
+            endif()
             if(TARGET sdl_controller_shim)
                 add_test(NAME ControllerBlackboxTests
                     COMMAND ${CMAKE_COMMAND} -E env
@@ -562,6 +573,13 @@ if(XANTH_BUILD_TESTS)
     set_tests_properties(Native114942NegativeFixture Native103774NegativeFixture
         Native100203PrefixFixture Native103744Fixture Native100016StoreFixture
         PROPERTIES SKIP_RETURN_CODE 77)
+
+    if(EXISTS "${XANTH_TEST_DATA_DIR}/XANTH.EXE")
+        set_property(TEST NativeUnitTests NativeHalStressTests
+            Native114942NegativeFixture Native103774NegativeFixture
+            Native100203PrefixFixture Native103744Fixture Native100016StoreFixture
+            APPEND PROPERTY ENVIRONMENT "XANTH_DATA=${XANTH_TEST_DATA_DIR}")
+    endif()
 
     add_test(NAME NativeDmaPipelineTests COMMAND test_dma_pipeline)
     set_tests_properties(NativeDmaPipelineTests PROPERTIES

@@ -73,6 +73,7 @@ class HotspotTests(unittest.TestCase):
         if SAVES.exists():
             shutil.rmtree(SAVES)
         SAVES.mkdir(parents=True)
+        FRAMES.mkdir(parents=True, exist_ok=True)
         for stale in FRAMES.glob("hv_*.bmp"):
             stale.unlink()
 

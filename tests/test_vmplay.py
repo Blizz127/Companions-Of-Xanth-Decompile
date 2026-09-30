@@ -35,7 +35,10 @@ TRACE = PROJECT_ROOT / "tests" / "traces" / "reach_first_room.xit"
 # Hash of the first room (Dug's computer desk), framebuffer + palette.
 # Regenerate deliberately, never to make a red test pass: a change here means
 # the game is rendering something different.
-GOLDEN_FIRST_ROOM = "3ec4adf60ff311da"
+# BIOS keyboard-status IF correction advances the retail rain clock.
+# Independent old/new BMP comparison found zero pixel changes outside the
+# verified rain rectangle (51,4)-(136,75) at every checkpoint below.
+GOLDEN_FIRST_ROOM = "6926dda7f01786b6"
 
 BUDGET = 2_000_000_000
 
@@ -127,9 +130,9 @@ class InteractionTests(unittest.TestCase):
 
     # Selecting a verb and clicking an object must each change the screen.
     GOLDEN = {
-        "room_idle": "ace8f1a3d6b858f2",
-        "verb_take": "0c26affc320f0d17",
-        "took_computer": "e8ae412501bc4d7c",
+        "room_idle": "fc53131750c9cb17",
+        "verb_take": "f4d01e0db56a202b",
+        "took_computer": "b14d4ebce73cb2d4",
     }
 
     @classmethod

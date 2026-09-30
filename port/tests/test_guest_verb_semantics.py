@@ -8,18 +8,21 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
+# BIOS keyboard IF correction shifts rain animation phase. Old/new replays
+# were pixel-audited at all 17 checkpoints: no differences outside the rain
+# rectangle (51,4)-(136,75), including unchanged verb/text/inventory pixels.
 KEY_HASHES = {
-    "key_g_take": "286d24a6981c25cd", "key_o_open": "89bb7773c07544ad",
-    "key_c_close": "83690ab14bff6e8b", "key_t_talk": "383b7b24a47902aa",
+    "key_g_take": "c66da11afc1ab5ea", "key_o_open": "a07b6fc1662f992a",
+    "key_c_close": "83690ab14bff6e8b", "key_t_talk": "523f6818f6f2182d",
     "key_l_look": "4c48e145df8a198e", "key_p_put": "f6af6e7867cf32a8",
 }
 CONTEXT_HASHES = {
-    "context_computer": "1856d50726caec90",
+    "context_computer": "2824febf16eb5715",
     **dict(zip((f"context_hover_{y}" for y in [7,17,27,37,47,57,67,87,97,107]), [
-        "263d58756a93b539", "14ef3d4f421ea0a2", "1a596cbacb0c11f5",
-        "8a46a22763c924df", "9838ecb1d245be6c", "5839b145ca99df90",
-        "a6dc951b339a2506", "0ce89668768d6c99", "18eb188cd903e0ee",
-        "e8aa73c33c4636c4",
+        "912c2da57fa00221", "c7e0547a000309ee", "2c9d889add312aad",
+        "2e637db0ae042ff4", "ed49bf3cac9497bd", "7cbf89d0c20fd67c",
+        "49d9f8d252225348", "c4595761b21e54be", "0627b8e21d56f1ca",
+        "aabd13ebdd1c69f8",
     ])),
 }
 

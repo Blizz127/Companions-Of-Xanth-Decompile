@@ -510,7 +510,9 @@ static void stress_keyboard_queue(void) {
 static void stress_filesystem_resolver(void) {
     printf("\n=== [STRESS 5] Filesystem Resolver Stress & Security ===\n");
 
-    hal_fs_init("original", "saves");
+    const char *configured_data = getenv("XANTH_DATA");
+    const char *data_dir = configured_data && *configured_data ? configured_data : "original";
+    hal_fs_init(data_dir, "saves");
 
     char out_path[1024];
 
@@ -533,9 +535,9 @@ static void stress_filesystem_resolver(void) {
 
     for (size_t i = 0; i < sizeof(case_variants) / sizeof(case_variants[0]); i++) {
         memset(out_path, 0, sizeof(out_path));
-        bool found = hal_fs_find_file("original", case_variants[i], out_path, sizeof(out_path));
+        bool found = hal_fs_find_file(data_dir, case_variants[i], out_path, sizeof(out_path));
         if (!found) {
-            fprintf(stderr, "[FAIL] Case query '%s' not found in original/\n", case_variants[i]);
+            fprintf(stderr, "[FAIL] Case query '%s' not found in selected data directory\n", case_variants[i]);
         }
         STRESS_ASSERT(found, "Mixed-case lookup must find asset");
     }
@@ -562,7 +564,7 @@ static void stress_filesystem_resolver(void) {
 
     for (size_t i = 0; i < sizeof(traversal_attacks) / sizeof(traversal_attacks[0]); i++) {
         memset(out_path, 0, sizeof(out_path));
-        bool escaped = hal_fs_find_file("original", traversal_attacks[i], out_path, sizeof(out_path));
+        bool escaped = hal_fs_find_file(data_dir, traversal_attacks[i], out_path, sizeof(out_path));
         if (escaped) {
             fprintf(stderr, "[SECURITY WARNING] Traversal not blocked for '%s': resolved to '%s'\n",
                     traversal_attacks[i], out_path);
@@ -599,14 +601,14 @@ static void stress_filesystem_resolver(void) {
     strcat(deep_path, "target.dat");
 
     /* Must return false cleanly without stack smash or crash */
-    bool deep_res = hal_fs_find_file("original", deep_path, out_path, sizeof(out_path));
+    bool deep_res = hal_fs_find_file(data_dir, deep_path, out_path, sizeof(out_path));
     STRESS_ASSERT(!deep_res, "Deep non-existent path must return false without crash");
 
     /* 1,000-character path string */
     char long_path[1500];
     memset(long_path, 'A', 1000);
     long_path[1000] = '\0';
-    bool long_res = hal_fs_find_file("original", long_path, out_path, sizeof(out_path));
+    bool long_res = hal_fs_find_file(data_dir, long_path, out_path, sizeof(out_path));
     STRESS_ASSERT(!long_res, "1000-char path must return false without buffer overflow");
 
     /* 5.6 DOS File Handle Table Exhaustion (64 Handles) */

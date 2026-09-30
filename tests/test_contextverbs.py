@@ -40,10 +40,13 @@ TOOL = Path(os.environ.get("XANTH_VM_TOOL", PROJECT_ROOT / "build" / "tool_vmboo
 TRACE = PROJECT_ROOT / "tests" / "traces" / "context_verbs.xit"
 SAVES = PROJECT_ROOT / "build" / "ctx_saves"
 
+# BIOS keyboard-status IF correction advances the retail rain clock.
+# Independent old/new BMP comparison found zero pixel changes outside the
+# verified rain rectangle (51,4)-(136,75) at every checkpoint below.
 GOLDEN = {
     "read":    "c70ac4f600f877a9",
-    "touch":   "33e5932b012ca79b",
-    "cd_open": "1ff5390e6ad0f213",
+    "touch":   "577298e46f678b8c",
+    "cd_open": "f867ea477f6c628c",
 }
 
 BUDGET = 2_000_000_000
