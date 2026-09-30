@@ -1,15 +1,15 @@
-/* Synthetic-guest regression for hardware IRQ delivery around emulated DOS
- * services; no retail assets.
+/* Synthetic-guest regression for the interrupt flag around emulated BIOS
+ * and DOS services; no retail assets.
  *
- * Real MS-DOS executes STI inside INT 21h, so a timer tick pending while the
- * caller has IF clear is serviced during the call, and the service's IRET
- * restores the caller's flags. The VM models that window at the IRET of its
- * service trampolines. These cases pin the rule down:
- *   (a) a masked caller polling INT 21h sees timer ticks;
+ * The PC BIOS keyboard status call (INT 16h AH=01h/11h) executes STI and
+ * returns with RET 2, so its caller comes back with interrupts enabled
+ * whatever IF it called with. Services that return through IRET restore the
+ * caller's own flags. These cases pin the rule down:
+ *   (a) a masked caller polling INT 16h status gets IF back and sees ticks;
  *   (b) masked guest code that makes no service call stays masked;
  *   (c) the one-instruction shadows after MOV SS and STI still hold;
- *   (d) an IRQ taken inside the service returns to the caller with its own
- *       IF clear and the service's CF result intact.
+ *   (d) IRET-returning services (INT 21h, blocking INT 16h AH=00h) return
+ *       with the caller's IF still clear and their results intact.
  */
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -110,17 +110,21 @@ static int step_to(vm *v, unsigned cs, unsigned ip, int limit) {
 }
 
 static void test_masked_caller_progresses(void) {
-    /* cli; L: mov ah,2Ch; int 21h; jmp L */
-    static const unsigned char body[] = { 0xFA, 0xB4, 0x2C, 0xCD, 0x21, 0xEB, 0xFA };
+    /* cli; mov ah,01h; int 16h; (status call returns IF=1) L: jmp L */
+    static const unsigned char body[] = { 0xFA, 0xB4, 0x01, 0xCD, 0x16, 0xEB, 0xFE };
     vm *v = start(body, sizeof(body));
     CHECK(v);
     if (!v) return;
-    vm_run(v, 2000000);
     unsigned cs = v->img.load_seg;
-    CHECK(rd(cs, D_COUNT) > 0);                       /* ticks reached the guest ISR */
-    CHECK(!(v->cpu.flags & 0x0200) || v->cpu.s[CPU_CS] != cs); /* caller stays masked */
+    CHECK(step_to(v, cs, BODY + 0x03, 100));          /* at int 16h, IF clear */
+    CHECK(!(v->cpu.flags & 0x0200));
+    CHECK(step_to(v, cs, BODY + 0x05, 50));           /* back from the BIOS */
+    CHECK(v->cpu.flags & 0x0200);                     /* RET 2: interrupts enabled */
+    CHECK(v->cpu.flags & 0x0040);                     /* ZF: no key waiting */
+    vm_run(v, 2000000);
+    CHECK(rd(cs, D_COUNT) > 0);                       /* ticks reach the guest ISR */
     CHECK(!v->cpu.fault);
-    printf("(a) masked INT 21h poller: %u ticks serviced\n", rd(cs, D_COUNT));
+    printf("(a) masked INT 16h status poller: IF restored, %u ticks serviced\n", rd(cs, D_COUNT));
     stop(v);
 }
 
@@ -175,29 +179,29 @@ static void test_shadows_hold(void) {
     stop(v);
 }
 
-static void test_nested_iret_restores_flags(void) {
+static void test_iret_services_keep_caller_flags(void) {
     /* cli; mov ah,3Eh; mov bx,0FFFFh; int 21h (close bad handle: CF=1);
-     * after: jmp $ */
+     * mov ah,00h; int 16h (blocking read, key queued); jmp $ */
     static const unsigned char body[] = {
-        0xFA, 0xB4, 0x3E, 0xBB, 0xFF, 0xFF, 0xCD, 0x21, 0xEB, 0xFE };
+        0xFA, 0xB4, 0x3E, 0xBB, 0xFF, 0xFF, 0xCD, 0x21,
+        0xB4, 0x00, 0xCD, 0x16, 0xEB, 0xFE };
     vm *v = start(body, sizeof(body));
     CHECK(v);
     if (!v) return;
     unsigned cs = v->img.load_seg, sp_before;
     CHECK(step_to(v, cs, BODY + 0x06, 100));          /* at int 21h */
     sp_before = v->cpu.r[CPU_SP];
-    CHECK(step_to(v, VM_SEG_TRAMP, 0x21 * 16 + 1, 50)); /* service done, at its IRET */
-    CHECK(!(v->cpu.flags & 0x0200));
-    v->tick_pending = true;
-    CHECK(step_to(v, cs, BODY + 0x08, 200));          /* back in the caller */
-    CHECK(rd(cs, D_COUNT) == 1);
-    CHECK(rd(cs, D_RETCS) == VM_SEG_TRAMP && rd(cs, D_RETIP) == 0x21 * 16 + 1);
-    CHECK(!(v->cpu.flags & 0x0200));                  /* caller's IF restored: clear */
-    CHECK(v->cpu.flags & 0x0001);                     /* the service's CF survived */
+    CHECK(step_to(v, cs, BODY + 0x08, 50));
+    CHECK(!(v->cpu.flags & 0x0200));                  /* caller's IF: still clear */
+    CHECK(v->cpu.flags & 0x0001);                     /* the service's CF */
     CHECK(v->cpu.r[CPU_AX] == 6);                     /* invalid handle */
     CHECK(v->cpu.r[CPU_SP] == sp_before);
-    printf("(d) IRQ inside INT 21h: returned with IF=0 CF=1 AX=%u, SP restored\n",
-           v->cpu.r[CPU_AX]);
+    vm_post_key(v, 0x39, 0x20);                       /* Space */
+    CHECK(step_to(v, cs, BODY + 0x0C, 50));
+    CHECK(!(v->cpu.flags & 0x0200));                  /* AH=00h returns via IRET */
+    CHECK(v->cpu.r[CPU_AX] == 0x3920);
+    CHECK(rd(cs, D_COUNT) == 0);
+    printf("(d) INT 21h and INT 16h AH=00h: IF=0 kept, CF=1 AX=6, key %04X\n", 0x3920);
     stop(v);
 }
 
@@ -207,8 +211,8 @@ int main(void) {
     test_masked_caller_progresses();
     test_masked_loop_stays_masked();
     test_shadows_hold();
-    test_nested_iret_restores_flags();
+    test_iret_services_keep_caller_flags();
     rmdir(g_dir);
-    printf("VM IRQ window %s\n", failed ? "FAIL" : "PASS");
+    printf("VM interrupt flag %s\n", failed ? "FAIL" : "PASS");
     return failed;
 }
