@@ -25,10 +25,19 @@ reference) for the behavior in question.
 
 ## Gameplay route coverage
 
-The retail-VM route now reaches the Region of Fire firewall after the hot-dog
-and Mack clue steps, and verifies the firewall description by framebuffer hash
-and OCR. Picking up the charcoal and continuing the remaining Fire puzzles,
-Gap, and ending have not been verified; no 1:1 claim is made for those routes.
+The retail-VM route reaches the Region of Fire firewall after the hot-dog and
+Mack clue steps and verifies the description by framebuffer hash and OCR.
+Segment 19 verifies charcoal collection: the guest awards five points and
+produces checkpoint `b65a762ada0a1483`; the route implies 295 points from the
+275-point anchor, with a direct status-panel reading still outstanding. Its
+VM replay passed in 272.119 seconds. A separate native-dispatch replay from
+the same hash-pinned 275-point save matched the VM-pinned firewall frame
+`dc10de12e2f8098d` and charcoal frame `b65a762ada0a1483`, ended `fault=ok`
+with a valid MCB chain, and left the source save hash
+`901998237900d1665a78bfcc42cb0f067045c49806edc336efbed7bd062647df`
+unchanged. This validates those two deeper checkpoints only. Returning to the
+barrow for the plaque rubbing, collecting mortar/pestle, the remaining Fire
+puzzles, Gap, and ending remain unverified; no 1:1 claim is made for them.
 
 ## Distribution and platforms
 
