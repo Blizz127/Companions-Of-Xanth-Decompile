@@ -402,6 +402,14 @@ if(XANTH_BUILD_TESTS)
     if(EXISTS "${XANTH_TEST_DATA_DIR}/XANTH.EXE")
         find_package(Python3 COMPONENTS Interpreter QUIET)
         if(Python3_Interpreter_FOUND)
+            if(TARGET tool_vmclick)
+                add_test(NAME RetailMouseQuickTapTests
+                    COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                        "XANTH_VMCLICK=$<TARGET_FILE:tool_vmclick>"
+                        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vm_mouse_quick_tap.py)
+                set_tests_properties(RetailMouseQuickTapTests PROPERTIES TIMEOUT 300)
+            endif()
             add_test(NAME GuestVerbSemanticsTests
                 COMMAND ${CMAKE_COMMAND} -E env
                     "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
@@ -411,6 +419,12 @@ if(XANTH_BUILD_TESTS)
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 TIMEOUT 420 ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
             if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../game_cd/XANTH/XANTH.EXE")
+                add_test(NAME RealTimeBootLogoTest
+                    COMMAND ${CMAKE_COMMAND} -E env
+                        "XANTH_DATA=${XANTH_TEST_DATA_DIR}"
+                        "XANTH_PORT_BIN=$<TARGET_FILE:xanth_port>"
+                        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_realtime_boot.py)
+                set_tests_properties(RealTimeBootLogoTest PROPERTIES TIMEOUT 300 SKIP_RETURN_CODE 77)
                 foreach(suite IN ITEMS mzload vmboot vmplay contextverbs hotspots
                         overlay saveload navigate soundblaster soak realsound)
                     add_test(NAME Vm_${suite}
